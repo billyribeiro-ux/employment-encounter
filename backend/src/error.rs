@@ -6,6 +6,7 @@ use axum::{
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum AppError {
     #[error("Validation error: {0}")]
     Validation(String),

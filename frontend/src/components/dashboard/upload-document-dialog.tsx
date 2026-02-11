@@ -29,7 +29,7 @@ import {
 import { useCreateDocument } from "@/lib/hooks/use-documents";
 
 const schema = z.object({
-  name: z.string().min(1, "Document name is required"),
+  filename: z.string().min(1, "Document name is required"),
   mime_type: z.string().min(1, "File type is required"),
   size_bytes: z.number().min(1, "File size required"),
   client_id: z.string().optional(),
@@ -51,7 +51,7 @@ export function UploadDocumentDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: "",
+      filename: "",
       mime_type: "",
       size_bytes: 0,
       client_id: "",
@@ -64,7 +64,7 @@ export function UploadDocumentDialog({
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      form.setValue("name", file.name);
+      form.setValue("filename", file.name);
       form.setValue("mime_type", file.type || "application/octet-stream");
       form.setValue("size_bytes", file.size);
     }
@@ -73,10 +73,10 @@ export function UploadDocumentDialog({
   async function onSubmit(values: FormValues) {
     try {
       await createDocument.mutateAsync({
-        name: values.name,
+        filename: values.filename,
         mime_type: values.mime_type,
         size_bytes: values.size_bytes,
-        client_id: values.client_id || undefined,
+        client_id: values.client_id || "",
         category: values.category || undefined,
         tax_year: values.tax_year || undefined,
       });
@@ -139,7 +139,7 @@ export function UploadDocumentDialog({
 
             <FormField
               control={form.control}
-              name="name"
+              name="filename"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Document Name</FormLabel>

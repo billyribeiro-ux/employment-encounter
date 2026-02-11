@@ -34,7 +34,7 @@ pub async fn get_dashboard_stats(
     .await?;
 
     let (hours_this_week_minutes,): (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(duration_minutes), 0) FROM time_entries WHERE tenant_id = $1 AND date >= date_trunc('week', CURRENT_DATE)",
+        "SELECT COALESCE(SUM(duration_minutes), 0)::BIGINT FROM time_entries WHERE tenant_id = $1 AND date >= date_trunc('week', CURRENT_DATE)",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
@@ -48,14 +48,14 @@ pub async fn get_dashboard_stats(
     .await?;
 
     let (outstanding_amount_cents,): (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(total_cents - amount_paid_cents), 0) FROM invoices WHERE tenant_id = $1 AND status IN ('sent', 'viewed', 'overdue')",
+        "SELECT COALESCE(SUM(total_cents - amount_paid_cents), 0)::BIGINT FROM invoices WHERE tenant_id = $1 AND status IN ('sent', 'viewed', 'overdue')",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
     .await?;
 
     let (revenue_mtd_cents,): (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(amount_paid_cents), 0) FROM invoices WHERE tenant_id = $1 AND status = 'paid' AND paid_date >= date_trunc('month', CURRENT_DATE)",
+        "SELECT COALESCE(SUM(amount_paid_cents), 0)::BIGINT FROM invoices WHERE tenant_id = $1 AND status = 'paid' AND paid_date >= date_trunc('month', CURRENT_DATE)",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)

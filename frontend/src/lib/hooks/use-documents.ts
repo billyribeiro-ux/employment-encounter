@@ -5,19 +5,18 @@ import type { PaginatedResponse } from "./use-clients";
 export interface Document {
   id: string;
   tenant_id: string;
-  client_id: string | null;
+  client_id: string;
   uploaded_by: string;
-  name: string;
+  filename: string;
   mime_type: string;
   size_bytes: number;
   s3_key: string;
-  s3_version_id: string | null;
   category: string | null;
-  ai_category: string | null;
   ai_confidence: number | null;
+  ai_extracted_data: Record<string, unknown>;
+  verification_status: string;
   tax_year: number | null;
-  status: string;
-  metadata: Record<string, unknown>;
+  version: number;
   created_at: string;
   updated_at: string;
 }
@@ -28,10 +27,10 @@ export interface UploadResponse {
 }
 
 export interface CreateDocumentPayload {
-  name: string;
+  filename: string;
   mime_type: string;
   size_bytes: number;
-  client_id?: string;
+  client_id: string;
   category?: string;
   tax_year?: number;
 }

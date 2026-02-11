@@ -50,6 +50,7 @@ pub struct UpdateTaskRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ListTasksQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

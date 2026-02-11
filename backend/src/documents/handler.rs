@@ -24,7 +24,7 @@ pub async fn list_documents(
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
-        Some("name") => "name",
+        Some("name") => "filename",
         Some("category") => "category",
         Some("size_bytes") => "size_bytes",
         Some("created_at") => "created_at",
@@ -38,7 +38,7 @@ pub async fn list_documents(
 
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(name) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2)",
+            "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(filename) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2)",
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -55,7 +55,7 @@ pub async fn list_documents(
 
     let documents: Vec<Document> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(name) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2) {} LIMIT $3 OFFSET $4", order_clause),
+            &format!("SELECT id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, tax_year, version, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(filename) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2) {} LIMIT $3 OFFSET $4", order_clause),
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -65,7 +65,7 @@ pub async fn list_documents(
         .await?
     } else {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL {} LIMIT $2 OFFSET $3", order_clause),
+            &format!("SELECT id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, tax_year, version, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL {} LIMIT $2 OFFSET $3", order_clause),
         )
         .bind(claims.tid)
         .bind(per_page)
@@ -93,7 +93,7 @@ pub async fn get_document(
     Path(doc_id): Path<Uuid>,
 ) -> AppResult<Json<Document>> {
     let doc: Document = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
+        "SELECT id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, tax_year, version, created_at, updated_at FROM documents WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(doc_id)
     .bind(claims.tid)
@@ -116,20 +116,22 @@ pub async fn create_document(
     let id = Uuid::new_v4();
     let s3_key = format!(
         "tenants/{}/documents/{}/{}",
-        claims.tid, id, &payload.name
+        claims.tid, id, &payload.filename
     );
 
     let doc: Document = sqlx::query_as(
-        "INSERT INTO documents (id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, status, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', '{}') RETURNING id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at",
+        "INSERT INTO documents (id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, category, tax_year) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, tax_year, version, created_at, updated_at",
     )
     .bind(id)
     .bind(claims.tid)
     .bind(payload.client_id)
     .bind(claims.sub)
-    .bind(&payload.name)
+    .bind(&payload.filename)
     .bind(&payload.mime_type)
     .bind(payload.size_bytes)
     .bind(&s3_key)
+    .bind(payload.category.as_deref())
+    .bind(payload.tax_year)
     .fetch_one(&state.db)
     .await?;
 
@@ -156,7 +158,7 @@ pub async fn delete_document(
     Path(doc_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
-        "UPDATE documents SET deleted_at = NOW(), status = 'deleted' WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
+        "UPDATE documents SET deleted_at = NOW(), verification_status = 'rejected' WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(doc_id)
     .bind(claims.tid)

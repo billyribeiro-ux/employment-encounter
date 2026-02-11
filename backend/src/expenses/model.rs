@@ -33,6 +33,7 @@ pub struct CreateExpenseRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ListExpensesQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

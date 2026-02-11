@@ -35,6 +35,7 @@ pub struct CreateTimeEntryRequest {
 }
 
 #[derive(Debug, Deserialize, Validate)]
+#[allow(dead_code)]
 pub struct UpdateTimeEntryRequest {
     pub client_id: Option<Uuid>,
     #[validate(length(max = 1000))]
@@ -46,6 +47,7 @@ pub struct UpdateTimeEntryRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ListTimeEntriesQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

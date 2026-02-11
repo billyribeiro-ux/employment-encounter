@@ -183,9 +183,9 @@ export default function DocumentsPage() {
                   <tbody>
                     {documents.map((doc) => (
                       <tr key={doc.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-4 py-3 font-medium">{doc.name}</td>
+                        <td className="px-4 py-3 font-medium">{doc.filename}</td>
                         <td className="px-4 py-3 text-muted-foreground">
-                          {doc.ai_category || doc.category || "Uncategorized"}
+                          {doc.category || "Uncategorized"}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatBytes(doc.size_bytes)}
@@ -193,14 +193,14 @@ export default function DocumentsPage() {
                         <td className="px-4 py-3">
                           <Badge
                             variant={
-                              doc.status === "processed"
+                              doc.verification_status === "verified"
                                 ? "default"
-                                : doc.status === "pending"
+                                : doc.verification_status === "pending"
                                   ? "secondary"
                                   : "outline"
                             }
                           >
-                            {doc.status}
+                            {doc.verification_status}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
@@ -209,7 +209,7 @@ export default function DocumentsPage() {
                         <td className="px-4 py-3 text-right">
                           <ConfirmDialog
                             title="Delete document?"
-                            description={`This will permanently delete "${doc.name}".`}
+                            description={`This will permanently delete "${doc.filename}".`}
                             actionLabel="Delete"
                             onConfirm={() => {
                               deleteDoc.mutate(doc.id, {

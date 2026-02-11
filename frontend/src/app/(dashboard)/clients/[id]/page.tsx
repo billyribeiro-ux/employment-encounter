@@ -287,12 +287,12 @@ export default function ClientDetailPage({
                     <tbody>
                       {documents.map((doc) => (
                         <tr key={doc.id} className="border-b last:border-0">
-                          <td className="px-4 py-2 font-medium">{doc.name}</td>
+                          <td className="px-4 py-2 font-medium">{doc.filename}</td>
                           <td className="px-4 py-2 text-muted-foreground">
-                            {doc.ai_category || doc.category || "—"}
+                            {doc.category || "—"}
                           </td>
                           <td className="px-4 py-2">
-                            <Badge variant="secondary">{doc.status}</Badge>
+                            <Badge variant="secondary">{doc.verification_status}</Badge>
                           </td>
                           <td className="px-4 py-2 text-muted-foreground">
                             {new Date(doc.created_at).toLocaleDateString()}

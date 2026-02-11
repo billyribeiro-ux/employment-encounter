@@ -1,6 +1,5 @@
 use axum::{
     extract::{Request, State},
-    http::StatusCode,
     middleware::Next,
     response::Response,
 };
@@ -41,6 +40,7 @@ pub async fn require_auth(
 }
 
 /// Require a minimum role level.
+#[allow(dead_code)]
 pub fn require_role(claims: &Claims, min_role: &str) -> Result<(), AppError> {
     let role_level = role_to_level(&claims.role);
     let min_level = role_to_level(min_role);
@@ -54,6 +54,7 @@ pub fn require_role(claims: &Claims, min_role: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn role_to_level(role: &str) -> u8 {
     match role {
         "client" => 0,
