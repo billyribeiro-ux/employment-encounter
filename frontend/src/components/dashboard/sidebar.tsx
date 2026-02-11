@@ -14,6 +14,7 @@ import {
   Building2,
   FolderOpen,
   CheckSquare,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Tasks", href: "/tasks", icon: CheckSquare },
   { name: "Time Tracking", href: "/time", icon: Clock },
   { name: "Invoices", href: "/invoices", icon: Receipt },
+  { name: "Expenses", href: "/expenses", icon: Wallet },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
