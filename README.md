@@ -34,32 +34,35 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Mobile Responsive** — Sheet-based sidebar for mobile/tablet, hidden on desktop
 - **Breadcrumbs** — Reusable component on all 4 detail pages (clients, invoices, workflows, tasks)
 - **Toast Notifications** — Sonner toasts on all CRUD mutations across every page
+- **Confirmation Dialogs** — AlertDialog-based confirmation on all destructive actions (delete client, document, expense)
+- **Table Skeletons** — Animated skeleton loading states on all 5 list pages
 
-### 20 Frontend Routes (16 static + 4 dynamic)
+### 21 Frontend Routes (16 static + 5 dynamic)
 
 | Route | Type | Description |
 |-------|------|-------------|
 | `/dashboard` | Static | Overview with metrics, charts, deadlines, tasks |
 | `/clients` | Static | Client list with search, pagination, delete |
 | `/clients/[id]` | Dynamic | Client detail with tabs + breadcrumbs |
-| `/documents` | Static | Document list with upload dialog |
+| `/documents` | Static | Document list with upload + confirm delete |
 | `/workflows` | Static | Workflow templates + instances |
 | `/workflows/[id]` | Dynamic | Workflow detail with step progress + breadcrumbs |
+| `/workflows/templates/[id]` | Dynamic | Template detail with step viewer + start instance |
 | `/tasks` | Static | Kanban board with clickable titles |
 | `/tasks/[id]` | Dynamic | Task detail with status transitions + breadcrumbs |
 | `/time` | Static | Time entries with timer + toast |
 | `/invoices` | Static | Invoice list with create dialog |
 | `/invoices/[id]` | Dynamic | Invoice detail with status actions + breadcrumbs |
-| `/expenses` | Static | Expense table with create/delete |
+| `/expenses` | Static | Expense table with create + confirm delete |
 | `/analytics` | Static | Metrics + 4 ECharts |
 | `/calendar` | Static | Compliance deadlines with mark-complete |
 | `/settings` | Static | Profile, firm, team, integrations |
 | `/login` | Static | Authentication |
 | `/register` | Static | Firm registration |
 
-### 9 Dialog Components
+### 10 Dialog Components
 
-CreateClientDialog, CreateTimeEntryDialog, CreateInvoiceDialog, CreateTaskDialog, CreateDeadlineDialog, CreateExpenseDialog, CreateWorkflowTemplateDialog, CreateWorkflowInstanceDialog, UploadDocumentDialog
+CreateClientDialog, CreateTimeEntryDialog, CreateInvoiceDialog, CreateTaskDialog, CreateDeadlineDialog, CreateExpenseDialog, CreateWorkflowTemplateDialog, CreateWorkflowInstanceDialog, UploadDocumentDialog, ConfirmDialog
 
 ### 3 ECharts Components
 
