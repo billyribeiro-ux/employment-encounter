@@ -280,3 +280,28 @@ pub async fn get_step_logs(
 
     Ok(Json(logs))
 }
+
+pub async fn delete_instance(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(instance_id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    // Delete step logs first
+    sqlx::query("DELETE FROM workflow_step_logs WHERE instance_id = $1 AND tenant_id = $2")
+        .bind(instance_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    let result = sqlx::query("DELETE FROM workflow_instances WHERE id = $1 AND tenant_id = $2")
+        .bind(instance_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Workflow not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}

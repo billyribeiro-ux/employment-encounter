@@ -122,6 +122,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/workflows", get(workflows::handler::list_instances))
         .route("/workflows", post(workflows::handler::create_instance))
         .route("/workflows/{id}", get(workflows::handler::get_instance))
+        .route("/workflows/{id}", delete(workflows::handler::delete_instance))
         .route("/workflows/{id}/advance", post(workflows::handler::advance_step))
         .route("/workflows/{id}/logs", get(workflows::handler::get_step_logs))
         // Tasks
