@@ -15,6 +15,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -52,10 +59,12 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const { data, isLoading, isError } = useTasks({
     per_page: 200,
     search: debouncedSearch || undefined,
+    priority: priorityFilter !== "all" ? priorityFilter : undefined,
   });
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -116,6 +125,17 @@ export default function TasksPage() {
           onChange={(v) => setSearchQuery(v)}
           placeholder="Search tasks..."
         />
+        <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (
