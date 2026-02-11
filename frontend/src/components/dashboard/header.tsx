@@ -7,7 +7,6 @@ import {
   LogOut,
   User,
   Settings,
-  Menu,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
+import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
 
 export function Header() {
   const router = useRouter();
@@ -38,10 +38,8 @@ export function Header() {
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-      {/* Mobile menu button */}
-      <Button variant="ghost" size="icon" className="lg:hidden">
-        <Menu className="h-5 w-5" />
-      </Button>
+      {/* Mobile menu */}
+      <MobileSidebar />
 
       {/* Search */}
       <div className="hidden flex-1 max-w-md lg:block">
