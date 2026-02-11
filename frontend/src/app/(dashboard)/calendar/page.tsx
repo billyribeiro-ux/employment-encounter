@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Calendar as CalendarIcon,
   Plus,
-  Loader2,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -19,6 +18,7 @@ import {
 } from "@/lib/hooks/use-compliance";
 import { CreateDeadlineDialog } from "@/components/dashboard/create-deadline-dialog";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function statusIcon(status: string) {
   switch (status) {
@@ -131,8 +131,17 @@ export default function CalendarPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-48 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              ))}
             </div>
           ) : isError ? (
             <div className="text-center py-12">

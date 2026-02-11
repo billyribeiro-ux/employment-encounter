@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Plus,
-  Loader2,
   CheckSquare,
   GripVertical,
   Trash2,
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useTasks,
   useCreateTask,
@@ -119,8 +119,17 @@ export default function TasksPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {COLUMNS.map((col) => (
+            <div key={col.id} className={`rounded-lg p-3 ${col.color}`}>
+              <Skeleton className="h-5 w-24 mb-3" />
+              <div className="space-y-2">
+                <Skeleton className="h-20 rounded-md" />
+                <Skeleton className="h-20 rounded-md" />
+                <Skeleton className="h-20 rounded-md" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : isError ? (
         <div className="text-center py-12">
