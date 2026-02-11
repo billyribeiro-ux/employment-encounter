@@ -11,6 +11,7 @@ import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
 import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -132,19 +133,25 @@ export default function DocumentsPage() {
                           {new Date(doc.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => {
+                          <ConfirmDialog
+                            title="Delete document?"
+                            description={`This will permanently delete "${doc.name}".`}
+                            actionLabel="Delete"
+                            onConfirm={() => {
                               deleteDoc.mutate(doc.id, {
                                 onSuccess: () => toast.success("Document deleted"),
                                 onError: () => toast.error("Failed to delete document"),
                               });
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </ConfirmDialog>
                         </td>
                       </tr>
                     ))}

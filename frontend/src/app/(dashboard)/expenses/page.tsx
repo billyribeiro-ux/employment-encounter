@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
 import { CreateExpenseDialog } from "@/components/dashboard/create-expense-dialog";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -128,15 +129,21 @@ export default function ExpensesPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDelete(exp.id)}
-                            disabled={deleteExpense.isPending}
+                          <ConfirmDialog
+                            title="Delete expense?"
+                            description="This will permanently delete this expense entry."
+                            actionLabel="Delete"
+                            onConfirm={() => handleDelete(exp.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              disabled={deleteExpense.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </ConfirmDialog>
                         </td>
                       </tr>
                     ))}
