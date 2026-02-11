@@ -29,6 +29,7 @@ export function useComplianceDeadlines(params?: {
   per_page?: number;
   status?: string;
   client_id?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["compliance-deadlines", params],

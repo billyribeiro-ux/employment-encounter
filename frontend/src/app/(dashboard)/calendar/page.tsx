@@ -7,9 +7,11 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
+  Search,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +21,7 @@ import {
 import { CreateDeadlineDialog } from "@/components/dashboard/create-deadline-dialog";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 function statusIcon(status: string) {
   switch (status) {
@@ -53,10 +56,13 @@ function daysUntil(dateStr: string): number {
 }
 
 export default function CalendarPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useComplianceDeadlines({
     page,
     per_page: 50,
+    search: debouncedSearch || undefined,
   });
   const updateDeadline = useUpdateDeadline();
 
@@ -84,6 +90,18 @@ export default function CalendarPage() {
             Add Deadline
           </Button>
         </CreateDeadlineDialog>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search deadlines..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
+        </div>
       </div>
 
       {!isLoading && !isError && deadlines.length > 0 && (

@@ -21,21 +21,45 @@ pub async fn list_deadlines(
     let per_page = params.per_page.unwrap_or(50).clamp(1, 200);
     let offset = (page - 1) * per_page;
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM compliance_deadlines WHERE tenant_id = $1",
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let deadlines: Vec<ComplianceDeadline> = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, filing_type, description, due_date, extended_due_date, status, extension_filed, extension_filed_at, completed_at, assigned_to, notes, reminder_sent_30d, reminder_sent_14d, reminder_sent_7d, reminder_sent_1d, created_at, updated_at FROM compliance_deadlines WHERE tenant_id = $1 ORDER BY due_date ASC LIMIT $2 OFFSET $3",
-    )
-    .bind(claims.tid)
-    .bind(per_page)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await?;
+    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM compliance_deadlines WHERE tenant_id = $1 AND (LOWER(filing_type) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2)",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .fetch_one(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM compliance_deadlines WHERE tenant_id = $1",
+        )
+        .bind(claims.tid)
+        .fetch_one(&state.db)
+        .await?
+    };
+
+    let deadlines: Vec<ComplianceDeadline> = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, filing_type, description, due_date, extended_due_date, status, extension_filed, extension_filed_at, completed_at, assigned_to, notes, reminder_sent_30d, reminder_sent_14d, reminder_sent_7d, reminder_sent_1d, created_at, updated_at FROM compliance_deadlines WHERE tenant_id = $1 AND (LOWER(filing_type) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2) ORDER BY due_date ASC LIMIT $3 OFFSET $4",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, filing_type, description, due_date, extended_due_date, status, extension_filed, extension_filed_at, completed_at, assigned_to, notes, reminder_sent_30d, reminder_sent_14d, reminder_sent_7d, reminder_sent_1d, created_at, updated_at FROM compliance_deadlines WHERE tenant_id = $1 ORDER BY due_date ASC LIMIT $2 OFFSET $3",
+        )
+        .bind(claims.tid)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    };
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

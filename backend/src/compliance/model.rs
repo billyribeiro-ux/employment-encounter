@@ -54,4 +54,5 @@ pub struct ListDeadlinesQuery {
     pub client_id: Option<Uuid>,
     pub month: Option<i32>,
     pub year: Option<i32>,
+    pub search: Option<String>,
 }
