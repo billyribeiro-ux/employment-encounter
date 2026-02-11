@@ -21,6 +21,7 @@ import {
   useUpdateTask,
   useDeleteTask,
 } from "@/lib/hooks/use-tasks";
+import { CreateTaskDialog } from "@/components/dashboard/create-task-dialog";
 
 const COLUMNS = [
   { id: "todo", label: "To Do", color: "bg-slate-100" },
@@ -91,10 +92,12 @@ export default function TasksPage() {
             Manage tasks across your firm with Kanban board
           </p>
         </div>
-        <Button onClick={() => setAddingToColumn("todo")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Task
-        </Button>
+        <CreateTaskDialog>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Task
+          </Button>
+        </CreateTaskDialog>
       </div>
 
       {isLoading ? (
