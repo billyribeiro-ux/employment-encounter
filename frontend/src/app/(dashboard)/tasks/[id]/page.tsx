@@ -4,7 +4,6 @@ import { use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Loader2,
   Calendar,
   User,
   Flag,
@@ -21,6 +20,7 @@ import { useTask, useUpdateTask, useDeleteTask } from "@/lib/hooks/use-tasks";
 import { useRouter } from "next/navigation";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function priorityVariant(
   priority: string
@@ -82,8 +82,22 @@ export default function TaskDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6 max-w-3xl">
+        <Skeleton className="h-4 w-48" />
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-9 w-20" />
+          <Skeleton className="h-9 w-20" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-40" />
       </div>
     );
   }

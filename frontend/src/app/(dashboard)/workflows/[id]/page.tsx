@@ -4,7 +4,6 @@ import { use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Loader2,
   CheckCircle2,
   Circle,
   ArrowRight,
@@ -28,6 +27,7 @@ import {
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WorkflowDetailPage({
   params,
@@ -63,8 +63,17 @@ export default function WorkflowDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6 max-w-4xl">
+        <Skeleton className="h-4 w-48" />
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Skeleton className="h-8 w-56 mb-2" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="h-9 w-20" />
+        </div>
+        <Skeleton className="h-32" />
+        <Skeleton className="h-48" />
       </div>
     );
   }
