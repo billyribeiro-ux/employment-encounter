@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Filter, Trash2 } from "lucide-react";
+import { Plus, Receipt, Search, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks/use-invoices";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
@@ -35,11 +42,13 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useInvoices({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
   const deleteInvoice = useDeleteInvoice();
 
@@ -69,10 +78,19 @@ export default function InvoicesPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search invoices..."
         />
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="sent">Sent</SelectItem>
+            <SelectItem value="viewed">Viewed</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="overdue">Overdue</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

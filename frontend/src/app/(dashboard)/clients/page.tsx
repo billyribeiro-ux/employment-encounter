@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, Users, Trash2 } from "lucide-react";
+import { Plus, Search, Users, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
@@ -18,11 +25,13 @@ import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useClients({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
   const deleteClient = useDeleteClient();
 
@@ -52,10 +61,17 @@ export default function ClientsPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search clients..."
         />
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
