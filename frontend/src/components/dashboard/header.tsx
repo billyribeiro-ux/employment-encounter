@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -23,9 +24,24 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
 
+const SEARCH_PAGES = [
+  { keywords: ["dashboard", "home", "overview"], href: "/dashboard" },
+  { keywords: ["client", "clients", "customer"], href: "/clients" },
+  { keywords: ["document", "documents", "file", "upload"], href: "/documents" },
+  { keywords: ["workflow", "workflows", "pipeline"], href: "/workflows" },
+  { keywords: ["task", "tasks", "kanban", "todo"], href: "/tasks" },
+  { keywords: ["time", "timer", "hours", "tracking"], href: "/time" },
+  { keywords: ["invoice", "invoices", "billing", "payment"], href: "/invoices" },
+  { keywords: ["expense", "expenses", "cost"], href: "/expenses" },
+  { keywords: ["analytics", "reports", "metrics", "chart"], href: "/analytics" },
+  { keywords: ["calendar", "deadline", "compliance", "filing"], href: "/calendar" },
+  { keywords: ["settings", "profile", "firm", "team", "security"], href: "/settings" },
+];
+
 export function Header() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const initials = user
     ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() || "U"
@@ -35,6 +51,22 @@ export function Header() {
     logout();
     router.push("/login");
   }
+
+  const handleSearch = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" && searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const match = SEARCH_PAGES.find((p) =>
+          p.keywords.some((k) => k.includes(q) || q.includes(k))
+        );
+        if (match) {
+          router.push(match.href);
+          setSearchQuery("");
+        }
+      }
+    },
+    [searchQuery, router]
+  );
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6">
@@ -46,8 +78,11 @@ export function Header() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search clients, documents..."
+            placeholder="Search pages... (press Enter)"
             className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
           />
         </div>
       </div>
