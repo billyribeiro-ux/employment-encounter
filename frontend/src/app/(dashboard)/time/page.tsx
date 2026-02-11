@@ -96,6 +96,14 @@ export default function TimePage() {
                 Failed to load time entries. Make sure the backend is running.
               </p>
             </div>
+          ) : entries.length === 0 && debouncedSearch ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-8 w-8 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-semibold mb-1">No results found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                No time entries match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+              </p>
+            </div>
           ) : entries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="rounded-full bg-muted p-4 mb-4">

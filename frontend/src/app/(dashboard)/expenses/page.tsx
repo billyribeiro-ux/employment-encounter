@@ -97,6 +97,14 @@ export default function ExpensesPage() {
                 Failed to load expenses. Make sure the backend is running.
               </p>
             </div>
+          ) : expenses.length === 0 && debouncedSearch ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-8 w-8 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-semibold mb-1">No results found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                No expenses match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+              </p>
+            </div>
           ) : expenses.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="rounded-full bg-muted p-4 mb-4">
