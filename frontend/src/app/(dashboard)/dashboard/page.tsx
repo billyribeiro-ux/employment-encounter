@@ -8,7 +8,6 @@ import {
   Receipt,
   TrendingUp,
   DollarSign,
-  Loader2,
   Plus,
   ArrowRight,
   AlertTriangle,
@@ -23,14 +22,15 @@ import { Badge } from "@/components/ui/badge";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
 import { useComplianceDeadlines } from "@/lib/hooks/use-compliance";
 import { useTasks } from "@/lib/hooks/use-tasks";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const RevenueChart = dynamic(
   () => import("@/components/charts/revenue-chart").then((m) => m.RevenueChart),
-  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 const UtilizationChart = dynamic(
   () => import("@/components/charts/utilization-chart").then((m) => m.UtilizationChart),
-  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 
 function formatCents(cents: number): string {
@@ -130,8 +130,17 @@ export default function DashboardPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-80" />
+            <Skeleton className="h-80" />
+          </div>
         </div>
       ) : isError ? (
         <div className="text-center py-12">

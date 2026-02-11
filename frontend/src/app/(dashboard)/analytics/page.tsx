@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Users,
   Clock,
-  Loader2,
   BarChart3,
   PieChart,
   LineChart,
@@ -14,18 +13,19 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const RevenueChart = dynamic(
   () => import("@/components/charts/revenue-chart").then((m) => m.RevenueChart),
-  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 const UtilizationChart = dynamic(
   () => import("@/components/charts/utilization-chart").then((m) => m.UtilizationChart),
-  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 const ClientDistributionChart = dynamic(
   () => import("@/components/charts/client-distribution-chart").then((m) => m.ClientDistributionChart),
-  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
 );
 
 function formatCents(cents: number): string {
@@ -50,8 +50,17 @@ export default function AnalyticsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-80" />
+            <Skeleton className="h-80" />
+          </div>
         </div>
       ) : (
         <>
