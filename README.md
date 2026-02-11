@@ -17,36 +17,42 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 ### Implemented
 
 - **Authentication** — JWT login/register, Argon2id password hashing, tenant isolation
-- **Client Management** — Full CRUD, contacts, detail page with tabs (overview, documents, time, invoices)
-- **Document Management** — Upload dialog with AI category auto-detect, file metadata, delete
-- **Workflow Engine** — Template builder (multi-step), instance creation, step advancement (complete/skip/return), activity logs
-- **Task Management** — Kanban board (4 columns: To Do, In Progress, Review, Done) with drag-and-drop, task detail page with status transitions
-- **Time Tracking** — Manual entry + timer mode, start/stop, billable/non-billable
-- **Invoicing** — Line items, subtotal/tax/total calculation, status workflow (draft → sent → paid), detail page
-- **Compliance Calendar** — Deadline tracking with urgency indicators, filing type presets (1040, 1120-S, 1065, etc.), mark-complete
-- **Expense Tracking** — Category-based logging, reimbursable flag, client association
-- **Analytics** — Dashboard stats, 4 metric cards, 6 chart placeholders (ECharts-ready)
-- **Dashboard** — Quick actions, upcoming deadlines from API, pending tasks from API, revenue/utilization chart placeholders
-- **Settings** — 6-tab layout (Profile, Firm, Team, Integrations, Billing, Security)
+- **Client Management** — Full CRUD with delete, contacts, detail page with tabs (overview, documents, time, invoices), breadcrumb navigation
+- **Document Management** — Upload dialog with AI category auto-detect, file metadata, delete with toast
+- **Workflow Engine** — Template builder (multi-step), instance creation, step advancement (complete/skip/return), activity logs, breadcrumbs
+- **Task Management** — Kanban board (4 columns: To Do, In Progress, Review, Done) with drag-and-drop, task detail page with status transitions, breadcrumbs
+- **Time Tracking** — Manual entry + timer mode, start/stop with toast, billable/non-billable, delete with toast
+- **Invoicing** — Line items, subtotal/tax/total calculation, status workflow (draft → sent → paid), detail page with breadcrumbs
+- **Compliance Calendar** — Deadline tracking with urgency indicators, filing type presets (1040, 1120-S, 1065, etc.), mark-complete with toast
+- **Expense Tracking** — Dedicated page with data table, category-based logging, reimbursable flag, client association, delete with toast
+- **Analytics** — Dashboard stats, 4 metric cards, 4 ECharts (revenue trend, client distribution donut, monthly trend, team utilization)
+- **Dashboard** — Quick actions, upcoming deadlines from API, pending tasks from API, ECharts revenue + utilization charts
+- **Settings** — 6-tab layout (Profile, Firm, Team, Integrations, Billing, Security) with toast on save
 - **Notifications** — Bell dropdown in header (ready for WebSocket integration)
+- **Dark Mode** — System/light/dark toggle via next-themes, Sun/Moon button in header
+- **Global Search** — Header search bar with keyword-based page navigation, ⌘K keyboard shortcut
+- **Mobile Responsive** — Sheet-based sidebar for mobile/tablet, hidden on desktop
+- **Breadcrumbs** — Reusable component on all 4 detail pages (clients, invoices, workflows, tasks)
+- **Toast Notifications** — Sonner toasts on all CRUD mutations across every page
 
-### 19 Frontend Routes (15 static + 4 dynamic)
+### 20 Frontend Routes (16 static + 4 dynamic)
 
 | Route | Type | Description |
 |-------|------|-------------|
-| `/dashboard` | Static | Overview with metrics, deadlines, tasks |
-| `/clients` | Static | Client list with search, pagination |
-| `/clients/[id]` | Dynamic | Client detail with tabs |
+| `/dashboard` | Static | Overview with metrics, charts, deadlines, tasks |
+| `/clients` | Static | Client list with search, pagination, delete |
+| `/clients/[id]` | Dynamic | Client detail with tabs + breadcrumbs |
 | `/documents` | Static | Document list with upload dialog |
 | `/workflows` | Static | Workflow templates + instances |
-| `/workflows/[id]` | Dynamic | Workflow detail with step progress |
-| `/tasks` | Static | Kanban board |
-| `/tasks/[id]` | Dynamic | Task detail with status transitions |
-| `/time` | Static | Time entries with timer |
-| `/invoices` | Static | Invoice list |
-| `/invoices/[id]` | Dynamic | Invoice detail with status actions |
-| `/analytics` | Static | Metrics + chart placeholders |
-| `/calendar` | Static | Compliance deadlines |
+| `/workflows/[id]` | Dynamic | Workflow detail with step progress + breadcrumbs |
+| `/tasks` | Static | Kanban board with clickable titles |
+| `/tasks/[id]` | Dynamic | Task detail with status transitions + breadcrumbs |
+| `/time` | Static | Time entries with timer + toast |
+| `/invoices` | Static | Invoice list with create dialog |
+| `/invoices/[id]` | Dynamic | Invoice detail with status actions + breadcrumbs |
+| `/expenses` | Static | Expense table with create/delete |
+| `/analytics` | Static | Metrics + 4 ECharts |
+| `/calendar` | Static | Compliance deadlines with mark-complete |
 | `/settings` | Static | Profile, firm, team, integrations |
 | `/login` | Static | Authentication |
 | `/register` | Static | Firm registration |
@@ -54,6 +60,10 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 ### 9 Dialog Components
 
 CreateClientDialog, CreateTimeEntryDialog, CreateInvoiceDialog, CreateTaskDialog, CreateDeadlineDialog, CreateExpenseDialog, CreateWorkflowTemplateDialog, CreateWorkflowInstanceDialog, UploadDocumentDialog
+
+### 3 ECharts Components
+
+RevenueChart (line+area), UtilizationChart (stacked bar), ClientDistributionChart (donut)
 
 ## Prerequisites
 
