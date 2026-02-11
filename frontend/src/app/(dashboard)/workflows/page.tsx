@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, FolderOpen, Loader2, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { Plus, FolderOpen, CheckCircle2, Circle, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/hooks/use-workflows";
 import { CreateWorkflowTemplateDialog } from "@/components/dashboard/create-workflow-template-dialog";
 import { CreateWorkflowInstanceDialog } from "@/components/dashboard/create-workflow-instance-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   switch (status) {
@@ -88,8 +89,19 @@ export default function WorkflowsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <Skeleton className="h-4 w-40 mb-1" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                  <Skeleton className="h-2 w-full" />
+                </div>
+              ))}
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -107,10 +119,12 @@ export default function WorkflowsPage() {
                 Create a workflow from a template to track client engagements
                 through each step.
               </p>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create from Template
-              </Button>
+              <CreateWorkflowInstanceDialog>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create from Template
+                </Button>
+              </CreateWorkflowInstanceDialog>
             </div>
           ) : (
             <div className="space-y-4">
