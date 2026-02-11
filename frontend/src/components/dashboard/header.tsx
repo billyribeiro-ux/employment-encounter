@@ -57,10 +57,31 @@ export function Header() {
       {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>Notifications</span>
+              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground">
+                Mark all read
+              </Button>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-64 overflow-y-auto">
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 cursor-pointer">
+                <p className="text-sm font-medium">No new notifications</p>
+                <p className="text-xs text-muted-foreground">
+                  You&apos;re all caught up! Notifications for deadlines, tasks, and invoices will appear here.
+                </p>
+              </DropdownMenuItem>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User menu */}
         <DropdownMenu>
