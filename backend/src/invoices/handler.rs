@@ -193,3 +193,35 @@ pub async fn update_invoice_status(
 
     Ok(Json(invoice))
 }
+
+pub async fn delete_invoice(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(invoice_id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    // Delete line items first
+    sqlx::query("DELETE FROM invoice_line_items WHERE invoice_id = $1 AND tenant_id = $2")
+        .bind(invoice_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    // Unlink time entries
+    sqlx::query("UPDATE time_entries SET invoice_id = NULL WHERE invoice_id = $1 AND tenant_id = $2")
+        .bind(invoice_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    let result = sqlx::query("DELETE FROM invoices WHERE id = $1 AND tenant_id = $2")
+        .bind(invoice_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Invoice not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}

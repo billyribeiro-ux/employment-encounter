@@ -114,6 +114,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/invoices", get(invoices::handler::list_invoices))
         .route("/invoices", post(invoices::handler::create_invoice))
         .route("/invoices/{id}", get(invoices::handler::get_invoice))
+        .route("/invoices/{id}", delete(invoices::handler::delete_invoice))
         .route("/invoices/{id}/status", patch(invoices::handler::update_invoice_status))
         // Workflows
         .route("/workflow-templates", get(workflows::handler::list_templates))
