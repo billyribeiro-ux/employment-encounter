@@ -251,7 +251,7 @@ export default function TimePage() {
               {meta && meta.total_pages > 1 && (
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Page {meta.page} of {meta.total_pages}
+                    Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
                   </p>
                   <div className="flex gap-2">
                     <Button
