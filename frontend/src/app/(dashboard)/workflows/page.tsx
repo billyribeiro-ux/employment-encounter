@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, FolderOpen, Loader2, CheckCircle2, Circle, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,7 @@ export default function WorkflowsPage() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h4 className="font-medium">{wf.name}</h4>
+                        <Link href={`/workflows/${wf.id}`} className="font-medium hover:underline">{wf.name}</Link>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {template?.name || "Unknown template"}
                           {wf.due_date && ` · Due ${new Date(wf.due_date).toLocaleDateString()}`}
@@ -164,8 +165,8 @@ export default function WorkflowsPage() {
                             ) : (
                               <Circle
                                 className={`h-3.5 w-3.5 shrink-0 ${i === wf.current_step_index
-                                    ? "text-primary"
-                                    : "text-muted-foreground/40"
+                                  ? "text-primary"
+                                  : "text-muted-foreground/40"
                                   }`}
                               />
                             )}

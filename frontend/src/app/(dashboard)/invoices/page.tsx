@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Receipt, Search, Filter, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -115,7 +116,11 @@ export default function InvoicesPage() {
                   <tbody>
                     {invoices.map((inv) => (
                       <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
-                        <td className="px-4 py-3 font-medium">{inv.invoice_number}</td>
+                        <td className="px-4 py-3 font-medium">
+                          <Link href={`/invoices/${inv.id}`} className="hover:underline">
+                            {inv.invoice_number || inv.id.slice(0, 8)}
+                          </Link>
+                        </td>
                         <td className="px-4 py-3">
                           <Badge variant={statusVariant(inv.status)}>
                             {inv.status}
