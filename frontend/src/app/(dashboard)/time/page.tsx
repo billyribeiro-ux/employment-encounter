@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
+import { toast } from "sonner";
 
 function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -80,10 +81,12 @@ export default function TimePage() {
               <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                 Start a timer or add a manual entry to begin tracking your time.
               </p>
-              <Button>
-                <Play className="mr-2 h-4 w-4" />
-                Start Timer
-              </Button>
+              <CreateTimeEntryDialog mode="timer">
+                <Button>
+                  <Play className="mr-2 h-4 w-4" />
+                  Start Timer
+                </Button>
+              </CreateTimeEntryDialog>
             </div>
           ) : (
             <div className="space-y-4">
@@ -136,7 +139,12 @@ export default function TimePage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-red-600"
-                                onClick={() => stopTimer.mutate(entry.id)}
+                                onClick={() => {
+                                  stopTimer.mutate(entry.id, {
+                                    onSuccess: () => toast.success("Timer stopped"),
+                                    onError: () => toast.error("Failed to stop timer"),
+                                  });
+                                }}
                               >
                                 <Square className="h-4 w-4" />
                               </Button>
@@ -146,7 +154,12 @@ export default function TimePage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => deleteEntry.mutate(entry.id)}
+                                onClick={() => {
+                                  deleteEntry.mutate(entry.id, {
+                                    onSuccess: () => toast.success("Time entry deleted"),
+                                    onError: () => toast.error("Failed to delete entry"),
+                                  });
+                                }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
