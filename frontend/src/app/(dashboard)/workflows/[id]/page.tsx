@@ -10,6 +10,7 @@ import {
   ArrowRight,
   SkipForward,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,8 +23,11 @@ import {
   useWorkflowTemplates,
   useAdvanceWorkflowStep,
   useWorkflowStepLogs,
+  useDeleteWorkflowInstance,
 } from "@/lib/hooks/use-workflows";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { useRouter } from "next/navigation";
 
 export default function WorkflowDetailPage({
   params,
@@ -31,7 +35,9 @@ export default function WorkflowDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: instance, isLoading, isError } = useWorkflowInstance(id);
+  const deleteInstance = useDeleteWorkflowInstance();
   const { data: templates } = useWorkflowTemplates();
   const { data: logs } = useWorkflowStepLogs(id);
   const advanceStep = useAdvanceWorkflowStep();
@@ -114,6 +120,29 @@ export default function WorkflowDetailPage({
               ` · Due ${new Date(instance.due_date).toLocaleDateString()}`}
           </p>
         </div>
+        <ConfirmDialog
+          title="Delete workflow?"
+          description={`This will permanently delete "${instance.name}".`}
+          actionLabel="Delete"
+          onConfirm={() => {
+            deleteInstance.mutate(instance.id, {
+              onSuccess: () => {
+                toast.success("Workflow deleted");
+                router.push("/workflows");
+              },
+              onError: () => toast.error("Failed to delete workflow"),
+            });
+          }}
+        >
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            disabled={deleteInstance.isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        </ConfirmDialog>
       </div>
 
       {steps.length > 0 && (
@@ -152,8 +181,8 @@ export default function WorkflowDetailPage({
                   <div
                     key={i}
                     className={`flex items-start gap-3 rounded-lg p-3 ${isCurrent
-                        ? "bg-primary/5 border border-primary/20"
-                        : "border border-transparent"
+                      ? "bg-primary/5 border border-primary/20"
+                      : "border border-transparent"
                       }`}
                   >
                     {isCompleted ? (
@@ -161,18 +190,18 @@ export default function WorkflowDetailPage({
                     ) : (
                       <Circle
                         className={`h-5 w-5 mt-0.5 shrink-0 ${isCurrent
-                            ? "text-primary"
-                            : "text-muted-foreground/30"
+                          ? "text-primary"
+                          : "text-muted-foreground/30"
                           }`}
                       />
                     )}
                     <div className="flex-1">
                       <p
                         className={`text-sm font-medium ${isCompleted
-                            ? "text-muted-foreground line-through"
-                            : isCurrent
-                              ? "text-primary"
-                              : ""
+                          ? "text-muted-foreground line-through"
+                          : isCurrent
+                            ? "text-primary"
+                            : ""
                           }`}
                       >
                         Step {i + 1}: {step.name}
@@ -244,14 +273,14 @@ export default function WorkflowDetailPage({
                   <div className="flex items-start gap-3">
                     <div
                       className={`h-2 w-2 rounded-full mt-2 shrink-0 ${log.action === "completed"
-                          ? "bg-green-500"
-                          : log.action === "started"
-                            ? "bg-blue-500"
-                            : log.action === "skipped"
-                              ? "bg-amber-500"
-                              : log.action === "returned"
-                                ? "bg-red-500"
-                                : "bg-muted-foreground"
+                        ? "bg-green-500"
+                        : log.action === "started"
+                          ? "bg-blue-500"
+                          : log.action === "skipped"
+                            ? "bg-amber-500"
+                            : log.action === "returned"
+                              ? "bg-red-500"
+                              : "bg-muted-foreground"
                         }`}
                     />
                     <div className="flex-1">

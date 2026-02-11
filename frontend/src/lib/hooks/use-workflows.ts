@@ -147,6 +147,18 @@ export function useAdvanceWorkflowStep() {
   });
 }
 
+export function useDeleteWorkflowInstance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/workflows/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    },
+  });
+}
+
 export function useWorkflowStepLogs(instanceId: string) {
   return useQuery({
     queryKey: ["workflows", instanceId, "logs"],
