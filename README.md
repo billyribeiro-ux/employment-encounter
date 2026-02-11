@@ -22,7 +22,7 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Workflow Engine** — Template builder (multi-step), instance creation, step advancement (complete/skip/return), activity logs, breadcrumbs
 - **Task Management** — Kanban board (4 columns: To Do, In Progress, Review, Done) with drag-and-drop, task detail page with status transitions, breadcrumbs
 - **Time Tracking** — Manual entry + timer mode, start/stop with toast, billable/non-billable, delete with toast
-- **Invoicing** — Line items, subtotal/tax/total calculation, status workflow (draft → sent → paid), detail page with breadcrumbs
+- **Invoicing** — Line items, subtotal/tax/total calculation, status workflow (draft → sent → paid), detail page with delete + breadcrumbs
 - **Compliance Calendar** — Deadline tracking with urgency indicators, filing type presets (1040, 1120-S, 1065, etc.), mark-complete with toast
 - **Expense Tracking** — Dedicated page with data table, category-based logging, reimbursable flag, client association, delete with toast
 - **Analytics** — Dashboard stats, 4 metric cards, 4 ECharts (revenue trend, client distribution donut, monthly trend, team utilization)
@@ -32,10 +32,13 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Dark Mode** — System/light/dark toggle via next-themes, Sun/Moon button in header
 - **Global Search** — Header search bar with keyword-based page navigation, ⌘K keyboard shortcut
 - **Mobile Responsive** — Sheet-based sidebar for mobile/tablet, hidden on desktop
-- **Breadcrumbs** — Reusable component on all 4 detail pages (clients, invoices, workflows, tasks)
+- **Breadcrumbs** — Reusable component on all 5 detail pages (clients, invoices, workflows, workflow templates, tasks)
 - **Toast Notifications** — Sonner toasts on all CRUD mutations across every page
-- **Confirmation Dialogs** — AlertDialog-based confirmation on all destructive actions (delete client, document, expense)
-- **Table Skeletons** — Animated skeleton loading states on all 5 list pages
+- **Confirmation Dialogs** — AlertDialog-based confirmation on all destructive actions across list + detail pages
+- **Table Skeletons** — Animated skeleton loading states on all 5 list pages + workflow cards
+- **Search Filters** — Wired search inputs on clients, invoices, documents pages (resets pagination)
+- **Responsive Tables** — Horizontal scroll with min-width constraints on all 5 data tables
+- **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 4 detail pages (clients, invoices, workflows, tasks)
 
 ### 21 Frontend Routes (16 static + 5 dynamic)
 
