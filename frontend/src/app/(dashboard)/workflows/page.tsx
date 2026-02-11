@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, FolderOpen, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { Plus, FolderOpen, CheckCircle2, Circle, ArrowRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,6 +17,7 @@ import { CreateWorkflowTemplateDialog } from "@/components/dashboard/create-work
 import { CreateWorkflowInstanceDialog } from "@/components/dashboard/create-workflow-instance-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   switch (status) {
@@ -26,8 +28,14 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 export default function WorkflowsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useWorkflowInstances({ page, per_page: 25 });
+  const { data, isLoading, isError } = useWorkflowInstances({
+    page,
+    per_page: 25,
+    search: debouncedSearch || undefined,
+  });
   const { data: templates } = useWorkflowTemplates();
   const advanceStep = useAdvanceWorkflowStep();
 
@@ -56,6 +64,18 @@ export default function WorkflowsPage() {
               Start Workflow
             </Button>
           </CreateWorkflowInstanceDialog>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search workflows..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
         </div>
       </div>
 

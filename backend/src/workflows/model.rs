@@ -80,4 +80,5 @@ pub struct ListWorkflowsQuery {
     pub per_page: Option<i64>,
     pub status: Option<String>,
     pub client_id: Option<Uuid>,
+    pub search: Option<String>,
 }
