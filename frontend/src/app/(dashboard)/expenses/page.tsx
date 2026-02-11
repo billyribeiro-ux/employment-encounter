@@ -91,8 +91,8 @@ export default function ExpensesPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
+              <div className="rounded-md border overflow-x-auto">
+                <table className="w-full text-sm min-w-[700px]">
                   <thead>
                     <tr className="border-b bg-muted/50">
                       <th className="px-4 py-3 text-left font-medium">Date</th>
