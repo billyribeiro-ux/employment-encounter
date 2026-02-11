@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Plus,
   Loader2,
@@ -174,9 +175,9 @@ export default function TasksPage() {
                       <div className="flex items-start gap-2">
                         <GripVertical className="h-4 w-4 text-muted-foreground/40 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium leading-tight">
+                          <Link href={`/tasks/${task.id}`} className="text-sm font-medium leading-tight hover:underline">
                             {task.title}
-                          </p>
+                          </Link>
                           {task.description && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                               {task.description}
