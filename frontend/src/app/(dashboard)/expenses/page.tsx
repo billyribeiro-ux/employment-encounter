@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Wallet, Loader2, Trash2 } from "lucide-react";
+import { Plus, Wallet, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
 import { CreateExpenseDialog } from "@/components/dashboard/create-expense-dialog";
+import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -64,9 +65,7 @@ export default function ExpensesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={6} rows={5} />
           ) : isError ? (
             <div className="text-center py-12">
               <p className="text-sm text-destructive">

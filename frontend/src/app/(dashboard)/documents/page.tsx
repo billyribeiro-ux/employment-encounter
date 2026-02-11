@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Search, Filter, FileText, Loader2, Trash2 } from "lucide-react";
+import { Upload, Search, Filter, FileText, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
 import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
 import { toast } from "sonner";
+import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -66,9 +67,7 @@ export default function DocumentsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={5} rows={5} />
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-sm text-destructive">

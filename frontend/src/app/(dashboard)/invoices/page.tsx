@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Filter, Loader2 } from "lucide-react";
+import { Plus, Receipt, Search, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices } from "@/lib/hooks/use-invoices";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
+import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -76,9 +77,7 @@ export default function InvoicesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={5} rows={5} />
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-sm text-destructive">

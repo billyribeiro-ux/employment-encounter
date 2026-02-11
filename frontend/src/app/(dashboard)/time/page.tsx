@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Loader2, Trash2 } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
 import { toast } from "sonner";
+import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 
 function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -63,9 +64,7 @@ export default function TimePage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={6} rows={5} />
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-sm text-destructive">

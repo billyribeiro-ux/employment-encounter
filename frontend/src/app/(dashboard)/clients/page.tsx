@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, Loader2, Users, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Users, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
 import { toast } from "sonner";
+import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,9 +68,7 @@ export default function ClientsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={6} rows={5} />
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-sm text-destructive">
