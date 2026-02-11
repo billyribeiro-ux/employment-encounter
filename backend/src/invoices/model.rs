@@ -51,6 +51,8 @@ pub struct ListInvoicesQuery {
     pub status: Option<String>,
     pub client_id: Option<Uuid>,
     pub search: Option<String>,
+    pub sort: Option<String>,
+    pub order: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -43,6 +43,8 @@ export function useInvoices(params?: {
   status?: string;
   client_id?: string;
   search?: string;
+  sort?: string;
+  order?: string;
 }) {
   return useQuery({
     queryKey: ["invoices", params],

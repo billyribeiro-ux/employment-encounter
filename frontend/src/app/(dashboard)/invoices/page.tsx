@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Trash2 } from "lucide-react";
+import { Plus, Receipt, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -43,14 +43,33 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("created_at");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useInvoices({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
+    sort: sortBy,
+    order: sortOrder,
   });
   const deleteInvoice = useDeleteInvoice();
+
+  function toggleSort(col: string) {
+    if (sortBy === col) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortOrder(col === "created_at" ? "desc" : "asc");
+    }
+    setPage(1);
+  }
+
+  function sortIcon(col: string) {
+    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  }
 
   const invoices = data?.data ?? [];
   const meta = data?.meta;
@@ -144,11 +163,21 @@ export default function InvoicesPage() {
                 <table className="w-full text-sm min-w-[600px]">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium">Invoice #</th>
-                      <th className="px-4 py-3 text-left font-medium">Status</th>
-                      <th className="px-4 py-3 text-right font-medium">Amount</th>
-                      <th className="px-4 py-3 text-left font-medium">Due Date</th>
-                      <th className="px-4 py-3 text-left font-medium">Created</th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("invoice_number")}>
+                        <span className="flex items-center">Invoice #{sortIcon("invoice_number")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("status")}>
+                        <span className="flex items-center">Status{sortIcon("status")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-right font-medium cursor-pointer select-none" onClick={() => toggleSort("total_cents")}>
+                        <span className="flex items-center justify-end">Amount{sortIcon("total_cents")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("due_date")}>
+                        <span className="flex items-center">Due Date{sortIcon("due_date")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                        <span className="flex items-center">Created{sortIcon("created_at")}</span>
+                      </th>
                       <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
