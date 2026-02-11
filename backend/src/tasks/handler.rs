@@ -21,21 +21,45 @@ pub async fn list_tasks(
     let per_page = params.per_page.unwrap_or(50).clamp(1, 200);
     let offset = (page - 1) * per_page;
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1",
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let tasks: Vec<Task> = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 ORDER BY sort_order, created_at DESC LIMIT $2 OFFSET $3",
-    )
-    .bind(claims.tid)
-    .bind(per_page)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await?;
+    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2)",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .fetch_one(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1",
+        )
+        .bind(claims.tid)
+        .fetch_one(&state.db)
+        .await?
+    };
+
+    let tasks: Vec<Task> = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) ORDER BY sort_order, created_at DESC LIMIT $3 OFFSET $4",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 ORDER BY sort_order, created_at DESC LIMIT $2 OFFSET $3",
+        )
+        .bind(claims.tid)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    };
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

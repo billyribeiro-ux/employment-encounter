@@ -9,6 +9,7 @@ import {
   GripVertical,
   Trash2,
   Calendar,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,9 +46,13 @@ function priorityColor(priority: string) {
 }
 
 export default function TasksPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
-  const { data, isLoading, isError } = useTasks({ per_page: 200 });
+  const { data, isLoading, isError } = useTasks({
+    per_page: 200,
+    search: searchQuery || undefined,
+  });
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -99,6 +104,18 @@ export default function TasksPage() {
             Add Task
           </Button>
         </CreateTaskDialog>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {isLoading ? (

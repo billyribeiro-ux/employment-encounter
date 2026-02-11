@@ -51,6 +51,7 @@ export function useTasks(params?: {
   priority?: string;
   assigned_to?: string;
   client_id?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["tasks", params],

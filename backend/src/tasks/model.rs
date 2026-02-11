@@ -57,4 +57,5 @@ pub struct ListTasksQuery {
     pub priority: Option<String>,
     pub assigned_to: Option<Uuid>,
     pub client_id: Option<Uuid>,
+    pub search: Option<String>,
 }
