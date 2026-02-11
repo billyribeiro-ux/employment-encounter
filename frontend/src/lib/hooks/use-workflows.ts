@@ -159,6 +159,18 @@ export function useDeleteWorkflowInstance() {
   });
 }
 
+export function useDeleteWorkflowTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/workflow-templates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflow-templates"] });
+    },
+  });
+}
+
 export function useWorkflowStepLogs(instanceId: string) {
   return useQuery({
     queryKey: ["workflows", instanceId, "logs"],

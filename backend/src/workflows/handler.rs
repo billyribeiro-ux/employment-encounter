@@ -305,3 +305,37 @@ pub async fn delete_instance(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn delete_template(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(template_id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    // Check for existing instances using this template
+    let (instance_count,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM workflow_instances WHERE template_id = $1 AND tenant_id = $2",
+    )
+    .bind(template_id)
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    if instance_count > 0 {
+        return Err(AppError::Validation(format!(
+            "Cannot delete template with {} active instance(s). Delete instances first.",
+            instance_count
+        )));
+    }
+
+    let result = sqlx::query("DELETE FROM workflow_templates WHERE id = $1 AND tenant_id = $2")
+        .bind(template_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Template not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}

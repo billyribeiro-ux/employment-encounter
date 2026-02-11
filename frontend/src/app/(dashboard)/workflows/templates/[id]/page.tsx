@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Circle, Play } from "lucide-react";
+import { ArrowLeft, Circle, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,12 @@ import { Separator } from "@/components/ui/separator";
 import {
   useWorkflowTemplates,
   useCreateWorkflowInstance,
+  useDeleteWorkflowTemplate,
 } from "@/lib/hooks/use-workflows";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { useRouter } from "next/navigation";
 
 export default function WorkflowTemplateDetailPage({
   params,
@@ -22,8 +25,10 @@ export default function WorkflowTemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: templates, isLoading } = useWorkflowTemplates();
   const createInstance = useCreateWorkflowInstance();
+  const deleteTemplate = useDeleteWorkflowTemplate();
 
   const template = templates?.find((t) => t.id === id);
 
@@ -68,6 +73,16 @@ export default function WorkflowTemplateDetailPage({
 
   const steps = Array.isArray(template.steps) ? template.steps : [];
 
+  async function handleDelete() {
+    try {
+      await deleteTemplate.mutateAsync(id);
+      toast.success("Template deleted");
+      router.push("/workflows");
+    } catch {
+      toast.error("Failed to delete template. It may have active instances.");
+    }
+  }
+
   async function handleStartInstance() {
     try {
       await createInstance.mutateAsync({
@@ -108,10 +123,21 @@ export default function WorkflowTemplateDetailPage({
             </p>
           )}
         </div>
-        <Button onClick={handleStartInstance} disabled={createInstance.isPending}>
-          <Play className="mr-2 h-4 w-4" />
-          Start Instance
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleStartInstance} disabled={createInstance.isPending}>
+            <Play className="mr-2 h-4 w-4" />
+            Start Instance
+          </Button>
+          <ConfirmDialog
+            title="Delete Template"
+            description="Are you sure you want to delete this workflow template? This cannot be undone."
+            onConfirm={handleDelete}
+          >
+            <Button variant="destructive" size="icon">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </ConfirmDialog>
+        </div>
       </div>
 
       <Card>

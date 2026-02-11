@@ -119,6 +119,7 @@ async fn main() -> anyhow::Result<()> {
         // Workflows
         .route("/workflow-templates", get(workflows::handler::list_templates))
         .route("/workflow-templates", post(workflows::handler::create_template))
+        .route("/workflow-templates/{id}", delete(workflows::handler::delete_template))
         .route("/workflows", get(workflows::handler::list_instances))
         .route("/workflows", post(workflows::handler::create_instance))
         .route("/workflows/{id}", get(workflows::handler::get_instance))
