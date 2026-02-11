@@ -139,6 +139,18 @@ export default function TasksPage() {
             Failed to load tasks. Make sure the backend is running.
           </p>
         </div>
+      ) : tasks.length === 0 && debouncedSearch ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <Search className="h-8 w-8 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-semibold mb-1">No results found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                No tasks match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       ) : tasks.length === 0 && !addingToColumn ? (
         <Card>
           <CardContent className="py-12">

@@ -182,6 +182,7 @@ npm run dev
 | GET | `/api/v1/compliance-deadlines` | List compliance deadlines |
 | POST | `/api/v1/compliance-deadlines` | Create deadline |
 | PUT | `/api/v1/compliance-deadlines/:id` | Update deadline |
+| DELETE | `/api/v1/compliance-deadlines/:id` | Delete deadline |
 | GET | `/api/v1/expenses` | List expenses |
 | POST | `/api/v1/expenses` | Create expense |
 | DELETE | `/api/v1/expenses/:id` | Delete expense |
