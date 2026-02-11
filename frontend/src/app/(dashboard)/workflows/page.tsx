@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, FolderOpen, CheckCircle2, Circle, ArrowRight, Search } from "lucide-react";
+import { Plus, FolderOpen, CheckCircle2, Circle, ArrowRight, Search, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,14 @@ import {
   useWorkflowInstances,
   useWorkflowTemplates,
   useAdvanceWorkflowStep,
+  useDeleteWorkflowInstance,
 } from "@/lib/hooks/use-workflows";
 import { CreateWorkflowTemplateDialog } from "@/components/dashboard/create-workflow-template-dialog";
 import { CreateWorkflowInstanceDialog } from "@/components/dashboard/create-workflow-instance-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   switch (status) {
@@ -38,6 +40,7 @@ export default function WorkflowsPage() {
   });
   const { data: templates } = useWorkflowTemplates();
   const advanceStep = useAdvanceWorkflowStep();
+  const deleteInstance = useDeleteWorkflowInstance();
 
   const workflows = data?.data ?? [];
   const meta = data?.meta;
@@ -196,6 +199,22 @@ export default function WorkflowsPage() {
                             Advance
                           </Button>
                         )}
+                        <ConfirmDialog
+                          title="Delete Workflow"
+                          description="Are you sure you want to delete this workflow instance? This cannot be undone."
+                          onConfirm={async () => {
+                            try {
+                              await deleteInstance.mutateAsync(wf.id);
+                              toast.success("Workflow deleted");
+                            } catch {
+                              toast.error("Failed to delete workflow");
+                            }
+                          }}
+                        >
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </ConfirmDialog>
                       </div>
                     </div>
 
