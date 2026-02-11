@@ -41,6 +41,7 @@ export function useDocuments(params?: {
   per_page?: number;
   client_id?: string;
   category?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["documents", params],

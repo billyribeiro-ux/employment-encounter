@@ -42,6 +42,7 @@ export function useInvoices(params?: {
   per_page?: number;
   status?: string;
   client_id?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["invoices", params],

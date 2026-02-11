@@ -32,8 +32,13 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 }
 
 export default function InvoicesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useInvoices({ page, per_page: 25 });
+  const { data, isLoading, isError } = useInvoices({
+    page,
+    per_page: 25,
+    search: searchQuery || undefined,
+  });
   const deleteInvoice = useDeleteInvoice();
 
   const invoices = data?.data ?? [];
@@ -59,7 +64,12 @@ export default function InvoicesPage() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search invoices..." className="pl-9" />
+          <Input
+            placeholder="Search invoices..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
         </div>
         <Button variant="outline" size="sm">
           <Filter className="mr-2 h-4 w-4" />
