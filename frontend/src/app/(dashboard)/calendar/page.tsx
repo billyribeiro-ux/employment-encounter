@@ -18,6 +18,7 @@ import {
   useUpdateDeadline,
 } from "@/lib/hooks/use-compliance";
 import { CreateDeadlineDialog } from "@/components/dashboard/create-deadline-dialog";
+import { toast } from "sonner";
 
 function statusIcon(status: string) {
   switch (status) {
@@ -241,10 +242,13 @@ export default function CalendarPage() {
                           variant="outline"
                           disabled={updateDeadline.isPending}
                           onClick={() =>
-                            updateDeadline.mutate({
-                              id: dl.id,
-                              status: "completed",
-                            })
+                            updateDeadline.mutate(
+                              { id: dl.id, status: "completed" },
+                              {
+                                onSuccess: () => toast.success("Deadline marked complete"),
+                                onError: () => toast.error("Failed to update deadline"),
+                              }
+                            )
                           }
                         >
                           <CheckCircle2 className="mr-1 h-3 w-3" />

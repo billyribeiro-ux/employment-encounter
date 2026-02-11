@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
 import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
+import { toast } from "sonner";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -136,7 +137,12 @@ export default function DocumentsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteDoc.mutate(doc.id)}
+                            onClick={() => {
+                              deleteDoc.mutate(doc.id, {
+                                onSuccess: () => toast.success("Document deleted"),
+                                onError: () => toast.error("Failed to delete document"),
+                              });
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
