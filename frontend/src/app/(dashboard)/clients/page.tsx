@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Search, Filter, Loader2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -109,7 +110,11 @@ export default function ClientsPage() {
                   <tbody>
                     {clients.map((client) => (
                       <tr key={client.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
-                        <td className="px-4 py-3 font-medium">{client.name}</td>
+                        <td className="px-4 py-3 font-medium">
+                          <Link href={`/clients/${client.id}`} className="hover:underline">
+                            {client.name}
+                          </Link>
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">{client.business_type}</td>
                         <td className="px-4 py-3">
                           <Badge variant={client.status === "active" ? "default" : "secondary"}>
