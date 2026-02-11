@@ -21,21 +21,45 @@ pub async fn list_expenses(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM expenses WHERE tenant_id = $1",
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let expenses: Vec<Expense> = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE tenant_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3",
-    )
-    .bind(claims.tid)
-    .bind(per_page)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await?;
+    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM expenses WHERE tenant_id = $1 AND (LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(category) LIKE $2)",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .fetch_one(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM expenses WHERE tenant_id = $1",
+        )
+        .bind(claims.tid)
+        .fetch_one(&state.db)
+        .await?
+    };
+
+    let expenses: Vec<Expense> = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE tenant_id = $1 AND (LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(category) LIKE $2) ORDER BY date DESC LIMIT $3 OFFSET $4",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE tenant_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3",
+        )
+        .bind(claims.tid)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    };
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

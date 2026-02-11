@@ -48,4 +48,5 @@ pub struct ListDocumentsQuery {
     pub client_id: Option<Uuid>,
     pub category: Option<String>,
     pub status: Option<String>,
+    pub search: Option<String>,
 }

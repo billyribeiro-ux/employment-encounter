@@ -21,24 +21,49 @@ pub async fn list_clients(
     let offset = (page - 1) * per_page;
 
     let status_filter = params.status.as_deref().unwrap_or("active");
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL",
-    )
-    .bind(claims.tid)
-    .bind(status_filter)
-    .fetch_one(&state.db)
-    .await?;
+    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL AND (LOWER(name) LIKE $3 OR LOWER(COALESCE(business_type, '')) LIKE $3)",
+        )
+        .bind(claims.tid)
+        .bind(status_filter)
+        .bind(pattern)
+        .fetch_one(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL",
+        )
+        .bind(claims.tid)
+        .bind(status_filter)
+        .fetch_one(&state.db)
+        .await?
+    };
 
-    let clients: Vec<Client> = sqlx::query_as(
-        "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL ORDER BY name ASC LIMIT $3 OFFSET $4",
-    )
-    .bind(claims.tid)
-    .bind(status_filter)
-    .bind(per_page)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await?;
+    let clients: Vec<Client> = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL AND (LOWER(name) LIKE $3 OR LOWER(COALESCE(business_type, '')) LIKE $3) ORDER BY name ASC LIMIT $4 OFFSET $5",
+        )
+        .bind(claims.tid)
+        .bind(status_filter)
+        .bind(pattern)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL ORDER BY name ASC LIMIT $3 OFFSET $4",
+        )
+        .bind(claims.tid)
+        .bind(status_filter)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    };
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

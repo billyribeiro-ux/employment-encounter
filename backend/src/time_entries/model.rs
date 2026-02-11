@@ -54,4 +54,5 @@ pub struct ListTimeEntriesQuery {
     pub date_from: Option<NaiveDate>,
     pub date_to: Option<NaiveDate>,
     pub is_billable: Option<bool>,
+    pub search: Option<String>,
 }

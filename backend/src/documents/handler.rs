@@ -21,21 +21,45 @@ pub async fn list_documents(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL",
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let documents: Vec<Document> = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-    )
-    .bind(claims.tid)
-    .bind(per_page)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await?;
+    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(name) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2)",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .fetch_one(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL",
+        )
+        .bind(claims.tid)
+        .fetch_one(&state.db)
+        .await?
+    };
+
+    let documents: Vec<Document> = if let Some(ref pattern) = search_pattern {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(name) LIKE $2 OR LOWER(COALESCE(category, '')) LIKE $2) ORDER BY created_at DESC LIMIT $3 OFFSET $4",
+        )
+        .bind(claims.tid)
+        .bind(pattern)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    } else {
+        sqlx::query_as(
+            "SELECT id, tenant_id, client_id, uploaded_by, name, mime_type, size_bytes, s3_key, s3_version_id, category, ai_category, ai_confidence, tax_year, status, metadata, created_at, updated_at FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+        )
+        .bind(claims.tid)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?
+    };
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

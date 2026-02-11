@@ -50,6 +50,7 @@ pub struct ListInvoicesQuery {
     pub per_page: Option<i64>,
     pub status: Option<String>,
     pub client_id: Option<Uuid>,
+    pub search: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
