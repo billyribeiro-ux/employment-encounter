@@ -11,17 +11,21 @@ import {
   Receipt,
   Edit,
   Shield,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useClient } from "@/lib/hooks/use-clients";
+import { useClient, useDeleteClient } from "@/lib/hooks/use-clients";
 import { useDocuments } from "@/lib/hooks/use-documents";
 import { useTimeEntries } from "@/lib/hooks/use-time-entries";
 import { useInvoices } from "@/lib/hooks/use-invoices";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -42,7 +46,9 @@ export default function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: client, isLoading, isError } = useClient(id);
+  const deleteClient = useDeleteClient();
   const { data: docsData } = useDocuments({ client_id: id, per_page: 10 });
   const { data: timeData } = useTimeEntries({ client_id: id, per_page: 10 });
   const { data: invoiceData } = useInvoices({ client_id: id, per_page: 10 });
@@ -97,10 +103,35 @@ export default function ClientDetailPage({
             {client.business_type}
           </p>
         </div>
-        <Button variant="outline">
-          <Edit className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <ConfirmDialog
+            title="Delete client?"
+            description={`This will permanently delete "${client.name}" and all associated data.`}
+            actionLabel="Delete"
+            onConfirm={() => {
+              deleteClient.mutate(client.id, {
+                onSuccess: () => {
+                  toast.success("Client deleted");
+                  router.push("/clients");
+                },
+                onError: () => toast.error("Failed to delete client"),
+              });
+            }}
+          >
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteClient.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </ConfirmDialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
