@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
@@ -21,11 +22,12 @@ function formatDuration(minutes: number): string {
 
 export default function TimePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useTimeEntries({
     page,
     per_page: 25,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
   const stopTimer = useStopTimer();
   const deleteEntry = useDeleteTimeEntry();

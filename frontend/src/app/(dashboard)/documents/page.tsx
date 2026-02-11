@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
@@ -21,11 +22,12 @@ function formatBytes(bytes: number): string {
 
 export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useDocuments({
     page,
     per_page: 25,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
   const deleteDoc = useDeleteDocument();
 

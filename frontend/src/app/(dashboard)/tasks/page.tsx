@@ -24,6 +24,7 @@ import {
   useDeleteTask,
 } from "@/lib/hooks/use-tasks";
 import { CreateTaskDialog } from "@/components/dashboard/create-task-dialog";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 const COLUMNS = [
   { id: "todo", label: "To Do", color: "bg-slate-100" },
@@ -47,11 +48,12 @@ function priorityColor(priority: string) {
 
 export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const { data, isLoading, isError } = useTasks({
     per_page: 200,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();

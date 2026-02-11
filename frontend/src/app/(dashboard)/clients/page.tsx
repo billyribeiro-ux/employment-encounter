@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
@@ -16,11 +17,12 @@ import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useClients({
     page,
     per_page: 25,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
   const deleteClient = useDeleteClient();
 

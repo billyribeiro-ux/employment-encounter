@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks/use-invoices";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
@@ -33,11 +34,12 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 
 export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useInvoices({
     page,
     per_page: 25,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
   const deleteInvoice = useDeleteInvoice();
 
