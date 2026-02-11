@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Circle, Play } from "lucide-react";
+import { ArrowLeft, Circle, Play } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   useCreateWorkflowInstance,
 } from "@/lib/hooks/use-workflows";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WorkflowTemplateDetailPage({
   params,
@@ -28,8 +29,21 @@ export default function WorkflowTemplateDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6 max-w-3xl">
+        <Skeleton className="h-4 w-48" />
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Skeleton className="h-8 w-56 mb-2" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <Skeleton className="h-24" />
+        <div className="space-y-2">
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
+        </div>
       </div>
     );
   }
