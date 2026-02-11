@@ -105,6 +105,74 @@ export function useUpdateClient(id: string) {
   });
 }
 
+// ── Client Sub-Resource Hooks ──────────────────────────────────────
+
+export function useClientDocuments(clientId: string, params?: { page?: number; per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", clientId, "documents", params],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/documents`, { params });
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
+export function useClientTimeEntries(clientId: string, params?: { page?: number; per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", clientId, "time-entries", params],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/time-entries`, { params });
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
+export function useClientInvoices(clientId: string, params?: { page?: number; per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", clientId, "invoices", params],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/invoices`, { params });
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
+export function useClientMessages(clientId: string, params?: { page?: number; per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", clientId, "messages", params],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/messages`, { params });
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
+export function useClientDeadlines(clientId: string) {
+  return useQuery({
+    queryKey: ["clients", clientId, "deadlines"],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/deadlines`);
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
+export function useClientTimeline(clientId: string, params?: { per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", clientId, "timeline", params],
+    queryFn: async () => {
+      const { data } = await api.get(`/clients/${clientId}/timeline`, { params });
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
+
 export function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({

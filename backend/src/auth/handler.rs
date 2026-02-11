@@ -11,6 +11,7 @@ use validator::Validate;
 
 use crate::auth::{jwt, password};
 use crate::error::{AppError, AppResult};
+use crate::middleware::security::{self, SecurityEventType};
 use crate::AppState;
 
 #[derive(Debug, Deserialize, Validate)]
@@ -136,11 +137,15 @@ pub async fn register(
 
 pub async fn login(
     State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> AppResult<Json<AuthResponse>> {
     payload
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let ip = security::extract_ip(&headers);
+    let ua = security::extract_user_agent(&headers);
 
     // Find user by email
     let user: UserRow = sqlx::query_as(
@@ -154,6 +159,12 @@ pub async fn login(
     // Check if account is locked
     if let Some(locked_until) = user.locked_until {
         if locked_until > chrono::Utc::now() {
+            security::log_security_event(
+                state.db.clone(), Some(user.tenant_id), Some(user.id),
+                SecurityEventType::LoginLocked,
+                format!("Login attempt on locked account: {}", payload.email),
+                ip.clone(), ua.clone(), None,
+            );
             return Err(AppError::Unauthorized(
                 "Account is temporarily locked. Try again later.".to_string(),
             ));
@@ -183,6 +194,12 @@ pub async fn login(
             .execute(&state.db)
             .await?;
 
+        security::log_security_event(
+            state.db.clone(), Some(user.tenant_id), Some(user.id),
+            SecurityEventType::LoginFailed,
+            format!("Failed login attempt #{} for: {}", new_count, payload.email),
+            ip.clone(), ua.clone(), None,
+        );
         return Err(AppError::Unauthorized("Invalid email or password".to_string()));
     }
 
@@ -191,6 +208,13 @@ pub async fn login(
         .bind(user.id)
         .execute(&state.db)
         .await?;
+
+    security::log_security_event(
+        state.db.clone(), Some(user.tenant_id), Some(user.id),
+        SecurityEventType::LoginSuccess,
+        format!("Successful login: {}", user.email),
+        ip, ua, None,
+    );
 
     let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
     let refresh_token = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
@@ -227,6 +251,16 @@ pub async fn refresh_token(
         .map_err(|_| AppError::Unauthorized("Invalid or expired refresh token".to_string()))?;
 
     let claims = token_data.claims;
+
+    // Check if token has been revoked via Redis
+    if let Some(ref redis) = state.redis {
+        use fred::interfaces::KeysInterface;
+        let revoke_key = format!("revoked_token:{}", claims.sub);
+        let revoked: Option<String> = redis.get(&revoke_key).await.ok().flatten();
+        if revoked.is_some() {
+            return Err(AppError::Unauthorized("Token has been revoked".to_string()));
+        }
+    }
 
     // Verify user still exists and is active
     let user: UserRow = sqlx::query_as(
@@ -285,8 +319,33 @@ pub async fn get_me(
     }))
 }
 
-pub async fn logout() -> StatusCode {
-    // In a stateless JWT setup, logout is handled client-side by discarding tokens.
-    // With Redis sessions (future), we'd revoke the refresh token here.
-    StatusCode::NO_CONTENT
+pub async fn logout(
+    State(state): State<AppState>,
+    Extension(claims): Extension<jwt::Claims>,
+) -> AppResult<StatusCode> {
+    security::log_security_event(
+        state.db.clone(), Some(claims.tid), Some(claims.sub),
+        SecurityEventType::LogoutSuccess,
+        "User logged out, tokens revoked".to_string(),
+        None, None, None,
+    );
+
+    // Revoke all tokens for this user via Redis
+    if let Some(ref redis) = state.redis {
+        use fred::interfaces::KeysInterface;
+        let revoke_key = format!("revoked_token:{}", claims.sub);
+        // Set revocation flag with TTL matching refresh token lifetime (7 days)
+        let _: () = redis.set(&revoke_key, "revoked", Some(fred::types::Expiration::EX(7 * 24 * 3600)), None, false).await
+            .map_err(|e| AppError::Internal(format!("Failed to revoke token: {}", e)))?;
+    }
+
+    // Also revoke in database for persistence
+    sqlx::query(
+        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL"
+    )
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

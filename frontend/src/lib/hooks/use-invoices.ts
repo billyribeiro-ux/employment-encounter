@@ -93,6 +93,46 @@ export function useDeleteInvoice() {
   });
 }
 
+export function useSendInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<Invoice>(`/invoices/${id}/send`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+export function useRecordPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      amount_cents,
+      method,
+      notes,
+    }: {
+      id: string;
+      amount_cents: number;
+      method: string;
+      notes?: string;
+    }) => {
+      const { data } = await api.post(`/invoices/${id}/payment`, {
+        amount_cents,
+        method,
+        notes,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
 export function useUpdateInvoiceStatus() {
   const queryClient = useQueryClient();
   return useMutation({

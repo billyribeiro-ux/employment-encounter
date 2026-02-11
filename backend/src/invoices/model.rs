@@ -60,3 +60,11 @@ pub struct ListInvoicesQuery {
 pub struct UpdateInvoiceStatusRequest {
     pub status: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct RecordPaymentRequest {
+    pub amount_cents: i64,
+    pub method: String,
+    pub stripe_payment_id: Option<String>,
+    pub notes: Option<String>,
+}

@@ -37,6 +37,7 @@ pub struct AppState {
     pub config: Config,
     pub ws_broadcast: ws::WsBroadcast,
     pub rate_limiter: middleware::rate_limit::RateLimiter,
+    pub redis: Option<std::sync::Arc<fred::clients::RedisClient>>,
 }
 
 #[tokio::main]
@@ -72,14 +73,42 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Database migrations applied successfully");
 
+    // Connect to Redis (graceful fallback if unavailable)
+    let redis_client = {
+        use fred::prelude::*;
+        match RedisConfig::from_url(&config.redis_url) {
+            Ok(redis_config) => {
+                let client = RedisClient::new(redis_config, None, None, None);
+                match client.init().await {
+                    Ok(_handle) => {
+                        tracing::info!("Redis connected successfully");
+                        Some(std::sync::Arc::new(client))
+                    }
+                    Err(e) => {
+                        tracing::warn!("Redis connection failed (falling back to in-memory): {}", e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Redis config error (falling back to in-memory): {}", e);
+                None
+            }
+        }
+    };
+
     // Build application state
     let ws_broadcast = ws::WsBroadcast::new();
-    let rate_limiter = middleware::rate_limit::RateLimiter::new(100, 60);
+    let mut rate_limiter = middleware::rate_limit::RateLimiter::new(100, 60);
+    if let Some(ref redis) = redis_client {
+        rate_limiter = rate_limiter.with_redis(redis.clone());
+    }
     let state = AppState {
         db,
         config: config.clone(),
         ws_broadcast,
         rate_limiter,
+        redis: redis_client,
     };
 
     // Build CORS layer
@@ -112,15 +141,23 @@ async fn main() -> anyhow::Result<()> {
         .route("/clients/{id}", get(clients::handler::get_client))
         .route("/clients/{id}", put(clients::handler::update_client))
         .route("/clients/{id}", delete(clients::handler::delete_client))
+        .route("/clients/{id}/documents", get(clients::handler::list_client_documents))
+        .route("/clients/{id}/time-entries", get(clients::handler::list_client_time_entries))
+        .route("/clients/{id}/invoices", get(clients::handler::list_client_invoices))
+        .route("/clients/{id}/messages", get(clients::handler::list_client_messages))
+        .route("/clients/{id}/deadlines", get(clients::handler::list_client_deadlines))
+        .route("/clients/{id}/timeline", get(clients::handler::get_client_timeline))
         // Time entries
         .route("/time-entries", get(time_entries::handler::list_time_entries))
         .route("/time-entries", post(time_entries::handler::create_time_entry))
+        .route("/time-entries/{id}", put(time_entries::handler::update_time_entry))
         .route("/time-entries/{id}/stop", post(time_entries::handler::stop_timer))
         .route("/time-entries/{id}", delete(time_entries::handler::delete_time_entry))
         // Documents
         .route("/documents", get(documents::handler::list_documents))
         .route("/documents", post(documents::handler::create_document))
         .route("/documents/{id}", get(documents::handler::get_document))
+        .route("/documents/{id}", patch(documents::handler::update_document))
         .route("/documents/{id}", delete(documents::handler::delete_document))
         // Invoices
         .route("/invoices", get(invoices::handler::list_invoices))
@@ -129,6 +166,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/invoices/{id}", delete(invoices::handler::delete_invoice))
         .route("/invoices/{id}/pdf", get(invoices::handler::generate_invoice_pdf))
         .route("/invoices/{id}/status", patch(invoices::handler::update_invoice_status))
+        .route("/invoices/{id}/send", post(invoices::handler::send_invoice))
+        .route("/invoices/{id}/payment", post(invoices::handler::record_payment))
         // Workflows
         .route("/workflow-templates", get(workflows::handler::list_templates))
         .route("/workflow-templates", post(workflows::handler::create_template))

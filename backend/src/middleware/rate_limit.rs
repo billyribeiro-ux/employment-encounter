@@ -12,14 +12,16 @@ use tokio::sync::Mutex;
 use crate::error::AppError;
 use crate::AppState;
 
-/// In-memory sliding window rate limiter.
-/// In production, use Redis for distributed rate limiting.
+/// Hybrid rate limiter: tries Redis first, falls back to in-memory.
+/// In production with multiple instances, Redis ensures distributed limiting.
 #[derive(Clone)]
 pub struct RateLimiter {
-    /// Map of IP -> (request_count, window_start)
+    /// In-memory fallback: Map of IP -> (request_count, window_start)
     windows: Arc<Mutex<HashMap<String, (u32, Instant)>>>,
     max_requests: u32,
+    window_secs: u64,
     window_duration: Duration,
+    redis: Option<Arc<fred::clients::RedisClient>>,
 }
 
 impl RateLimiter {
@@ -27,11 +29,45 @@ impl RateLimiter {
         Self {
             windows: Arc::new(Mutex::new(HashMap::new())),
             max_requests,
+            window_secs,
             window_duration: Duration::from_secs(window_secs),
+            redis: None,
         }
     }
 
+    pub fn with_redis(mut self, client: Arc<fred::clients::RedisClient>) -> Self {
+        self.redis = Some(client);
+        self
+    }
+
     async fn check(&self, key: &str) -> bool {
+        // Try Redis first
+        if let Some(ref redis) = self.redis {
+            if let Ok(allowed) = self.check_redis(redis, key).await {
+                return allowed;
+            }
+            // Redis failed — fall through to in-memory
+        }
+
+        // In-memory fallback
+        self.check_memory(key).await
+    }
+
+    async fn check_redis(&self, redis: &fred::clients::RedisClient, key: &str) -> Result<bool, fred::error::RedisError> {
+        use fred::interfaces::KeysInterface;
+
+        let redis_key = format!("rate_limit:{}", key);
+        let count: i64 = redis.incr(&redis_key).await?;
+
+        if count == 1 {
+            // First request in window — set expiry
+            let _: () = redis.expire(&redis_key, self.window_secs as i64).await?;
+        }
+
+        Ok(count <= self.max_requests as i64)
+    }
+
+    async fn check_memory(&self, key: &str) -> bool {
         let mut windows = self.windows.lock().await;
         let now = Instant::now();
 

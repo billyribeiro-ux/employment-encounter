@@ -80,6 +80,25 @@ export function useCreateDocument() {
   });
 }
 
+export interface UpdateDocumentPayload {
+  category?: string;
+  tax_year?: number;
+  verification_status?: string;
+}
+
+export function useUpdateDocument(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: UpdateDocumentPayload) => {
+      const { data } = await api.patch<Document>(`/documents/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}
+
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
   return useMutation({

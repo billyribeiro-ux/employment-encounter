@@ -265,6 +265,96 @@ pub async fn delete_invoice(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub async fn send_invoice(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(invoice_id): Path<Uuid>,
+) -> AppResult<Json<Invoice>> {
+    let invoice: Invoice = sqlx::query_as(
+        "UPDATE invoices SET status = 'sent', sent_at = NOW(), issued_date = COALESCE(issued_date, CURRENT_DATE), updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND status = 'draft' \
+         RETURNING id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, \
+         amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, \
+         stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at",
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invoice not found or not in draft status".to_string()))?;
+
+    // In production: send email via Resend here
+    // For now, just update status and return
+
+    Ok(Json(invoice))
+}
+
+pub async fn record_payment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(invoice_id): Path<Uuid>,
+    Json(payload): Json<RecordPaymentRequest>,
+) -> AppResult<(StatusCode, Json<serde_json::Value>)> {
+    // Verify invoice exists and is payable
+    let invoice: Invoice = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, \
+         amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, \
+         stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at \
+         FROM invoices WHERE id = $1 AND tenant_id = $2 AND status IN ('sent', 'viewed', 'overdue')"
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invoice not found or not payable".to_string()))?;
+
+    // Record payment in payments table
+    let payment_id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO payments (id, tenant_id, invoice_id, amount_cents, method, stripe_payment_id, notes) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7)"
+    )
+    .bind(payment_id)
+    .bind(claims.tid)
+    .bind(invoice_id)
+    .bind(payload.amount_cents)
+    .bind(&payload.method)
+    .bind(payload.stripe_payment_id.as_deref())
+    .bind(payload.notes.as_deref())
+    .execute(&state.db)
+    .await?;
+
+    // Update invoice amount_paid and status
+    let new_paid = invoice.amount_paid_cents + payload.amount_cents;
+    let new_status = if new_paid >= invoice.total_cents { "paid" } else { &invoice.status };
+    let paid_date = if new_paid >= invoice.total_cents {
+        Some(chrono::Utc::now().date_naive())
+    } else {
+        invoice.paid_date
+    };
+
+    sqlx::query(
+        "UPDATE invoices SET amount_paid_cents = $3, status = $4, paid_date = $5, updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .bind(new_paid)
+    .bind(new_status)
+    .bind(paid_date)
+    .execute(&state.db)
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(serde_json::json!({
+        "payment_id": payment_id,
+        "invoice_id": invoice_id,
+        "amount_cents": payload.amount_cents,
+        "method": payload.method,
+        "new_total_paid_cents": new_paid,
+        "invoice_status": new_status,
+    }))))
+}
+
 #[derive(Debug, sqlx::FromRow)]
 struct InvoiceLineItem {
     description: String,

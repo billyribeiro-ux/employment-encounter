@@ -8,6 +8,7 @@ export interface TimeEntry {
   user_id: string;
   client_id: string;
   description: string;
+  service_type: string;
   duration_minutes: number;
   rate_cents: number;
   is_billable: boolean;
@@ -58,6 +59,29 @@ export function useCreateTimeEntry() {
   return useMutation({
     mutationFn: async (payload: CreateTimeEntryPayload) => {
       const { data } = await api.post<TimeEntry>("/time-entries", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+    },
+  });
+}
+
+export interface UpdateTimeEntryPayload {
+  client_id?: string;
+  description?: string;
+  service_type?: string;
+  duration_minutes?: number;
+  rate_cents?: number;
+  is_billable?: boolean;
+  date?: string;
+}
+
+export function useUpdateTimeEntry(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: UpdateTimeEntryPayload) => {
+      const { data } = await api.put<TimeEntry>(`/time-entries/${id}`, payload);
       return data;
     },
     onSuccess: () => {

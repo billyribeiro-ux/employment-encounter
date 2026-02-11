@@ -42,6 +42,15 @@ pub struct UploadResponse {
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
+pub struct UpdateDocumentRequest {
+    pub category: Option<String>,
+    pub tax_year: Option<i16>,
+    pub verification_status: Option<String>,
+    pub ai_verified: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ListDocumentsQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

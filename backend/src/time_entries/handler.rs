@@ -56,7 +56,7 @@ pub async fn list_time_entries(
 
     let entries: Vec<TimeEntry> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 AND LOWER(COALESCE(description, '')) LIKE $2 {} LIMIT $3 OFFSET $4", order_clause),
+            &format!("SELECT id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 AND LOWER(COALESCE(description, '')) LIKE $2 {} LIMIT $3 OFFSET $4", order_clause),
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -66,7 +66,7 @@ pub async fn list_time_entries(
         .await?
     } else {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 {} LIMIT $2 OFFSET $3", order_clause),
+            &format!("SELECT id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 {} LIMIT $2 OFFSET $3", order_clause),
         )
         .bind(claims.tid)
         .bind(per_page)
@@ -99,6 +99,7 @@ pub async fn create_time_entry(
 
     let id = Uuid::new_v4();
     let description = payload.description.unwrap_or_default();
+    let service_type = payload.service_type.unwrap_or_else(|| "general".to_string());
     let is_billable = payload.is_billable.unwrap_or(true);
     let date = payload.date.unwrap_or_else(|| chrono::Utc::now().date_naive());
     let start_timer = payload.start_timer.unwrap_or(false);
@@ -112,13 +113,16 @@ pub async fn create_time_entry(
     let rate_cents = payload.rate_cents.unwrap_or(0);
 
     let entry: TimeEntry = sqlx::query_as(
-        "INSERT INTO time_entries (id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at",
+        "INSERT INTO time_entries (id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, date) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
+         RETURNING id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at",
     )
     .bind(id)
     .bind(claims.tid)
     .bind(claims.sub)
     .bind(payload.client_id)
     .bind(&description)
+    .bind(&service_type)
     .bind(duration)
     .bind(rate_cents)
     .bind(is_billable)
@@ -137,7 +141,7 @@ pub async fn stop_timer(
     Path(entry_id): Path<Uuid>,
 ) -> AppResult<Json<TimeEntry>> {
     let existing: TimeEntry = sqlx::query_as(
-        "SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE id = $1 AND tenant_id = $2 AND is_running = TRUE",
+        "SELECT id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE id = $1 AND tenant_id = $2 AND is_running = TRUE",
     )
     .bind(entry_id)
     .bind(claims.tid)
@@ -153,7 +157,9 @@ pub async fn stop_timer(
     };
 
     let entry: TimeEntry = sqlx::query_as(
-        "UPDATE time_entries SET is_running = FALSE, stopped_at = $3, duration_minutes = $4, updated_at = NOW() WHERE id = $1 AND tenant_id = $2 RETURNING id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at",
+        "UPDATE time_entries SET is_running = FALSE, stopped_at = $3, duration_minutes = $4, updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 \
+         RETURNING id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at",
     )
     .bind(entry_id)
     .bind(claims.tid)
@@ -161,6 +167,46 @@ pub async fn stop_timer(
     .bind(elapsed_minutes)
     .fetch_one(&state.db)
     .await?;
+
+    Ok(Json(entry))
+}
+
+pub async fn update_time_entry(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(entry_id): Path<Uuid>,
+    Json(payload): Json<UpdateTimeEntryRequest>,
+) -> AppResult<Json<TimeEntry>> {
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let entry: TimeEntry = sqlx::query_as(
+        "UPDATE time_entries SET \
+         client_id = COALESCE($3, client_id), \
+         description = COALESCE($4, description), \
+         service_type = COALESCE($5, service_type), \
+         duration_minutes = COALESCE($6, duration_minutes), \
+         rate_cents = COALESCE($7, rate_cents), \
+         is_billable = COALESCE($8, is_billable), \
+         date = COALESCE($9, date), \
+         updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND invoice_id IS NULL \
+         RETURNING id, tenant_id, user_id, client_id, description, service_type, duration_minutes, rate_cents, \
+         is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at",
+    )
+    .bind(entry_id)
+    .bind(claims.tid)
+    .bind(payload.client_id)
+    .bind(payload.description.as_deref())
+    .bind(payload.service_type.as_deref())
+    .bind(payload.duration_minutes)
+    .bind(payload.rate_cents)
+    .bind(payload.is_billable)
+    .bind(payload.date)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Time entry not found or already invoiced".to_string()))?;
 
     Ok(Json(entry))
 }

@@ -173,6 +173,35 @@ pub async fn create_document(
     ))
 }
 
+pub async fn update_document(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(doc_id): Path<Uuid>,
+    Json(payload): Json<UpdateDocumentRequest>,
+) -> AppResult<Json<Document>> {
+    let doc: Document = sqlx::query_as(
+        "UPDATE documents SET \
+         category = COALESCE($3, category), \
+         tax_year = COALESCE($4, tax_year), \
+         verification_status = COALESCE($5, verification_status), \
+         updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL \
+         RETURNING id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, \
+         category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, \
+         tax_year, version, created_at, updated_at",
+    )
+    .bind(doc_id)
+    .bind(claims.tid)
+    .bind(payload.category.as_deref())
+    .bind(payload.tax_year)
+    .bind(payload.verification_status.as_deref())
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Document not found".to_string()))?;
+
+    Ok(Json(doc))
+}
+
 pub async fn delete_document(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,

@@ -23,15 +23,12 @@ pub async fn require_auth(
 
     let token_data = validate_token(token, &state.config.jwt_secret)?;
 
-    // Set tenant context for RLS
-    let tenant_id = token_data.claims.tid.to_string();
-    sqlx::query(&format!(
-        "SET LOCAL app.current_tenant = '{}'",
-        tenant_id
-    ))
-    .execute(&state.db)
-    .await
-    .map_err(|e| AppError::Internal(format!("Failed to set tenant context: {}", e)))?;
+    // Set tenant context for RLS — parameterized to prevent SQL injection
+    sqlx::query("SELECT set_config('app.current_tenant', $1, true)")
+        .bind(token_data.claims.tid.to_string())
+        .execute(&state.db)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to set tenant context: {}", e)))?;
 
     // Inject claims into request extensions
     req.extensions_mut().insert(token_data.claims);

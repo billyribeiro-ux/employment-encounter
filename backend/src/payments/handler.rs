@@ -140,12 +140,11 @@ pub async fn stripe_webhook(
                         );
 
                         // Create in-app notification
-                        // Set tenant context first for RLS
-                        sqlx::query(&format!(
-                            "SET LOCAL app.current_tenant = '{}'", tenant_id
-                        ))
-                        .execute(&state.db)
-                        .await?;
+                        // Set tenant context first for RLS — parameterized
+                        sqlx::query("SELECT set_config('app.current_tenant', $1, true)")
+                            .bind(tenant_id.to_string())
+                            .execute(&state.db)
+                            .await?;
 
                         sqlx::query(
                             "INSERT INTO notifications (tenant_id, user_id, type, title, body) \

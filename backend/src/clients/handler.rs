@@ -193,6 +193,212 @@ pub async fn update_client(
     Ok(Json(client))
 }
 
+// ── Client Sub-Resource Endpoints ──────────────────────────────────────
+
+pub async fn list_client_documents(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+    Query(params): Query<SubResourceQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let per_page = params.per_page.unwrap_or(25).min(100);
+    let page = params.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * per_page;
+
+    let docs: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, String, Option<String>, String, i16, chrono::DateTime<chrono::Utc>)>(
+        "SELECT id, filename, category, verification_status, version, created_at \
+         FROM documents WHERE tenant_id = $1 AND client_id = $2 AND deleted_at IS NULL \
+         ORDER BY created_at DESC LIMIT $3 OFFSET $4"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, filename, category, status, version, created_at)| {
+        serde_json::json!({ "id": id, "filename": filename, "category": category, "verification_status": status, "version": version, "created_at": created_at })
+    })
+    .collect();
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND client_id = $2 AND deleted_at IS NULL"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "data": docs, "meta": { "page": page, "per_page": per_page, "total": total } })))
+}
+
+pub async fn list_client_time_entries(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+    Query(params): Query<SubResourceQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let per_page = params.per_page.unwrap_or(25).min(100);
+    let page = params.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * per_page;
+
+    let entries: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, String, String, i32, i64, bool, chrono::NaiveDate)>(
+        "SELECT id, description, service_type, duration_minutes, rate_cents, is_billable, date \
+         FROM time_entries WHERE tenant_id = $1 AND client_id = $2 \
+         ORDER BY date DESC LIMIT $3 OFFSET $4"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, desc, stype, dur, rate, billable, date)| {
+        serde_json::json!({ "id": id, "description": desc, "service_type": stype, "duration_minutes": dur, "rate_cents": rate, "is_billable": billable, "date": date })
+    })
+    .collect();
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1 AND client_id = $2"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "data": entries, "meta": { "page": page, "per_page": per_page, "total": total } })))
+}
+
+pub async fn list_client_invoices(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+    Query(params): Query<SubResourceQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let per_page = params.per_page.unwrap_or(25).min(100);
+    let page = params.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * per_page;
+
+    let invoices: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, String, String, i64, Option<chrono::NaiveDate>, chrono::DateTime<chrono::Utc>)>(
+        "SELECT id, invoice_number, status, total_cents, due_date, created_at \
+         FROM invoices WHERE tenant_id = $1 AND client_id = $2 \
+         ORDER BY created_at DESC LIMIT $3 OFFSET $4"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, num, status, total, due, created)| {
+        serde_json::json!({ "id": id, "invoice_number": num, "status": status, "total_cents": total, "due_date": due, "created_at": created })
+    })
+    .collect();
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND client_id = $2"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "data": invoices, "meta": { "page": page, "per_page": per_page, "total": total } })))
+}
+
+pub async fn list_client_messages(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+    Query(params): Query<SubResourceQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let per_page = params.per_page.unwrap_or(50).min(100);
+    let page = params.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * per_page;
+
+    let messages: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Uuid, String, bool, bool, chrono::DateTime<chrono::Utc>)>(
+        "SELECT id, sender_id, content, is_internal, is_read, created_at \
+         FROM messages WHERE tenant_id = $1 AND client_id = $2 \
+         ORDER BY created_at DESC LIMIT $3 OFFSET $4"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, sender, content, internal, read, created)| {
+        serde_json::json!({ "id": id, "sender_id": sender, "content": content, "is_internal": internal, "is_read": read, "created_at": created })
+    })
+    .collect();
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM messages WHERE tenant_id = $1 AND client_id = $2"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "data": messages, "meta": { "page": page, "per_page": per_page, "total": total } })))
+}
+
+pub async fn list_client_deadlines(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let deadlines: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, String, Option<String>, chrono::NaiveDate, String, Option<chrono::DateTime<chrono::Utc>>)>(
+        "SELECT id, filing_type, description, due_date, status, completed_at \
+         FROM compliance_deadlines WHERE tenant_id = $1 AND client_id = $2 \
+         ORDER BY due_date ASC"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, ftype, desc, due, status, completed)| {
+        serde_json::json!({ "id": id, "filing_type": ftype, "description": desc, "due_date": due, "status": status, "completed_at": completed })
+    })
+    .collect();
+
+    Ok(Json(serde_json::json!({ "data": deadlines })))
+}
+
+pub async fn get_client_timeline(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+    Query(params): Query<SubResourceQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let limit = params.per_page.unwrap_or(50).min(100);
+
+    let events: Vec<serde_json::Value> = sqlx::query_as::<_, (Uuid, Option<Uuid>, String, String, Option<Uuid>, serde_json::Value, chrono::DateTime<chrono::Utc>)>(
+        "SELECT id, user_id, action, resource_type, resource_id, details, created_at \
+         FROM audit_logs WHERE tenant_id = $1 AND \
+         (resource_id = $2 OR details->>'client_id' = $3) \
+         ORDER BY created_at DESC LIMIT $4"
+    )
+    .bind(claims.tid)
+    .bind(client_id)
+    .bind(client_id.to_string())
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await?
+    .into_iter()
+    .map(|(id, user_id, action, rtype, rid, details, created)| {
+        serde_json::json!({ "id": id, "user_id": user_id, "action": action, "resource_type": rtype, "resource_id": rid, "details": details, "created_at": created })
+    })
+    .collect();
+
+    Ok(Json(serde_json::json!({ "data": events })))
+}
+
 pub async fn delete_client(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,

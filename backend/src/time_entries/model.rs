@@ -10,6 +10,7 @@ pub struct TimeEntry {
     pub user_id: Uuid,
     pub client_id: Uuid,
     pub description: String,
+    pub service_type: String,
     pub duration_minutes: i32,
     pub rate_cents: i64,
     pub is_billable: bool,
@@ -27,6 +28,7 @@ pub struct CreateTimeEntryRequest {
     pub client_id: Uuid,
     #[validate(length(max = 1000))]
     pub description: Option<String>,
+    pub service_type: Option<String>,
     pub duration_minutes: Option<i32>,
     pub rate_cents: Option<i64>,
     pub is_billable: Option<bool>,
@@ -35,11 +37,11 @@ pub struct CreateTimeEntryRequest {
 }
 
 #[derive(Debug, Deserialize, Validate)]
-#[allow(dead_code)]
 pub struct UpdateTimeEntryRequest {
     pub client_id: Option<Uuid>,
     #[validate(length(max = 1000))]
     pub description: Option<String>,
+    pub service_type: Option<String>,
     pub duration_minutes: Option<i32>,
     pub rate_cents: Option<i64>,
     pub is_billable: Option<bool>,

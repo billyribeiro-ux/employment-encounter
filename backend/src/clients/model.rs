@@ -64,6 +64,12 @@ pub struct ListClientsQuery {
     pub order: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SubResourceQuery {
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct PaginatedResponse<T: Serialize> {
     pub data: Vec<T>,
