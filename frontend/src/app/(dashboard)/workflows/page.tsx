@@ -15,6 +15,7 @@ import {
 import { CreateWorkflowTemplateDialog } from "@/components/dashboard/create-workflow-template-dialog";
 import { CreateWorkflowInstanceDialog } from "@/components/dashboard/create-workflow-instance-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   switch (status) {
@@ -154,10 +155,13 @@ export default function WorkflowsPage() {
                             variant="outline"
                             disabled={advanceStep.isPending}
                             onClick={() =>
-                              advanceStep.mutate({
-                                id: wf.id,
-                                action: "completed",
-                              })
+                              advanceStep.mutate(
+                                { id: wf.id, action: "completed" },
+                                {
+                                  onSuccess: () => toast.success("Step advanced"),
+                                  onError: () => toast.error("Failed to advance step"),
+                                }
+                              )
                             }
                           >
                             <ArrowRight className="mr-1 h-3 w-3" />

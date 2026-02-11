@@ -9,15 +9,18 @@ import {
   Calendar,
   CheckCircle2,
   Send,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useInvoice, useUpdateInvoiceStatus } from "@/lib/hooks/use-invoices";
+import { useInvoice, useUpdateInvoiceStatus, useDeleteInvoice } from "@/lib/hooks/use-invoices";
 import { toast } from "sonner";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { useRouter } from "next/navigation";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -48,8 +51,10 @@ export default function InvoiceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: invoice, isLoading, isError } = useInvoice(id);
   const updateStatus = useUpdateInvoiceStatus();
+  const deleteInvoice = useDeleteInvoice();
 
   async function handleStatusChange(newStatus: string) {
     try {
@@ -121,6 +126,29 @@ export default function InvoiceDetailPage({
               Send
             </Button>
           )}
+          <ConfirmDialog
+            title="Delete invoice?"
+            description={`This will permanently delete invoice "${invoice.invoice_number || invoice.id.slice(0, 8)}" and all line items.`}
+            actionLabel="Delete"
+            onConfirm={() => {
+              deleteInvoice.mutate(invoice.id, {
+                onSuccess: () => {
+                  toast.success("Invoice deleted");
+                  router.push("/invoices");
+                },
+                onError: () => toast.error("Failed to delete invoice"),
+              });
+            }}
+          >
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteInvoice.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </ConfirmDialog>
           {(invoice.status === "sent" || invoice.status === "viewed") && (
             <Button
               disabled={updateStatus.isPending}
