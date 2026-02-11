@@ -1,12 +1,16 @@
 mod auth;
 mod clients;
+mod compliance;
 mod config;
 mod dashboard;
 mod documents;
 mod error;
+mod expenses;
 mod invoices;
 mod middleware;
+mod tasks;
 mod time_entries;
+mod workflows;
 
 use axum::{
     http::{header, Method},
@@ -111,6 +115,28 @@ async fn main() -> anyhow::Result<()> {
         .route("/invoices", post(invoices::handler::create_invoice))
         .route("/invoices/{id}", get(invoices::handler::get_invoice))
         .route("/invoices/{id}/status", patch(invoices::handler::update_invoice_status))
+        // Workflows
+        .route("/workflow-templates", get(workflows::handler::list_templates))
+        .route("/workflow-templates", post(workflows::handler::create_template))
+        .route("/workflows", get(workflows::handler::list_instances))
+        .route("/workflows", post(workflows::handler::create_instance))
+        .route("/workflows/{id}", get(workflows::handler::get_instance))
+        .route("/workflows/{id}/advance", post(workflows::handler::advance_step))
+        .route("/workflows/{id}/logs", get(workflows::handler::get_step_logs))
+        // Tasks
+        .route("/tasks", get(tasks::handler::list_tasks))
+        .route("/tasks", post(tasks::handler::create_task))
+        .route("/tasks/{id}", get(tasks::handler::get_task))
+        .route("/tasks/{id}", put(tasks::handler::update_task))
+        .route("/tasks/{id}", delete(tasks::handler::delete_task))
+        // Compliance deadlines
+        .route("/compliance-deadlines", get(compliance::handler::list_deadlines))
+        .route("/compliance-deadlines", post(compliance::handler::create_deadline))
+        .route("/compliance-deadlines/{id}", put(compliance::handler::update_deadline))
+        // Expenses
+        .route("/expenses", get(expenses::handler::list_expenses))
+        .route("/expenses", post(expenses::handler::create_expense))
+        .route("/expenses/{id}", delete(expenses::handler::delete_expense))
         // Auth middleware
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
