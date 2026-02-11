@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   DollarSign,
   TrendingUp,
@@ -13,6 +14,19 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
+
+const RevenueChart = dynamic(
+  () => import("@/components/charts/revenue-chart").then((m) => m.RevenueChart),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+);
+const UtilizationChart = dynamic(
+  () => import("@/components/charts/utilization-chart").then((m) => m.UtilizationChart),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+);
+const ClientDistributionChart = dynamic(
+  () => import("@/components/charts/client-distribution-chart").then((m) => m.ClientDistributionChart),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+);
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -105,12 +119,8 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p>ECharts bar chart</p>
-                    <p className="text-xs mt-1">Install echarts + echarts-for-react</p>
-                  </div>
+                <div className="h-64">
+                  <RevenueChart />
                 </div>
               </CardContent>
             </Card>
@@ -118,16 +128,12 @@ export default function AnalyticsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
-                  Revenue by Service Type
+                  Client Distribution
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <PieChart className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p>ECharts donut chart</p>
-                    <p className="text-xs mt-1">Tax Returns · Bookkeeping · Advisory</p>
-                  </div>
+                <div className="h-64">
+                  <ClientDistributionChart />
                 </div>
               </CardContent>
             </Card>
@@ -139,12 +145,8 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <LineChart className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p>ECharts line + area chart</p>
-                    <p className="text-xs mt-1">12-month trend with animated draw</p>
-                  </div>
+                <div className="h-64">
+                  <RevenueChart />
                 </div>
               </CardContent>
             </Card>
@@ -156,12 +158,8 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <Activity className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p>ECharts stacked bar chart</p>
-                    <p className="text-xs mt-1">Billable vs non-billable per CPA</p>
-                  </div>
+                <div className="h-64">
+                  <UtilizationChart />
                 </div>
               </CardContent>
             </Card>

@@ -16,12 +16,22 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
 import { useComplianceDeadlines } from "@/lib/hooks/use-compliance";
 import { useTasks } from "@/lib/hooks/use-tasks";
+
+const RevenueChart = dynamic(
+  () => import("@/components/charts/revenue-chart").then((m) => m.RevenueChart),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+);
+const UtilizationChart = dynamic(
+  () => import("@/components/charts/utilization-chart").then((m) => m.UtilizationChart),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> }
+);
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -155,11 +165,8 @@ export default function DashboardPage() {
                 <CardTitle>Revenue Trend</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p>ECharts revenue chart</p>
-                  </div>
+                <div className="h-64">
+                  <RevenueChart />
                 </div>
               </CardContent>
             </Card>
@@ -168,11 +175,8 @@ export default function DashboardPage() {
                 <CardTitle>Team Utilization</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  <div className="text-center">
-                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p>ECharts utilization chart</p>
-                  </div>
+                <div className="h-64">
+                  <UtilizationChart />
                 </div>
               </CardContent>
             </Card>
