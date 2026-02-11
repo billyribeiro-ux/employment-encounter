@@ -33,10 +33,11 @@ export default function TimePage() {
   const [billableFilter, setBillableFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date");
   const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [perPage, setPerPage] = useState(25);
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useTimeEntries({
     page,
-    per_page: 25,
+    per_page: perPage,
     search: debouncedSearch || undefined,
     is_billable: billableFilter === "all" ? undefined : billableFilter === "billable",
     sort: sortBy,
@@ -248,11 +249,24 @@ export default function TimePage() {
                 </table>
               </div>
 
-              {meta && meta.total_pages > 1 && (
+              {meta && (meta.total_pages > 1 || meta.total > 10) && (
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
+                    </p>
+                    <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[70px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
