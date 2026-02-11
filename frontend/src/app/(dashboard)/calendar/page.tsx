@@ -17,6 +17,7 @@ import {
   useComplianceDeadlines,
   useUpdateDeadline,
 } from "@/lib/hooks/use-compliance";
+import { CreateDeadlineDialog } from "@/components/dashboard/create-deadline-dialog";
 
 function statusIcon(status: string) {
   switch (status) {
@@ -76,10 +77,12 @@ export default function CalendarPage() {
             Track tax deadlines, filing dates, and compliance milestones
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Deadline
-        </Button>
+        <CreateDeadlineDialog>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Deadline
+          </Button>
+        </CreateDeadlineDialog>
       </div>
 
       {!isLoading && !isError && deadlines.length > 0 && (
@@ -148,10 +151,12 @@ export default function CalendarPage() {
                 Add compliance deadlines to track IRS filing dates, state
                 deadlines, and custom reminders for your clients.
               </p>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Deadline
-              </Button>
+              <CreateDeadlineDialog>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Deadline
+                </Button>
+              </CreateDeadlineDialog>
             </div>
           ) : (
             <div className="space-y-3">
