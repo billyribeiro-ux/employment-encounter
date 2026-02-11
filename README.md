@@ -36,7 +36,7 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Toast Notifications** — Sonner toasts on all CRUD mutations across every page
 - **Confirmation Dialogs** — AlertDialog-based confirmation on all destructive actions across list + detail pages
 - **Table Skeletons** — Animated skeleton loading states on all 5 list pages + workflow cards
-- **Search Filters** — Wired search inputs on clients, invoices, documents pages (resets pagination)
+- **Search Filters** — Wired search inputs on all 5 list pages (clients, invoices, documents, expenses, time) with pagination reset
 - **Responsive Tables** — Horizontal scroll with min-width constraints on all 5 data tables
 - **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 4 detail pages (clients, invoices, workflows, tasks)
 
