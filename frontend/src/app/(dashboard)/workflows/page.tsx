@@ -60,15 +60,17 @@ export default function WorkflowsPage() {
       {templates && templates.length > 0 && (
         <div className="grid gap-3 md:grid-cols-3">
           {templates.map((t) => (
-            <Card key={t.id} className="cursor-pointer hover:border-primary/50 transition-colors">
-              <CardContent className="pt-4 pb-3">
-                <p className="font-medium text-sm">{t.name}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {Array.isArray(t.steps) ? t.steps.length : 0} steps
-                  {t.category && ` · ${t.category}`}
-                </p>
-              </CardContent>
-            </Card>
+            <Link key={t.id} href={`/workflows/templates/${t.id}`}>
+              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+                <CardContent className="pt-4 pb-3">
+                  <p className="font-medium text-sm">{t.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Array.isArray(t.steps) ? t.steps.length : 0} steps
+                    {t.category && ` · ${t.category}`}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

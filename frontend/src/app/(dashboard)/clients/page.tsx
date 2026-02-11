@@ -16,7 +16,11 @@ import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useClients({ page, per_page: 25 });
+  const { data, isLoading, isError } = useClients({
+    page,
+    per_page: 25,
+    search: searchQuery || undefined,
+  });
   const deleteClient = useDeleteClient();
 
   const clients = data?.data ?? [];
