@@ -23,6 +23,7 @@ export function useExpenses(params?: {
   per_page?: number;
   client_id?: string;
   category?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["expenses", params],

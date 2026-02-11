@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Wallet, Trash2 } from "lucide-react";
+import { Plus, Wallet, Trash2, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
@@ -20,8 +21,13 @@ function formatCents(cents: number): string {
 }
 
 export default function ExpensesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useExpenses({ page, per_page: 25 });
+  const { data, isLoading, isError } = useExpenses({
+    page,
+    per_page: 25,
+    search: searchQuery || undefined,
+  });
   const deleteExpense = useDeleteExpense();
 
   const expenses = data?.data ?? [];
@@ -51,6 +57,22 @@ export default function ExpensesPage() {
             Record Expense
           </Button>
         </CreateExpenseDialog>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search expenses..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Button variant="outline" size="sm">
+          <Filter className="mr-2 h-4 w-4" />
+          Filters
+        </Button>
       </div>
 
       <Card>

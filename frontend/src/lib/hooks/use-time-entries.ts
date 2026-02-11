@@ -36,6 +36,7 @@ export function useTimeEntries(params?: {
   client_id?: string;
   date_from?: string;
   date_to?: string;
+  search?: string;
 }) {
   return useQuery({
     queryKey: ["time-entries", params],

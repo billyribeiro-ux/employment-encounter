@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Trash2 } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2, Search, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
@@ -19,8 +20,13 @@ function formatDuration(minutes: number): string {
 }
 
 export default function TimePage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useTimeEntries({ page, per_page: 25 });
+  const { data, isLoading, isError } = useTimeEntries({
+    page,
+    per_page: 25,
+    search: searchQuery || undefined,
+  });
   const stopTimer = useStopTimer();
   const deleteEntry = useDeleteTimeEntry();
 
@@ -50,6 +56,22 @@ export default function TimePage() {
             </Button>
           </CreateTimeEntryDialog>
         </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search time entries..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Button variant="outline" size="sm">
+          <Filter className="mr-2 h-4 w-4" />
+          Filters
+        </Button>
       </div>
 
       <Card>
