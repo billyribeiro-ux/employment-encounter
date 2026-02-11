@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Filter } from "lucide-react";
+import { Plus, Receipt, Search, Filter, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useInvoices } from "@/lib/hooks/use-invoices";
+import { useInvoices, useDeleteInvoice } from "@/lib/hooks/use-invoices";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { toast } from "sonner";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -32,6 +34,7 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useInvoices({ page, per_page: 25 });
+  const deleteInvoice = useDeleteInvoice();
 
   const invoices = data?.data ?? [];
   const meta = data?.meta;
@@ -112,6 +115,7 @@ export default function InvoicesPage() {
                       <th className="px-4 py-3 text-right font-medium">Amount</th>
                       <th className="px-4 py-3 text-left font-medium">Due Date</th>
                       <th className="px-4 py-3 text-left font-medium">Created</th>
+                      <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -137,6 +141,28 @@ export default function InvoicesPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {new Date(inv.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <ConfirmDialog
+                            title="Delete invoice?"
+                            description={`This will permanently delete invoice "${inv.invoice_number || inv.id.slice(0, 8)}".`}
+                            actionLabel="Delete"
+                            onConfirm={() => {
+                              deleteInvoice.mutate(inv.id, {
+                                onSuccess: () => toast.success("Invoice deleted"),
+                                onError: () => toast.error("Failed to delete invoice"),
+                              });
+                            }}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              disabled={deleteInvoice.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </ConfirmDialog>
                         </td>
                       </tr>
                     ))}
