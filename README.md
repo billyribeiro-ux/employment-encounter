@@ -35,8 +35,8 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Breadcrumbs** — Reusable component on all 5 detail pages (clients, invoices, workflows, workflow templates, tasks)
 - **Toast Notifications** — Sonner toasts on all CRUD mutations across every page
 - **Confirmation Dialogs** — AlertDialog-based confirmation on all destructive actions across list + detail pages
-- **Table Skeletons** — Animated skeleton loading states on all 5 list pages + workflow cards
-- **Search Filters** — Full-stack search on all 6 data pages (clients, invoices, documents, expenses, time, tasks) with backend ILIKE filtering and pagination reset
+- **Skeleton Loading** — Animated skeleton states on all list pages, detail pages, Kanban board, calendar, and workflow cards (zero Loader2 spinners)
+- **Search Filters** — Full-stack debounced search (300ms) on all 6 data pages with backend ILIKE filtering and pagination reset
 - **Responsive Tables** — Horizontal scroll with min-width constraints on all 5 data tables
 - **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 4 detail pages (clients, invoices, workflows, tasks)
 
