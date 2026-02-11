@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Trash2, Search, Filter } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
@@ -23,11 +30,13 @@ function formatDuration(minutes: number): string {
 export default function TimePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [billableFilter, setBillableFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useTimeEntries({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    is_billable: billableFilter === "all" ? undefined : billableFilter === "billable",
   });
   const stopTimer = useStopTimer();
   const deleteEntry = useDeleteTimeEntry();
@@ -66,10 +75,16 @@ export default function TimePage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search time entries..."
         />
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <Select value={billableFilter} onValueChange={(v) => { setBillableFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Billable" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Entries</SelectItem>
+            <SelectItem value="billable">Billable</SelectItem>
+            <SelectItem value="non-billable">Non-Billable</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Wallet, Trash2, Search, Filter } from "lucide-react";
+import { Plus, Wallet, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateExpenseDialog } from "@/components/dashboard/create-expense-dialog";
@@ -24,11 +31,13 @@ function formatCents(cents: number): string {
 export default function ExpensesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useExpenses({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
   const deleteExpense = useDeleteExpense();
 
@@ -67,10 +76,18 @@ export default function ExpensesPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search expenses..."
         />
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="reimbursed">Reimbursed</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

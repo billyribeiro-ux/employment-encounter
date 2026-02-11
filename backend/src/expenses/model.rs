@@ -38,5 +38,6 @@ pub struct ListExpensesQuery {
     pub per_page: Option<i64>,
     pub client_id: Option<Uuid>,
     pub category: Option<String>,
+    pub status: Option<String>,
     pub search: Option<String>,
 }

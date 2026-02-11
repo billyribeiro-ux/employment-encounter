@@ -36,6 +36,7 @@ export function useTimeEntries(params?: {
   client_id?: string;
   date_from?: string;
   date_to?: string;
+  is_billable?: boolean;
   search?: string;
 }) {
   return useQuery({

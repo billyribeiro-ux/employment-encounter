@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Search, Filter, FileText, Trash2 } from "lucide-react";
+import { Upload, Search, FileText, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
@@ -23,11 +30,13 @@ function formatBytes(bytes: number): string {
 export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useDocuments({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    category: categoryFilter !== "all" ? categoryFilter : undefined,
   });
   const deleteDoc = useDeleteDocument();
 
@@ -57,10 +66,20 @@ export default function DocumentsPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search documents..."
         />
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="tax_return">Tax Return</SelectItem>
+            <SelectItem value="financial_statement">Financial Statement</SelectItem>
+            <SelectItem value="receipt">Receipt</SelectItem>
+            <SelectItem value="contract">Contract</SelectItem>
+            <SelectItem value="correspondence">Correspondence</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

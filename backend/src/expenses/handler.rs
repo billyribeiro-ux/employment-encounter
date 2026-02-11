@@ -23,43 +23,40 @@ pub async fn list_expenses(
 
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM expenses WHERE tenant_id = $1 AND (LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(category) LIKE $2)",
-        )
-        .bind(claims.tid)
-        .bind(pattern)
-        .fetch_one(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM expenses WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
-    };
+    let mut where_clause = String::from("WHERE tenant_id = $1");
+    let mut param_idx = 2;
 
-    let expenses: Vec<Expense> = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE tenant_id = $1 AND (LOWER(COALESCE(description, '')) LIKE $2 OR LOWER(category) LIKE $2) ORDER BY date DESC LIMIT $3 OFFSET $4",
-        )
-        .bind(claims.tid)
-        .bind(pattern)
+    if search_pattern.is_some() {
+        where_clause.push_str(&format!(" AND (LOWER(COALESCE(description, '')) LIKE ${p} OR LOWER(category) LIKE ${p})", p = param_idx));
+        param_idx += 1;
+    }
+    if params.status.is_some() {
+        where_clause.push_str(&format!(" AND status = ${}", param_idx));
+        param_idx += 1;
+    }
+
+    let count_sql = format!("SELECT COUNT(*) FROM expenses {}", where_clause);
+    let list_sql = format!("SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses {} ORDER BY date DESC LIMIT ${} OFFSET ${}", where_clause, param_idx, param_idx + 1);
+
+    let mut count_query = sqlx::query_as::<_, (i64,)>(&count_sql).bind(claims.tid);
+    let mut list_query = sqlx::query_as::<_, Expense>(&list_sql).bind(claims.tid);
+
+    if let Some(ref pattern) = search_pattern {
+        count_query = count_query.bind(pattern.clone());
+        list_query = list_query.bind(pattern.clone());
+    }
+    if let Some(ref status) = params.status {
+        count_query = count_query.bind(status.clone());
+        list_query = list_query.bind(status.clone());
+    }
+
+    let (total,): (i64,) = count_query.fetch_one(&state.db).await?;
+
+    let expenses: Vec<Expense> = list_query
         .bind(per_page)
         .bind(offset)
         .fetch_all(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE tenant_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3",
-        )
-        .bind(claims.tid)
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(&state.db)
-        .await?
-    };
+        .await?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 
