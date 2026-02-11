@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Receipt, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -92,7 +92,7 @@ export default function InvoicesPage() {
         </CreateInvoiceDialog>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
@@ -111,6 +111,17 @@ export default function InvoicesPage() {
             <SelectItem value="overdue">Overdue</SelectItem>
           </SelectContent>
         </Select>
+        {(searchQuery || statusFilter !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={() => { setSearchQuery(""); setStatusFilter("all"); setSortBy("created_at"); setSortOrder("desc"); setPage(1); }}
+          >
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       <Card>

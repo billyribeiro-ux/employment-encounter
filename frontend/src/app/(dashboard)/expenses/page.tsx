@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Wallet, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Wallet, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export default function ExpensesPage() {
         </CreateExpenseDialog>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
@@ -108,6 +108,17 @@ export default function ExpensesPage() {
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
+        {(searchQuery || statusFilter !== "all" || sortBy !== "date" || sortOrder !== "desc") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={() => { setSearchQuery(""); setStatusFilter("all"); setSortBy("date"); setSortOrder("desc"); setPage(1); }}
+          >
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       <Card>

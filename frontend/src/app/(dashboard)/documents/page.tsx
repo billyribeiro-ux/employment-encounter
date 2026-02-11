@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Search, FileText, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Upload, Search, FileText, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -80,7 +80,7 @@ export default function DocumentsPage() {
         </UploadDocumentDialog>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
@@ -100,6 +100,17 @@ export default function DocumentsPage() {
             <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
+        {(searchQuery || categoryFilter !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={() => { setSearchQuery(""); setCategoryFilter("all"); setSortBy("created_at"); setSortOrder("desc"); setPage(1); }}
+          >
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       <Card>

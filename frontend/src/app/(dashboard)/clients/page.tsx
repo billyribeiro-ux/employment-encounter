@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -75,7 +75,7 @@ export default function ClientsPage() {
         </CreateClientDialog>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
@@ -92,6 +92,17 @@ export default function ClientsPage() {
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
+        {(searchQuery || statusFilter !== "all" || sortBy !== "name" || sortOrder !== "asc") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={() => { setSearchQuery(""); setStatusFilter("all"); setSortBy("name"); setSortOrder("asc"); setPage(1); }}
+          >
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       <Card>

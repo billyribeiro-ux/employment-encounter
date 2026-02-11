@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -89,7 +89,7 @@ export default function TimePage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
@@ -105,6 +105,17 @@ export default function TimePage() {
             <SelectItem value="non-billable">Non-Billable</SelectItem>
           </SelectContent>
         </Select>
+        {(searchQuery || billableFilter !== "all" || sortBy !== "date" || sortOrder !== "desc") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={() => { setSearchQuery(""); setBillableFilter("all"); setSortBy("date"); setSortOrder("desc"); setPage(1); }}
+          >
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       <Card>
