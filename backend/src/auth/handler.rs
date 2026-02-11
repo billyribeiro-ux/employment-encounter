@@ -1,4 +1,8 @@
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{
+    extract::{Extension, State},
+    http::StatusCode,
+    Json,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -207,4 +211,82 @@ pub async fn login(
 
 pub async fn health() -> StatusCode {
     StatusCode::OK
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RefreshRequest {
+    pub refresh_token: String,
+}
+
+pub async fn refresh_token(
+    State(state): State<AppState>,
+    Json(payload): Json<RefreshRequest>,
+) -> AppResult<Json<AuthResponse>> {
+    // Validate the refresh token
+    let token_data = jwt::validate_token(&payload.refresh_token, &state.config.jwt_secret)
+        .map_err(|_| AppError::Unauthorized("Invalid or expired refresh token".to_string()))?;
+
+    let claims = token_data.claims;
+
+    // Verify user still exists and is active
+    let user: UserRow = sqlx::query_as(
+        "SELECT id, tenant_id, email, password_hash, first_name, last_name, role, status, failed_login_count, locked_until \
+         FROM users WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::Unauthorized("User not found".to_string()))?;
+
+    if user.status != "active" {
+        return Err(AppError::Unauthorized("Account is not active".to_string()));
+    }
+
+    // Issue new token pair
+    let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+    let refresh_token = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+
+    Ok(Json(AuthResponse {
+        access_token,
+        refresh_token,
+        user: UserResponse {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+            tenant_id: user.tenant_id,
+        },
+    }))
+}
+
+pub async fn get_me(
+    State(state): State<AppState>,
+    Extension(claims): Extension<jwt::Claims>,
+) -> AppResult<Json<UserResponse>> {
+    let user: UserRow = sqlx::query_as(
+        "SELECT id, tenant_id, email, password_hash, first_name, last_name, role, status, failed_login_count, locked_until \
+         FROM users WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
+
+    Ok(Json(UserResponse {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        tenant_id: user.tenant_id,
+    }))
+}
+
+pub async fn logout() -> StatusCode {
+    // In a stateless JWT setup, logout is handled client-side by discarding tokens.
+    // With Redis sessions (future), we'd revoke the refresh token here.
+    StatusCode::NO_CONTENT
 }

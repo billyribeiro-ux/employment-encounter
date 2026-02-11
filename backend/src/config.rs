@@ -21,6 +21,10 @@ pub struct Config {
     pub typesense_url: Option<String>,
     #[serde(default)]
     pub typesense_api_key: Option<String>,
+    #[serde(default)]
+    pub stripe_secret_key: Option<String>,
+    #[serde(default)]
+    pub stripe_webhook_secret: Option<String>,
 }
 
 fn default_host() -> String {

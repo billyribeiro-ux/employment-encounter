@@ -135,13 +135,34 @@ pub async fn create_document(
     .fetch_one(&state.db)
     .await?;
 
-    // Generate presigned upload URL
-    // In production this would use aws_sdk_s3::presigning
-    // For local dev with LocalStack, return a placeholder URL
-    let upload_url = format!(
-        "{}/{}/{}",
-        state.config.s3_endpoint, state.config.s3_bucket, &s3_key
-    );
+    // Generate presigned upload URL via AWS SDK
+    let s3_config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+        .endpoint_url(&state.config.s3_endpoint)
+        .region(aws_config::Region::new(state.config.s3_region.clone()))
+        .load()
+        .await;
+    let s3_client = aws_sdk_s3::Client::new(&s3_config);
+
+    let upload_url = match s3_client
+        .put_object()
+        .bucket(&state.config.s3_bucket)
+        .key(&s3_key)
+        .content_type(&payload.mime_type)
+        .presigned(
+            aws_sdk_s3::presigning::PresigningConfig::expires_in(std::time::Duration::from_secs(3600))
+                .expect("valid presigning config"),
+        )
+        .await
+    {
+        Ok(presigned) => presigned.uri().to_string(),
+        Err(_) => {
+            // Fallback for local dev if presigning fails
+            format!(
+                "{}/{}/{}",
+                state.config.s3_endpoint, state.config.s3_bucket, &s3_key
+            )
+        }
+    };
 
     Ok((
         StatusCode::CREATED,

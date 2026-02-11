@@ -7,10 +7,16 @@ mod documents;
 mod error;
 mod expenses;
 mod invoices;
+mod messages;
 mod middleware;
+mod payments;
+mod notifications;
+mod reports;
+mod settings;
 mod tasks;
 mod time_entries;
 mod workflows;
+mod ws;
 
 use axum::{
     http::{header, Method},
@@ -29,6 +35,8 @@ use config::Config;
 pub struct AppState {
     pub db: sqlx::PgPool,
     pub config: Config,
+    pub ws_broadcast: ws::WsBroadcast,
+    pub rate_limiter: middleware::rate_limit::RateLimiter,
 }
 
 #[tokio::main]
@@ -65,9 +73,13 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Database migrations applied successfully");
 
     // Build application state
+    let ws_broadcast = ws::WsBroadcast::new();
+    let rate_limiter = middleware::rate_limit::RateLimiter::new(100, 60);
     let state = AppState {
         db,
         config: config.clone(),
+        ws_broadcast,
+        rate_limiter,
     };
 
     // Build CORS layer
@@ -115,6 +127,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/invoices", post(invoices::handler::create_invoice))
         .route("/invoices/{id}", get(invoices::handler::get_invoice))
         .route("/invoices/{id}", delete(invoices::handler::delete_invoice))
+        .route("/invoices/{id}/pdf", get(invoices::handler::generate_invoice_pdf))
         .route("/invoices/{id}/status", patch(invoices::handler::update_invoice_status))
         // Workflows
         .route("/workflow-templates", get(workflows::handler::list_templates))
@@ -141,6 +154,48 @@ async fn main() -> anyhow::Result<()> {
         .route("/expenses", get(expenses::handler::list_expenses))
         .route("/expenses", post(expenses::handler::create_expense))
         .route("/expenses/{id}", delete(expenses::handler::delete_expense))
+        // Notifications
+        .route("/notifications", get(notifications::handler::list_notifications))
+        .route("/notifications", post(notifications::handler::create_notification))
+        .route("/notifications/unread-count", get(notifications::handler::get_unread_count))
+        .route("/notifications/read-all", put(notifications::handler::mark_all_read))
+        .route("/notifications/{id}/read", put(notifications::handler::mark_read))
+        .route("/notifications/{id}", delete(notifications::handler::delete_notification))
+        // Messages
+        .route("/messages", post(messages::handler::create_message))
+        .route("/messages/client/{client_id}", get(messages::handler::list_messages_for_client))
+        .route("/messages/{id}/read", put(messages::handler::mark_message_read))
+        .route("/messages/{id}", delete(messages::handler::delete_message))
+        // Settings
+        .route("/settings/firm", get(settings::handler::get_firm_settings))
+        .route("/settings/firm", put(settings::handler::update_firm_settings))
+        .route("/settings/profile", get(settings::handler::get_profile))
+        .route("/settings/profile", put(settings::handler::update_profile))
+        .route("/settings/users", get(settings::handler::list_users))
+        .route("/settings/users/invite", post(settings::handler::invite_user))
+        .route("/settings/users/{id}/role", put(settings::handler::update_user_role))
+        .route("/settings/users/{id}", delete(settings::handler::delete_user))
+        // Reports
+        .route("/reports/pl", get(reports::handler::get_profit_loss))
+        .route("/reports/cashflow", get(reports::handler::get_cash_flow))
+        .route("/team/utilization", get(reports::handler::get_team_utilization))
+        // Payments
+        .route("/payments/create-intent", post(payments::handler::create_payment_intent))
+        // Audit logs (admin only)
+        .route("/audit-logs", get(middleware::audit_handler::list_audit_logs))
+        // MFA
+        .route("/auth/mfa/setup", post(auth::mfa::setup_mfa))
+        .route("/auth/mfa/enable", post(auth::mfa::enable_mfa))
+        .route("/auth/mfa/verify", post(auth::mfa::verify_mfa))
+        .route("/auth/mfa/disable", post(auth::mfa::disable_mfa))
+        // Auth (protected)
+        .route("/auth/me", get(auth::handler::get_me))
+        .route("/auth/logout", post(auth::handler::logout))
+        // Audit log middleware (runs after auth, before handlers)
+        .layer(axum_mw::from_fn_with_state(
+            state.clone(),
+            middleware::audit::audit_log,
+        ))
         // Auth middleware
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
@@ -154,9 +209,18 @@ async fn main() -> anyhow::Result<()> {
         // Auth (public)
         .route("/api/v1/auth/register", post(auth::handler::register))
         .route("/api/v1/auth/login", post(auth::handler::login))
+        .route("/api/v1/auth/refresh", post(auth::handler::refresh_token))
+        // WebSocket
+        .route("/api/v1/ws", get(ws::ws_handler))
+        // Stripe webhook (public, verified by signature)
+        .route("/api/v1/webhooks/stripe", post(payments::handler::stripe_webhook))
         // Protected API routes
         .nest("/api/v1", protected_routes)
         // Layers
+        .layer(axum_mw::from_fn_with_state(
+            state.clone(),
+            middleware::rate_limit::rate_limit,
+        ))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(state);

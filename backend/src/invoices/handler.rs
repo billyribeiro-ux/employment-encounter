@@ -1,6 +1,7 @@
 use axum::{
     extract::{Extension, Path, Query, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     Json,
 };
 use uuid::Uuid;
@@ -262,4 +263,169 @@ pub async fn delete_invoice(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct InvoiceLineItem {
+    description: String,
+    quantity: f64,
+    unit_price_cents: i64,
+    total_cents: i64,
+}
+
+/// Generate an HTML invoice and return it as a downloadable HTML file.
+/// In production, pipe this through a headless browser or wkhtmltopdf for real PDF.
+pub async fn generate_invoice_pdf(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(invoice_id): Path<Uuid>,
+) -> Result<Response, AppError> {
+    let invoice: Invoice = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE id = $1 AND tenant_id = $2",
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invoice not found".to_string()))?;
+
+    let line_items: Vec<InvoiceLineItem> = sqlx::query_as(
+        "SELECT description, quantity, unit_price_cents, total_cents FROM invoice_line_items WHERE invoice_id = $1 AND tenant_id = $2 ORDER BY sort_order",
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_all(&state.db)
+    .await?;
+
+    // Get client name
+    let client_name: String = sqlx::query_scalar(
+        "SELECT name FROM clients WHERE id = $1 AND tenant_id = $2",
+    )
+    .bind(invoice.client_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .unwrap_or_else(|| "Unknown Client".to_string());
+
+    // Get firm name
+    let firm_name: String = sqlx::query_scalar(
+        "SELECT name FROM tenants WHERE id = $1",
+    )
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .unwrap_or_else(|| "CPA Firm".to_string());
+
+    let fmt_cents = |c: i64| -> String {
+        format!("${:.2}", c as f64 / 100.0)
+    };
+
+    let due_date_str = invoice
+        .due_date
+        .map(|d| d.format("%B %d, %Y").to_string())
+        .unwrap_or_else(|| "N/A".to_string());
+
+    let issued_date_str = invoice
+        .issued_date
+        .map(|d| d.format("%B %d, %Y").to_string())
+        .unwrap_or_else(|| invoice.created_at.format("%B %d, %Y").to_string());
+
+    let mut rows_html = String::new();
+    for li in &line_items {
+        rows_html.push_str(&format!(
+            "<tr><td style='padding:8px;border-bottom:1px solid #eee'>{}</td>\
+             <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{:.2}</td>\
+             <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{}</td>\
+             <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{}</td></tr>",
+            li.description,
+            li.quantity,
+            fmt_cents(li.unit_price_cents),
+            fmt_cents(li.total_cents),
+        ));
+    }
+
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Invoice {inv_num}</title>
+<style>body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:40px;color:#333}}
+.header{{display:flex;justify-content:space-between;margin-bottom:40px}}
+.firm-name{{font-size:24px;font-weight:700;color:#1a1a1a}}
+.invoice-title{{font-size:28px;font-weight:700;color:#2563eb;text-align:right}}
+.meta{{display:flex;justify-content:space-between;margin-bottom:30px}}
+.meta-block{{line-height:1.6}}
+.meta-label{{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px}}
+table{{width:100%;border-collapse:collapse;margin-bottom:30px}}
+th{{text-align:left;padding:10px 8px;border-bottom:2px solid #333;font-size:13px;text-transform:uppercase;letter-spacing:0.5px}}
+.totals{{text-align:right;margin-top:20px}}
+.totals td{{padding:4px 8px}}
+.total-row{{font-size:18px;font-weight:700;color:#2563eb}}
+.status{{display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;text-transform:uppercase}}
+.status-paid{{background:#dcfce7;color:#166534}}
+.status-sent{{background:#dbeafe;color:#1e40af}}
+.status-draft{{background:#f3f4f6;color:#374151}}
+.status-overdue{{background:#fee2e2;color:#991b1b}}
+.notes{{margin-top:30px;padding:16px;background:#f9fafb;border-radius:8px;font-size:14px}}
+</style></head><body>
+<div class="header">
+  <div class="firm-name">{firm}</div>
+  <div class="invoice-title">INVOICE</div>
+</div>
+<div class="meta">
+  <div class="meta-block">
+    <div class="meta-label">Bill To</div>
+    <div style="font-size:16px;font-weight:600">{client}</div>
+  </div>
+  <div class="meta-block" style="text-align:right">
+    <div><span class="meta-label">Invoice #:</span> {inv_num}</div>
+    <div><span class="meta-label">Issued:</span> {issued}</div>
+    <div><span class="meta-label">Due:</span> {due}</div>
+    <div><span class="meta-label">Status:</span> <span class="status status-{status_lower}">{status}</span></div>
+  </div>
+</div>
+<table>
+  <thead><tr>
+    <th>Description</th>
+    <th style="text-align:right">Qty</th>
+    <th style="text-align:right">Unit Price</th>
+    <th style="text-align:right">Amount</th>
+  </tr></thead>
+  <tbody>{rows}</tbody>
+</table>
+<table class="totals" style="width:300px;margin-left:auto">
+  <tr><td>Subtotal</td><td>{subtotal}</td></tr>
+  <tr><td>Tax</td><td>{tax}</td></tr>
+  <tr class="total-row"><td style="border-top:2px solid #333;padding-top:8px">Total</td><td style="border-top:2px solid #333;padding-top:8px">{total}</td></tr>
+  <tr><td>Amount Paid</td><td>{paid}</td></tr>
+  <tr style="font-weight:600"><td>Balance Due</td><td>{balance}</td></tr>
+</table>
+{notes_section}
+</body></html>"#,
+        firm = firm_name,
+        client = client_name,
+        inv_num = invoice.invoice_number,
+        issued = issued_date_str,
+        due = due_date_str,
+        status = invoice.status,
+        status_lower = invoice.status.to_lowercase(),
+        rows = rows_html,
+        subtotal = fmt_cents(invoice.subtotal_cents),
+        tax = fmt_cents(invoice.tax_cents),
+        total = fmt_cents(invoice.total_cents),
+        paid = fmt_cents(invoice.amount_paid_cents),
+        balance = fmt_cents(invoice.total_cents - invoice.amount_paid_cents),
+        notes_section = invoice.notes.as_ref().map(|n| format!("<div class='notes'><strong>Notes:</strong> {}</div>", n)).unwrap_or_default(),
+    );
+
+    Ok((
+        StatusCode::OK,
+        [
+            (axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8"),
+            (
+                axum::http::header::CONTENT_DISPOSITION,
+                &format!("inline; filename=\"{}.html\"", invoice.invoice_number),
+            ),
+        ],
+        html,
+    )
+        .into_response())
 }

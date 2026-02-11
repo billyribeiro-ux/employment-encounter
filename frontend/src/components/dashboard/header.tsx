@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   Search,
   LogOut,
   User,
@@ -26,6 +25,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
+import { NotificationBell } from "@/components/notification-bell";
+import { useWebSocket } from "@/lib/hooks/use-websocket";
 
 const SEARCH_PAGES = [
   { keywords: ["dashboard", "home", "overview"], href: "/dashboard" },
@@ -36,7 +37,9 @@ const SEARCH_PAGES = [
   { keywords: ["time", "timer", "hours", "tracking"], href: "/time" },
   { keywords: ["invoice", "invoices", "billing", "payment"], href: "/invoices" },
   { keywords: ["expense", "expenses", "cost"], href: "/expenses" },
-  { keywords: ["analytics", "reports", "metrics", "chart"], href: "/analytics" },
+  { keywords: ["analytics", "metrics", "chart"], href: "/analytics" },
+  { keywords: ["report", "reports", "profit", "loss", "cashflow", "utilization"], href: "/reports" },
+  { keywords: ["message", "messages", "chat", "messaging"], href: "/messages" },
   { keywords: ["calendar", "deadline", "compliance", "filing"], href: "/calendar" },
   { keywords: ["settings", "profile", "firm", "team", "security"], href: "/settings" },
 ];
@@ -47,6 +50,9 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, setTheme } = useTheme();
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Connect WebSocket for real-time events
+  useWebSocket();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -107,31 +113,7 @@ export function Header() {
       {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Notifications</span>
-              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground">
-                Mark all read
-              </Button>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-64 overflow-y-auto">
-              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 cursor-pointer">
-                <p className="text-sm font-medium">No new notifications</p>
-                <p className="text-xs text-muted-foreground">
-                  You&apos;re all caught up! Notifications for deadlines, tasks, and invoices will appear here.
-                </p>
-              </DropdownMenuItem>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationBell />
 
         {/* Dark mode toggle */}
         <Button
