@@ -16,6 +16,13 @@ import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   useComplianceDeadlines,
   useUpdateDeadline,
   useDeleteDeadline,
@@ -61,11 +68,13 @@ function daysUntil(dateStr: string): number {
 export default function CalendarPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useComplianceDeadlines({
     page,
     per_page: 50,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
   const updateDeadline = useUpdateDeadline();
   const deleteDeadline = useDeleteDeadline();
@@ -102,6 +111,17 @@ export default function CalendarPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search deadlines..."
         />
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="overdue">Overdue</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {!isLoading && !isError && deadlines.length > 0 && (

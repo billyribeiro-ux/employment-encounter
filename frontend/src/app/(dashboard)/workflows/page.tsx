@@ -9,6 +9,13 @@ import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   useWorkflowInstances,
   useWorkflowTemplates,
   useAdvanceWorkflowStep,
@@ -32,11 +39,13 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 export default function WorkflowsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useWorkflowInstances({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
   const { data: templates } = useWorkflowTemplates();
   const advanceStep = useAdvanceWorkflowStep();
@@ -76,6 +85,17 @@ export default function WorkflowsPage() {
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search workflows..."
         />
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="paused">Paused</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {templates && templates.length > 0 && (
