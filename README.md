@@ -160,6 +160,7 @@ npm run dev
 | GET | `/api/v1/invoices` | List invoices |
 | POST | `/api/v1/invoices` | Create invoice with line items |
 | GET | `/api/v1/invoices/:id` | Get invoice |
+| DELETE | `/api/v1/invoices/:id` | Delete invoice + line items |
 | PATCH | `/api/v1/invoices/:id/status` | Update invoice status |
 | GET | `/api/v1/workflow-templates` | List workflow templates |
 | POST | `/api/v1/workflow-templates` | Create workflow template |
