@@ -170,6 +170,7 @@ npm run dev
 | GET | `/api/v1/workflows` | List workflow instances |
 | POST | `/api/v1/workflows` | Create workflow instance |
 | GET | `/api/v1/workflows/:id` | Get workflow instance |
+| DELETE | `/api/v1/workflows/:id` | Delete workflow instance + logs |
 | POST | `/api/v1/workflows/:id/advance` | Advance workflow step |
 | GET | `/api/v1/workflows/:id/logs` | Get step logs |
 | GET | `/api/v1/tasks` | List tasks |
