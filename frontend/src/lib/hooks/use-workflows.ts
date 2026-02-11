@@ -109,7 +109,7 @@ export function useCreateWorkflowInstance() {
   return useMutation({
     mutationFn: async (payload: {
       template_id: string;
-      client_id: string;
+      client_id?: string;
       name: string;
       due_date?: string;
       assigned_to?: string;

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDocuments, useDeleteDocument } from "@/lib/hooks/use-documents";
+import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dialog";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -32,10 +33,12 @@ export default function DocumentsPage() {
             Upload, organize, and search firm documents
           </p>
         </div>
-        <Button>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload
-        </Button>
+        <UploadDocumentDialog>
+          <Button>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload
+          </Button>
+        </UploadDocumentDialog>
       </div>
 
       <div className="flex items-center gap-4">
@@ -81,10 +84,12 @@ export default function DocumentsPage() {
                 Upload your first document. AI will automatically categorize and
                 extract key information.
               </p>
-              <Button>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Document
-              </Button>
+              <UploadDocumentDialog>
+                <Button>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Document
+                </Button>
+              </UploadDocumentDialog>
             </div>
           ) : (
             <div className="space-y-4">

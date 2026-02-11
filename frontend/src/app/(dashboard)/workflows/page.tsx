@@ -12,6 +12,8 @@ import {
   useWorkflowTemplates,
   useAdvanceWorkflowStep,
 } from "@/lib/hooks/use-workflows";
+import { CreateWorkflowTemplateDialog } from "@/components/dashboard/create-workflow-template-dialog";
+import { CreateWorkflowInstanceDialog } from "@/components/dashboard/create-workflow-instance-dialog";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   switch (status) {
@@ -39,10 +41,20 @@ export default function WorkflowsPage() {
             Manage client engagement workflows and task pipelines
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Workflow
-        </Button>
+        <div className="flex gap-2">
+          <CreateWorkflowTemplateDialog>
+            <Button variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              New Template
+            </Button>
+          </CreateWorkflowTemplateDialog>
+          <CreateWorkflowInstanceDialog>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Start Workflow
+            </Button>
+          </CreateWorkflowInstanceDialog>
+        </div>
       </div>
 
       {templates && templates.length > 0 && (
