@@ -39,6 +39,9 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Search Filters** — Full-stack debounced search (300ms) on all 8 data pages (clients, invoices, documents, expenses, time, tasks, workflows, calendar) with backend ILIKE filtering and pagination reset
 - **Filter Dropdowns** — Status/category/priority/billable filter dropdowns on all 8 data pages wired to backend query params with page reset
 - **Sortable Columns** — Clickable table headers with ArrowUp/ArrowDown icons on all 5 table pages (clients, invoices, documents, expenses, time), backend dynamic ORDER BY with allowlist
+- **Per-Page Selector** — Configurable page size (10/25/50/100) on all 5 table pages with page reset
+- **Pagination Info** — "Showing X–Y of Z results" display on all 7 paginated pages
+- **Reset Filters** — One-click reset button appears when any filter, search, or sort is non-default on all 5 table pages
 - **Responsive Tables** — Horizontal scroll with min-width constraints on all 5 data tables
 - **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 5 detail pages (clients, invoices, workflows, workflow templates, tasks)
 - **Error Handling** — Error boundary with retry on dashboard + auth layouts, custom 404 not-found page, route-level skeleton loading
