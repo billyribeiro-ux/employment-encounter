@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTask, useUpdateTask, useDeleteTask } from "@/lib/hooks/use-tasks";
 import { useRouter } from "next/navigation";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function priorityVariant(
   priority: string
@@ -130,16 +131,22 @@ export default function TaskDetailPage({
             <Edit className="mr-1 h-3 w-3" />
             Edit
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-            disabled={deleteTask.isPending}
+          <ConfirmDialog
+            title="Delete task?"
+            description={`This will permanently delete "${task.title}".`}
+            actionLabel="Delete"
+            onConfirm={handleDelete}
           >
-            <Trash2 className="mr-1 h-3 w-3" />
-            Delete
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteTask.isPending}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Delete
+            </Button>
+          </ConfirmDialog>
         </div>
       </div>
 

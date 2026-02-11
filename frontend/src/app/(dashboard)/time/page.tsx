@@ -10,6 +10,7 @@ import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/us
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -149,19 +150,25 @@ export default function TimePage() {
                               </Button>
                             )}
                             {!entry.invoice_id && !entry.is_running && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => {
+                              <ConfirmDialog
+                                title="Delete time entry?"
+                                description="This will permanently delete this time entry."
+                                actionLabel="Delete"
+                                onConfirm={() => {
                                   deleteEntry.mutate(entry.id, {
                                     onSuccess: () => toast.success("Time entry deleted"),
                                     onError: () => toast.error("Failed to delete entry"),
                                   });
                                 }}
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </ConfirmDialog>
                             )}
                           </div>
                         </td>
