@@ -38,7 +38,7 @@ Multi-tenant SaaS platform for CPA firms (1-50 users). Unifies client management
 - **Skeleton Loading** — Animated skeleton states on all list pages, detail pages, Kanban board, calendar, and workflow cards (zero Loader2 spinners)
 - **Search Filters** — Full-stack debounced search (300ms) on all 6 data pages with backend ILIKE filtering and pagination reset
 - **Responsive Tables** — Horizontal scroll with min-width constraints on all 5 data tables
-- **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 4 detail pages (clients, invoices, workflows, tasks)
+- **Detail Page Actions** — Delete with ConfirmDialog + redirect on all 5 detail pages (clients, invoices, workflows, workflow templates, tasks)
 
 ### 21 Frontend Routes (16 static + 5 dynamic)
 
@@ -171,6 +171,7 @@ npm run dev
 | POST | `/api/v1/workflows` | Create workflow instance |
 | GET | `/api/v1/workflows/:id` | Get workflow instance |
 | DELETE | `/api/v1/workflows/:id` | Delete workflow instance + logs |
+| DELETE | `/api/v1/workflow-templates/:id` | Delete template (guards active instances) |
 | POST | `/api/v1/workflows/:id/advance` | Advance workflow step |
 | GET | `/api/v1/workflows/:id/logs` | Get step logs |
 | GET | `/api/v1/tasks` | List tasks |
