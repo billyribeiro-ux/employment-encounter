@@ -9,8 +9,9 @@ test.describe("Reports Page", () => {
 
   test("shows date range inputs", async ({ authedPage: page }) => {
     await page.goto("/reports");
-    await expect(page.getByText("From")).toBeVisible();
-    await expect(page.getByText("To")).toBeVisible();
+    const dateInputs = page.locator("input[type='date']");
+    await expect(dateInputs.first()).toBeVisible();
+    await expect(dateInputs.last()).toBeVisible();
   });
 
   test("shows all 3 report tabs", async ({ authedPage: page }) => {

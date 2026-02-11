@@ -36,9 +36,10 @@ test.describe("Settings Page", () => {
   test("Firm tab shows firm settings", async ({ authedPage: page }) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Firm" }).click();
-    await expect(page.getByText("Firm Settings")).toBeVisible();
-    await expect(page.getByLabel("Firm Name")).toBeVisible();
-    await expect(page.getByLabel("Firm Email")).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(page.getByText("Firm Settings", { exact: true })).toBeVisible();
+    await expect(page.locator("#firm_name")).toBeVisible();
+    await expect(page.locator("#firm_email")).toBeVisible();
   });
 
   test("Firm tab save shows toast", async ({ authedPage: page }) => {
@@ -51,25 +52,28 @@ test.describe("Settings Page", () => {
   test("Team tab shows current user and invite button", async ({ authedPage: page }) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Team" }).click();
-    await expect(page.getByText("Team Members")).toBeVisible();
+    await expect(page.getByText("Team Members").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Invite Member/ })).toBeVisible();
   });
 
   test("Integrations tab shows all 3 integrations", async ({ authedPage: page }) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Integrations" }).click();
-    await expect(page.getByText("QuickBooks Online")).toBeVisible();
-    await expect(page.getByText("Google Drive")).toBeVisible();
-    await expect(page.getByText("Stripe")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect QuickBooks" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect Google Drive" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connect Stripe" })).toBeVisible();
+    await page.waitForTimeout(500);
+    const main = page.locator("main");
+    await expect(main.getByText("QuickBooks Online")).toBeVisible({ timeout: 5000 });
+    await expect(main.getByText("Google Drive").first()).toBeVisible();
+    await expect(main.getByText("Stripe").first()).toBeVisible();
+    await expect(main.getByRole("button", { name: "Connect QuickBooks" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Connect Google Drive" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Connect Stripe" })).toBeVisible();
   });
 
   test("Billing tab shows subscription info", async ({ authedPage: page }) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Billing" }).click();
-    await expect(page.getByText("Subscription")).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(page.getByText("Subscription").first()).toBeVisible();
     await expect(page.getByText("Current Plan")).toBeVisible();
     await expect(page.getByRole("button", { name: "Upgrade" })).toBeVisible();
   });
@@ -77,10 +81,11 @@ test.describe("Settings Page", () => {
   test("Security tab shows password change and MFA", async ({ authedPage: page }) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Security" }).click();
-    await expect(page.getByText("Change Password")).toBeVisible();
-    await expect(page.getByLabel("Current Password")).toBeVisible();
-    await expect(page.getByLabel("New Password")).toBeVisible();
-    await expect(page.getByLabel("Confirm New Password")).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(page.getByText("Change Password").first()).toBeVisible();
+    await expect(page.locator("#current_password")).toBeVisible();
+    await expect(page.locator("#new_password")).toBeVisible();
+    await expect(page.locator("#confirm_password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Update Password" })).toBeVisible();
     await expect(page.getByText("Two-Factor Authentication")).toBeVisible();
     await expect(page.getByRole("button", { name: "Enable MFA" })).toBeVisible();

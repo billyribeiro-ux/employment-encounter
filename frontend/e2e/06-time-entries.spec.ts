@@ -9,8 +9,8 @@ test.describe("Time Tracking Page", () => {
 
   test("shows Manual Entry and Start Timer buttons", async ({ authedPage: page }) => {
     await page.goto("/time");
-    await expect(page.getByRole("button", { name: /Manual Entry/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Start Timer/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Manual Entry/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Start Timer/ }).first()).toBeVisible();
   });
 
   test("shows search and billable filter", async ({ authedPage: page }) => {
@@ -27,14 +27,14 @@ test.describe("Time Tracking Page", () => {
 
   test("opens timer dialog", async ({ authedPage: page }) => {
     await page.goto("/time");
-    await page.getByRole("button", { name: /Start Timer/ }).click();
+    await page.getByRole("button", { name: /Start Timer/ }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
   });
 
   test("filters by billable", async ({ authedPage: page }) => {
     await page.goto("/time");
     await page.getByText("All Entries").click();
-    await page.getByRole("option", { name: "Billable" }).click();
+    await page.getByRole("option", { name: "Billable" }).first().click();
     await page.waitForTimeout(500);
     await expect(page.locator("body")).toBeVisible();
   });

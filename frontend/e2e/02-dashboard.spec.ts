@@ -7,17 +7,19 @@ test.describe("Dashboard", () => {
   });
 
   test("shows all 6 metric cards", async ({ authedPage: page }) => {
+    const main = page.locator("main");
     const metricNames = [
       "Active Clients",
-      "Documents",
       "Hours This Week",
       "Outstanding Invoices",
       "Outstanding Amount",
       "Revenue MTD",
     ];
     for (const name of metricNames) {
-      await expect(page.getByText(name)).toBeVisible();
+      await expect(main.getByText(name)).toBeVisible();
     }
+    // "Documents" collides with sidebar — check inside main
+    await expect(main.getByText("Documents").first()).toBeVisible();
   });
 
   test("shows quick action buttons", async ({ authedPage: page }) => {
@@ -56,10 +58,10 @@ test.describe("Dashboard", () => {
   });
 
   test("shows Upcoming Deadlines section", async ({ authedPage: page }) => {
-    await expect(page.getByText("Upcoming Deadlines")).toBeVisible();
+    await expect(page.locator("main").getByText("Upcoming Deadlines").first()).toBeVisible();
   });
 
   test("shows Pending Tasks section", async ({ authedPage: page }) => {
-    await expect(page.getByText("Pending Tasks")).toBeVisible();
+    await expect(page.locator("main").getByText("Pending Tasks").first()).toBeVisible();
   });
 });

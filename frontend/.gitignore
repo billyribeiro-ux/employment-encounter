@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright
+e2e/fixtures/.test-creds.json
+test-results/
+playwright-report/

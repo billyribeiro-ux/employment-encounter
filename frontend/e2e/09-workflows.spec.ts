@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures/auth";
 test.describe("Workflows Page", () => {
   test("displays page heading", async ({ authedPage: page }) => {
     await page.goto("/workflows");
-    await expect(page.getByRole("heading", { name: "Workflows" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Workflows" }).first()).toBeVisible();
     await expect(page.getByText("Manage client engagement workflows")).toBeVisible();
   });
 

@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures/auth";
 test.describe("Invoices Page", () => {
   test("displays page heading", async ({ authedPage: page }) => {
     await page.goto("/invoices");
-    await expect(page.getByRole("heading", { name: "Invoices" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Invoices" }).first()).toBeVisible();
     await expect(page.getByText("Create, send, and track")).toBeVisible();
   });
 

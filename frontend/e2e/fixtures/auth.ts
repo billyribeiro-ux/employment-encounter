@@ -1,18 +1,19 @@
 import { test as base, expect, Page } from "@playwright/test";
 
-// Unique test user credentials — timestamp ensures no collisions
-const ts = Date.now();
+/**
+ * Stable test user — always the same so the global-setup can register once
+ * and every subsequent test can log in with these creds.
+ */
 export const TEST_USER = {
-  firm_name: `E2E Test Firm ${ts}`,
+  firm_name: "E2E Playwright Firm",
   first_name: "Test",
   last_name: "User",
-  email: `e2e-${ts}@testfirm.com`,
+  email: "e2e-playwright@testfirm.com",
   password: "SecurePassword123!",
 };
 
 /**
- * Register a brand-new account via the UI.
- * After success the browser is on /dashboard with tokens in localStorage.
+ * Register via the UI. Called from global-setup.ts only.
  */
 export async function registerViaUI(page: Page) {
   await page.goto("/register");
@@ -26,7 +27,7 @@ export async function registerViaUI(page: Page) {
 }
 
 /**
- * Login with existing credentials via the UI.
+ * Login via the UI.
  */
 export async function loginViaUI(page: Page) {
   await page.goto("/login");
@@ -37,8 +38,7 @@ export async function loginViaUI(page: Page) {
 }
 
 /**
- * Login via direct API call and inject tokens into localStorage.
- * Much faster than going through the UI for every test.
+ * Login via API and inject tokens into localStorage — fast auth for every test.
  */
 export async function loginViaAPI(page: Page) {
   const res = await page.request.post("http://localhost:8080/api/v1/auth/login", {
@@ -48,7 +48,7 @@ export async function loginViaAPI(page: Page) {
     throw new Error(`API login failed: ${res.status()} ${await res.text()}`);
   }
   const body = await res.json();
-  await page.goto("/login"); // need a page context to set localStorage
+  await page.goto("/login");
   await page.evaluate(
     ({ access_token, refresh_token, user }) => {
       localStorage.setItem("access_token", access_token);
@@ -60,15 +60,15 @@ export async function loginViaAPI(page: Page) {
 }
 
 /**
- * Extended test fixture that provides an authenticated page.
- * Usage: import { test } from "./fixtures/auth";
+ * Extended test fixture: provides `authedPage` — a page already logged in.
  */
+ 
 export const test = base.extend<{ authedPage: Page }>({
-  authedPage: async ({ page }, use) => {
+  authedPage: async ({ page }, use) => {  
     await loginViaAPI(page);
     await page.goto("/dashboard");
     await page.waitForURL("**/dashboard");
-    await use(page);
+    await use(page); // eslint-disable-line
   },
 });
 

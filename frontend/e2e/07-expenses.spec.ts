@@ -3,13 +3,13 @@ import { test, expect } from "./fixtures/auth";
 test.describe("Expenses Page", () => {
   test("displays page heading", async ({ authedPage: page }) => {
     await page.goto("/expenses");
-    await expect(page.getByRole("heading", { name: "Expenses" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Expenses" }).first()).toBeVisible();
     await expect(page.getByText("Track firm and client expenses")).toBeVisible();
   });
 
   test("shows Record Expense button", async ({ authedPage: page }) => {
     await page.goto("/expenses");
-    await expect(page.getByRole("button", { name: /Record Expense/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Record Expense/ }).first()).toBeVisible();
   });
 
   test("shows search and status filter", async ({ authedPage: page }) => {

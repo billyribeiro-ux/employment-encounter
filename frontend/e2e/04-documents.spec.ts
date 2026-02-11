@@ -3,13 +3,13 @@ import { test, expect } from "./fixtures/auth";
 test.describe("Documents Page", () => {
   test("displays page heading", async ({ authedPage: page }) => {
     await page.goto("/documents");
-    await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Documents" }).first()).toBeVisible();
     await expect(page.getByText("Upload, organize, and search")).toBeVisible();
   });
 
   test("shows Upload button", async ({ authedPage: page }) => {
     await page.goto("/documents");
-    await expect(page.getByRole("button", { name: /Upload/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Upload/ }).first()).toBeVisible();
   });
 
   test("shows search input", async ({ authedPage: page }) => {
@@ -24,7 +24,7 @@ test.describe("Documents Page", () => {
 
   test("opens upload document dialog", async ({ authedPage: page }) => {
     await page.goto("/documents");
-    await page.getByRole("button", { name: /Upload/ }).first().click();
+    await page.locator("main").getByRole("button", { name: /Upload/ }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
   });
 

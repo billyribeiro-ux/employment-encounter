@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { registerViaUI, loginViaUI } from "./fixtures/auth";
+import { loginViaUI } from "./fixtures/auth";
 
 test.describe("Authentication", () => {
   test("register page renders correctly", async ({ page }) => {
@@ -16,7 +16,6 @@ test.describe("Authentication", () => {
   test("register validates required fields", async ({ page }) => {
     await page.goto("/register");
     await page.getByRole("button", { name: "Create account" }).click();
-    // Should show validation errors, not navigate away
     await expect(page).toHaveURL(/\/register/);
   });
 
@@ -31,15 +30,15 @@ test.describe("Authentication", () => {
     await expect(page.getByText("at least 12 characters")).toBeVisible();
   });
 
-  test("register a new account and land on dashboard", async ({ page }) => {
-    await registerViaUI(page);
+  test("login via UI lands on dashboard (proves global-setup registered user)", async ({ page }) => {
+    await loginViaUI(page);
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText("Dashboard")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });
 
   test("login page renders correctly", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByText("Sign in")).toBeVisible();
+    await expect(page.getByText("Sign in").first()).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
@@ -55,7 +54,6 @@ test.describe("Authentication", () => {
     await page.getByLabel("Email").fill("wrong@wrong.com");
     await page.getByLabel("Password").fill("WrongPassword123!");
     await page.getByRole("button", { name: "Sign in" }).click();
-    // Should stay on login and show a toast or error
     await expect(page).toHaveURL(/\/login/);
   });
 
