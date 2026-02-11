@@ -25,6 +25,7 @@ import {
 } from "@/lib/hooks/use-tasks";
 import { CreateTaskDialog } from "@/components/dashboard/create-task-dialog";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 const COLUMNS = [
   { id: "todo", label: "To Do", color: "bg-slate-100" },
@@ -242,14 +243,26 @@ export default function TasksPage() {
                             )}
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteTask.mutate(task.id)}
+                        <ConfirmDialog
+                          title="Delete Task"
+                          description="Are you sure you want to delete this task? This cannot be undone."
+                          onConfirm={async () => {
+                            try {
+                              await deleteTask.mutateAsync(task.id);
+                              toast.success("Task deleted");
+                            } catch {
+                              toast.error("Failed to delete task");
+                            }
+                          }}
                         >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </ConfirmDialog>
                       </div>
                     </div>
                   ))}
