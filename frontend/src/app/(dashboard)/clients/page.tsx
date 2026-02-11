@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, Loader2, Users } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Users, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useClients } from "@/lib/hooks/use-clients";
+import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
+import { toast } from "sonner";
 
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useClients({ page, per_page: 25 });
+  const deleteClient = useDeleteClient();
 
   const clients = data?.data ?? [];
   const meta = data?.meta;
@@ -105,6 +107,7 @@ export default function ClientsPage() {
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-left font-medium">Fiscal Year</th>
                       <th className="px-4 py-3 text-left font-medium">Created</th>
+                      <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -124,6 +127,23 @@ export default function ClientsPage() {
                         <td className="px-4 py-3 text-muted-foreground">{client.fiscal_year_end}</td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {new Date(client.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteClient.mutate(client.id, {
+                                onSuccess: () => toast.success("Client deleted"),
+                                onError: () => toast.error("Failed to delete client"),
+                              });
+                            }}
+                            disabled={deleteClient.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))}

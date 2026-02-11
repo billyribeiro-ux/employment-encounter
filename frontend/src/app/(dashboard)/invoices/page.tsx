@@ -95,10 +95,12 @@ export default function InvoicesPage() {
                 Create your first invoice from tracked time entries or add line
                 items manually.
               </p>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Invoice
-              </Button>
+              <CreateInvoiceDialog>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Invoice
+                </Button>
+              </CreateInvoiceDialog>
             </div>
           ) : (
             <div className="space-y-4">
