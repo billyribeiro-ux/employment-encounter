@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Clock,
   Search,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   useComplianceDeadlines,
   useUpdateDeadline,
+  useDeleteDeadline,
 } from "@/lib/hooks/use-compliance";
 import { CreateDeadlineDialog } from "@/components/dashboard/create-deadline-dialog";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
 function statusIcon(status: string) {
   switch (status) {
@@ -65,6 +68,7 @@ export default function CalendarPage() {
     search: debouncedSearch || undefined,
   });
   const updateDeadline = useUpdateDeadline();
+  const deleteDeadline = useDeleteDeadline();
 
   const deadlines = data?.data ?? [];
   const meta = data?.meta;
@@ -263,25 +267,43 @@ export default function CalendarPage() {
                           </p>
                         </div>
                       </div>
-                      {dl.status !== "completed" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={updateDeadline.isPending}
-                          onClick={() =>
-                            updateDeadline.mutate(
-                              { id: dl.id, status: "completed" },
-                              {
-                                onSuccess: () => toast.success("Deadline marked complete"),
-                                onError: () => toast.error("Failed to update deadline"),
-                              }
-                            )
-                          }
+                      <div className="flex gap-1">
+                        {dl.status !== "completed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={updateDeadline.isPending}
+                            onClick={() =>
+                              updateDeadline.mutate(
+                                { id: dl.id, status: "completed" },
+                                {
+                                  onSuccess: () => toast.success("Deadline marked complete"),
+                                  onError: () => toast.error("Failed to update deadline"),
+                                }
+                              )
+                            }
+                          >
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            Complete
+                          </Button>
+                        )}
+                        <ConfirmDialog
+                          title="Delete Deadline"
+                          description="Are you sure you want to delete this deadline? This cannot be undone."
+                          onConfirm={async () => {
+                            try {
+                              await deleteDeadline.mutateAsync(dl.id);
+                              toast.success("Deadline deleted");
+                            } catch {
+                              toast.error("Failed to delete deadline");
+                            }
+                          }}
                         >
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Complete
-                        </Button>
-                      )}
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </ConfirmDialog>
+                      </div>
                     </div>
                   </div>
                 );

@@ -136,6 +136,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/compliance-deadlines", get(compliance::handler::list_deadlines))
         .route("/compliance-deadlines", post(compliance::handler::create_deadline))
         .route("/compliance-deadlines/{id}", put(compliance::handler::update_deadline))
+        .route("/compliance-deadlines/{id}", delete(compliance::handler::delete_deadline))
         // Expenses
         .route("/expenses", get(expenses::handler::list_expenses))
         .route("/expenses", post(expenses::handler::create_expense))

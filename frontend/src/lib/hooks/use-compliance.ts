@@ -91,3 +91,15 @@ export function useUpdateDeadline() {
     },
   });
 }
+
+export function useDeleteDeadline() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/compliance-deadlines/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["compliance-deadlines"] });
+    },
+  });
+}

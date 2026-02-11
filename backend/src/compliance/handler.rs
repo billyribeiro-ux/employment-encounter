@@ -149,3 +149,21 @@ pub async fn update_deadline(
 
     Ok(Json(updated))
 }
+
+pub async fn delete_deadline(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(deadline_id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    let result = sqlx::query("DELETE FROM compliance_deadlines WHERE id = $1 AND tenant_id = $2")
+        .bind(deadline_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Deadline not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}
