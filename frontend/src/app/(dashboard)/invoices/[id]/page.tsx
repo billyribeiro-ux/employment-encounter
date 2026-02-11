@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useInvoice, useUpdateInvoiceStatus } from "@/lib/hooks/use-invoices";
 import { toast } from "sonner";
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -89,12 +90,13 @@ export default function InvoiceDetailPage({
 
   return (
     <div className="space-y-6 max-w-4xl">
+      <Breadcrumbs
+        items={[
+          { label: "Invoices", href: "/invoices" },
+          { label: invoice.invoice_number || `Invoice ${id.slice(0, 8)}` },
+        ]}
+      />
       <div className="flex items-center gap-4">
-        <Link href="/invoices">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">
@@ -160,9 +162,8 @@ export default function InvoiceDetailPage({
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground mb-1">Balance Due</p>
             <p
-              className={`text-lg font-bold ${
-                balanceDue > 0 ? "text-red-600" : "text-green-600"
-              }`}
+              className={`text-lg font-bold ${balanceDue > 0 ? "text-red-600" : "text-green-600"
+                }`}
             >
               {formatCents(balanceDue)}
             </p>

@@ -23,6 +23,7 @@ import {
   useAdvanceWorkflowStep,
   useWorkflowStepLogs,
 } from "@/lib/hooks/use-workflows";
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 
 export default function WorkflowDetailPage({
   params,
@@ -46,8 +47,8 @@ export default function WorkflowDetailPage({
         action === "completed"
           ? "Step completed"
           : action === "skipped"
-          ? "Step skipped"
-          : "Step returned"
+            ? "Step skipped"
+            : "Step returned"
       );
     } catch {
       toast.error("Failed to advance workflow");
@@ -87,12 +88,13 @@ export default function WorkflowDetailPage({
 
   return (
     <div className="space-y-6 max-w-4xl">
+      <Breadcrumbs
+        items={[
+          { label: "Workflows", href: "/workflows" },
+          { label: instance.name },
+        ]}
+      />
       <div className="flex items-center gap-4">
-        <Link href="/workflows">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">
@@ -149,32 +151,29 @@ export default function WorkflowDetailPage({
                 return (
                   <div
                     key={i}
-                    className={`flex items-start gap-3 rounded-lg p-3 ${
-                      isCurrent
+                    className={`flex items-start gap-3 rounded-lg p-3 ${isCurrent
                         ? "bg-primary/5 border border-primary/20"
                         : "border border-transparent"
-                    }`}
+                      }`}
                   >
                     {isCompleted ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                     ) : (
                       <Circle
-                        className={`h-5 w-5 mt-0.5 shrink-0 ${
-                          isCurrent
+                        className={`h-5 w-5 mt-0.5 shrink-0 ${isCurrent
                             ? "text-primary"
                             : "text-muted-foreground/30"
-                        }`}
+                          }`}
                       />
                     )}
                     <div className="flex-1">
                       <p
-                        className={`text-sm font-medium ${
-                          isCompleted
+                        className={`text-sm font-medium ${isCompleted
                             ? "text-muted-foreground line-through"
                             : isCurrent
-                            ? "text-primary"
-                            : ""
-                        }`}
+                              ? "text-primary"
+                              : ""
+                          }`}
                       >
                         Step {i + 1}: {step.name}
                       </p>
@@ -244,17 +243,16 @@ export default function WorkflowDetailPage({
                   {i > 0 && <Separator className="mb-3" />}
                   <div className="flex items-start gap-3">
                     <div
-                      className={`h-2 w-2 rounded-full mt-2 shrink-0 ${
-                        log.action === "completed"
+                      className={`h-2 w-2 rounded-full mt-2 shrink-0 ${log.action === "completed"
                           ? "bg-green-500"
                           : log.action === "started"
-                          ? "bg-blue-500"
-                          : log.action === "skipped"
-                          ? "bg-amber-500"
-                          : log.action === "returned"
-                          ? "bg-red-500"
-                          : "bg-muted-foreground"
-                      }`}
+                            ? "bg-blue-500"
+                            : log.action === "skipped"
+                              ? "bg-amber-500"
+                              : log.action === "returned"
+                                ? "bg-red-500"
+                                : "bg-muted-foreground"
+                        }`}
                     />
                     <div className="flex-1">
                       <p className="text-sm">

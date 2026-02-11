@@ -21,6 +21,7 @@ import { useClient } from "@/lib/hooks/use-clients";
 import { useDocuments } from "@/lib/hooks/use-documents";
 import { useTimeEntries } from "@/lib/hooks/use-time-entries";
 import { useInvoices } from "@/lib/hooks/use-invoices";
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -78,12 +79,13 @@ export default function ClientDetailPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Clients", href: "/clients" },
+          { label: client.name },
+        ]}
+      />
       <div className="flex items-center gap-4">
-        <Link href="/clients">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>

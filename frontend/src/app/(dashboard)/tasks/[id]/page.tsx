@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useTask, useUpdateTask, useDeleteTask } from "@/lib/hooks/use-tasks";
 import { useRouter } from "next/navigation";
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 
 function priorityVariant(
   priority: string
@@ -108,12 +109,13 @@ export default function TaskDetailPage({
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <Breadcrumbs
+        items={[
+          { label: "Tasks", href: "/tasks" },
+          { label: task.title },
+        ]}
+      />
       <div className="flex items-center gap-4">
-        <Link href="/tasks">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{task.title}</h1>
           <div className="flex items-center gap-2 mt-1">
