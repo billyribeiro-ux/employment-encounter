@@ -23,6 +23,20 @@ pub async fn list_time_entries(
 
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
+    let sort_col = match params.sort.as_deref() {
+        Some("description") => "description",
+        Some("duration_minutes") => "duration_minutes",
+        Some("date") => "date",
+        Some("is_billable") => "is_billable",
+        Some("created_at") => "created_at",
+        _ => "date",
+    };
+    let sort_dir = match params.order.as_deref() {
+        Some("asc") => "ASC",
+        _ => "DESC",
+    };
+    let order_clause = format!("ORDER BY {} {}", sort_col, sort_dir);
+
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
             "SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1 AND LOWER(COALESCE(description, '')) LIKE $2",
@@ -42,7 +56,7 @@ pub async fn list_time_entries(
 
     let entries: Vec<TimeEntry> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 AND LOWER(COALESCE(description, '')) LIKE $2 ORDER BY date DESC, created_at DESC LIMIT $3 OFFSET $4",
+            &format!("SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 AND LOWER(COALESCE(description, '')) LIKE $2 {} LIMIT $3 OFFSET $4", order_clause),
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -52,7 +66,7 @@ pub async fn list_time_entries(
         .await?
     } else {
         sqlx::query_as(
-            "SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 ORDER BY date DESC, created_at DESC LIMIT $2 OFFSET $3",
+            &format!("SELECT id, tenant_id, user_id, client_id, description, duration_minutes, rate_cents, is_billable, is_running, started_at, stopped_at, date, invoice_id, created_at, updated_at FROM time_entries WHERE tenant_id = $1 {} LIMIT $2 OFFSET $3", order_clause),
         )
         .bind(claims.tid)
         .bind(per_page)

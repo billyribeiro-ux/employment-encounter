@@ -23,6 +23,19 @@ pub async fn list_expenses(
 
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
+    let sort_col = match params.sort.as_deref() {
+        Some("description") => "description",
+        Some("category") => "category",
+        Some("amount_cents") => "amount_cents",
+        Some("status") => "status",
+        Some("date") => "date",
+        _ => "date",
+    };
+    let sort_dir = match params.order.as_deref() {
+        Some("asc") => "ASC",
+        _ => "DESC",
+    };
+
     let mut where_clause = String::from("WHERE tenant_id = $1");
     let mut param_idx = 2;
 
@@ -36,7 +49,7 @@ pub async fn list_expenses(
     }
 
     let count_sql = format!("SELECT COUNT(*) FROM expenses {}", where_clause);
-    let list_sql = format!("SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses {} ORDER BY date DESC LIMIT ${} OFFSET ${}", where_clause, param_idx, param_idx + 1);
+    let list_sql = format!("SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses {} ORDER BY {} {} LIMIT ${} OFFSET ${}", where_clause, sort_col, sort_dir, param_idx, param_idx + 1);
 
     let mut count_query = sqlx::query_as::<_, (i64,)>(&count_sql).bind(claims.tid);
     let mut list_query = sqlx::query_as::<_, Expense>(&list_sql).bind(claims.tid);

@@ -25,6 +25,8 @@ export function useExpenses(params?: {
   category?: string;
   status?: string;
   search?: string;
+  sort?: string;
+  order?: string;
 }) {
   return useQuery({
     queryKey: ["expenses", params],

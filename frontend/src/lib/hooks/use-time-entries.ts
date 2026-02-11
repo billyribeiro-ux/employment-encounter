@@ -38,6 +38,8 @@ export function useTimeEntries(params?: {
   date_to?: string;
   is_billable?: boolean;
   search?: string;
+  sort?: string;
+  order?: string;
 }) {
   return useQuery({
     queryKey: ["time-entries", params],

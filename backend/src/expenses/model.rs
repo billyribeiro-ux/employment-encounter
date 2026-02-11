@@ -40,4 +40,6 @@ pub struct ListExpensesQuery {
     pub category: Option<String>,
     pub status: Option<String>,
     pub search: Option<String>,
+    pub sort: Option<String>,
+    pub order: Option<String>,
 }

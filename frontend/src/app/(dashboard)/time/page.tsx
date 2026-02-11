@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Trash2, Search } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -31,15 +31,34 @@ export default function TimePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
   const [billableFilter, setBillableFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useTimeEntries({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
     is_billable: billableFilter === "all" ? undefined : billableFilter === "billable",
+    sort: sortBy,
+    order: sortOrder,
   });
   const stopTimer = useStopTimer();
   const deleteEntry = useDeleteTimeEntry();
+
+  function toggleSort(col: string) {
+    if (sortBy === col) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortOrder(col === "date" ? "desc" : "asc");
+    }
+    setPage(1);
+  }
+
+  function sortIcon(col: string) {
+    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  }
 
   const entries = data?.data ?? [];
   const meta = data?.meta;
@@ -137,10 +156,18 @@ export default function TimePage() {
                 <table className="w-full text-sm min-w-[700px]">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium">Description</th>
-                      <th className="px-4 py-3 text-left font-medium">Date</th>
-                      <th className="px-4 py-3 text-left font-medium">Duration</th>
-                      <th className="px-4 py-3 text-left font-medium">Billable</th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("description")}>
+                        <span className="flex items-center">Description{sortIcon("description")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("date")}>
+                        <span className="flex items-center">Date{sortIcon("date")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("duration_minutes")}>
+                        <span className="flex items-center">Duration{sortIcon("duration_minutes")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("is_billable")}>
+                        <span className="flex items-center">Billable{sortIcon("is_billable")}</span>
+                      </th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>

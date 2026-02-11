@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Search, FileText, Trash2 } from "lucide-react";
+import { Upload, Search, FileText, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -31,14 +31,33 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("created_at");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
   const [page, setPage] = useState(1);
   const { data, isLoading, isError } = useDocuments({
     page,
     per_page: 25,
     search: debouncedSearch || undefined,
     category: categoryFilter !== "all" ? categoryFilter : undefined,
+    sort: sortBy,
+    order: sortOrder,
   });
   const deleteDoc = useDeleteDocument();
+
+  function toggleSort(col: string) {
+    if (sortBy === col) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortOrder(col === "created_at" ? "desc" : "asc");
+    }
+    setPage(1);
+  }
+
+  function sortIcon(col: string) {
+    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
+    return sortOrder === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  }
 
   const documents = data?.data ?? [];
   const meta = data?.meta;
@@ -133,11 +152,19 @@ export default function DocumentsPage() {
                 <table className="w-full text-sm min-w-[600px]">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium">Name</th>
-                      <th className="px-4 py-3 text-left font-medium">Category</th>
-                      <th className="px-4 py-3 text-left font-medium">Size</th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                        <span className="flex items-center">Name{sortIcon("name")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("category")}>
+                        <span className="flex items-center">Category{sortIcon("category")}</span>
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("size_bytes")}>
+                        <span className="flex items-center">Size{sortIcon("size_bytes")}</span>
+                      </th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
-                      <th className="px-4 py-3 text-left font-medium">Uploaded</th>
+                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                        <span className="flex items-center">Uploaded{sortIcon("created_at")}</span>
+                      </th>
                       <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
