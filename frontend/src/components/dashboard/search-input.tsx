@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,13 +18,22 @@ export function SearchInput({
   placeholder = "Search...",
   className,
 }: SearchInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className={`relative flex-1 max-w-sm ${className ?? ""}`}>
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
+        ref={inputRef}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            onChange("");
+            inputRef.current?.blur();
+          }
+        }}
         className="pl-9 pr-8"
       />
       {value && (
