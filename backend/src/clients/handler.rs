@@ -23,6 +23,19 @@ pub async fn list_clients(
     let status_filter = params.status.as_deref().unwrap_or("active");
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
+    let sort_col = match params.sort.as_deref() {
+        Some("name") => "name",
+        Some("business_type") => "business_type",
+        Some("status") => "status",
+        Some("created_at") => "created_at",
+        _ => "name",
+    };
+    let sort_dir = match params.order.as_deref() {
+        Some("desc") => "DESC",
+        _ => "ASC",
+    };
+    let order_clause = format!("ORDER BY {} {}", sort_col, sort_dir);
+
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
             "SELECT COUNT(*) FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL AND (LOWER(name) LIKE $3 OR LOWER(COALESCE(business_type, '')) LIKE $3)",
@@ -44,7 +57,7 @@ pub async fn list_clients(
 
     let clients: Vec<Client> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL AND (LOWER(name) LIKE $3 OR LOWER(COALESCE(business_type, '')) LIKE $3) ORDER BY name ASC LIMIT $4 OFFSET $5",
+            &format!("SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL AND (LOWER(name) LIKE $3 OR LOWER(COALESCE(business_type, '')) LIKE $3) {} LIMIT $4 OFFSET $5", order_clause),
         )
         .bind(claims.tid)
         .bind(status_filter)
@@ -55,7 +68,7 @@ pub async fn list_clients(
         .await?
     } else {
         sqlx::query_as(
-            "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL ORDER BY name ASC LIMIT $3 OFFSET $4",
+            &format!("SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at FROM clients WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL {} LIMIT $3 OFFSET $4", order_clause),
         )
         .bind(claims.tid)
         .bind(status_filter)

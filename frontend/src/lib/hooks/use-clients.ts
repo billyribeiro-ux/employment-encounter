@@ -54,6 +54,8 @@ export function useClients(params?: {
   per_page?: number;
   status?: string;
   search?: string;
+  sort?: string;
+  order?: string;
 }) {
   return useQuery({
     queryKey: ["clients", params],
