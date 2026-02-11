@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Plus, Receipt, Search, Filter, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/dashboard/search-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks/use-invoices";
@@ -64,15 +64,11 @@ export default function InvoicesPage() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search invoices..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={(v) => { setSearchQuery(v); setPage(1); }}
+          placeholder="Search invoices..."
+        />
         <Button variant="outline" size="sm">
           <Filter className="mr-2 h-4 w-4" />
           Filters

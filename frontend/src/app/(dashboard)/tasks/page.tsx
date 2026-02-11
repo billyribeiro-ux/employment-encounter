@@ -26,6 +26,7 @@ import {
 import { CreateTaskDialog } from "@/components/dashboard/create-task-dialog";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { SearchInput } from "@/components/dashboard/search-input";
 
 const COLUMNS = [
   { id: "todo", label: "To Do", color: "bg-slate-100" },
@@ -110,15 +111,11 @@ export default function TasksPage() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={(v) => setSearchQuery(v)}
+          placeholder="Search tasks..."
+        />
       </div>
 
       {isLoading ? (
