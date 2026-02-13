@@ -38,6 +38,14 @@ mod email_templates;
 mod question_bank;
 mod saved_jobs;
 
+// Next-level hiring modules
+mod approvals;
+mod assessments;
+mod onboarding;
+mod pipeline_stages;
+mod referrals;
+mod talent_pools;
+
 use axum::{
     extract::Request,
     http::{header, HeaderValue, Method},
@@ -388,6 +396,35 @@ async fn main() -> anyhow::Result<()> {
         // Activity Log
         .route("/activity", get(activity::handler::list_activity))
         .route("/activity/stats", get(activity::handler::get_activity_stats))
+        // Pipeline stages
+        .route("/pipeline-templates", get(pipeline_stages::handler::list_templates))
+        .route("/pipeline-templates", post(pipeline_stages::handler::create_template))
+        // Approvals
+        .route("/approvals", get(approvals::handler::list_requests))
+        .route("/approvals", post(approvals::handler::create_request))
+        .route("/approvals/{id}/decide", post(approvals::handler::decide_request))
+        // Referrals
+        .route("/referrals", get(referrals::handler::list_referrals))
+        .route("/referrals", post(referrals::handler::create_referral))
+        // Talent pools
+        .route("/talent-pools", get(talent_pools::handler::list_pools))
+        .route("/talent-pools", post(talent_pools::handler::create_pool))
+        .route("/talent-pools/{id}/members", get(talent_pools::handler::list_members))
+        .route("/talent-pools/{id}/members", post(talent_pools::handler::add_member))
+        // Assessments
+        .route("/assessments", get(assessments::handler::list_assessments))
+        .route("/assessments", post(assessments::handler::create_assessment))
+        .route("/assessments/{id}/submissions", get(assessments::handler::list_submissions))
+        // Onboarding
+        .route("/onboarding/templates", get(onboarding::handler::list_templates))
+        .route("/onboarding", get(onboarding::handler::list_instances))
+        .route("/onboarding", post(onboarding::handler::create_instance))
+        .route("/onboarding/{id}/progress", put(onboarding::handler::update_progress))
+        // Compliance / GDPR
+        .route("/compliance/consent", get(compliance::handler::list_consent_records))
+        .route("/compliance/deletion-requests", get(compliance::handler::list_deletion_requests))
+        .route("/compliance/deletion-requests", post(compliance::handler::create_deletion_request))
+        .route("/compliance/retention-policies", get(compliance::handler::list_retention_policies))
         // Audit logs (admin only)
         .route("/audit-logs", get(middleware::audit_handler::list_audit_logs))
         // MFA

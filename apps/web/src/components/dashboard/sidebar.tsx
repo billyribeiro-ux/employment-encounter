@@ -34,6 +34,19 @@ import {
   Zap,
   Heart,
   FileSearch,
+  Kanban,
+  Layers,
+  ShieldCheck,
+  ClipboardList,
+  VideoIcon,
+  UserPlus,
+  Handshake,
+  BookOpen,
+  GraduationCap,
+  DollarSign,
+  Shield,
+  SearchCheck,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,13 +61,34 @@ const sections: NavSection[] = [
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Jobs & Pipeline", href: "/hiring", icon: Briefcase },
+      { name: "Pipeline Board", href: "/hiring/pipeline", icon: Kanban },
+      { name: "Custom Stages", href: "/hiring/stages", icon: Layers },
       { name: "Evaluation Center", href: "/hiring/evaluate", icon: ClipboardCheck },
       { name: "Talent Discovery", href: "/talent", icon: Search },
-      { name: "Shortlisted", href: "/hiring/evaluate?tab=shortlisted", icon: Star },
+      { name: "Advanced Search", href: "/hiring/search", icon: SearchCheck },
       { name: "Offers", href: "/hiring/offers", icon: FileSignature },
-      { name: "Templates", href: "/hiring/templates", icon: Mail },
+      { name: "Negotiations", href: "/hiring/negotiations", icon: Scale },
+      { name: "Approvals", href: "/hiring/approvals", icon: ShieldCheck },
       { name: "Career Page", href: "/hiring/career-page", icon: Globe },
       { name: "Team", href: "/hiring/team", icon: Users },
+    ],
+  },
+  {
+    label: "Evaluation",
+    items: [
+      { name: "Scorecards", href: "/hiring/scorecards", icon: ClipboardList },
+      { name: "Assessments", href: "/hiring/assessments", icon: GraduationCap },
+      { name: "Video Interviews", href: "/hiring/video-interviews", icon: VideoIcon },
+      { name: "Reference Checks", href: "/hiring/references", icon: BookOpen },
+    ],
+  },
+  {
+    label: "Talent",
+    items: [
+      { name: "Referral Portal", href: "/hiring/referrals", icon: Handshake },
+      { name: "Talent Pools", href: "/hiring/talent-pools", icon: UserPlus },
+      { name: "Onboarding", href: "/hiring/onboarding", icon: GraduationCap },
+      { name: "Compensation", href: "/hiring/compensation", icon: DollarSign },
     ],
   },
   {
@@ -78,15 +112,17 @@ const sections: NavSection[] = [
     ],
   },
   {
-    label: "Manage",
+    label: "Operations",
     items: [
       { name: "Documents", href: "/documents", icon: FileText },
       { name: "Workflows", href: "/workflows", icon: FolderOpen },
       { name: "Tasks", href: "/tasks", icon: CheckSquare },
       { name: "Calendar", href: "/calendar", icon: Calendar },
+      { name: "Templates", href: "/hiring/templates", icon: Mail },
       { name: "Activity Log", href: "/hiring/activity", icon: Activity },
       { name: "Integrations", href: "/hiring/integrations", icon: Plug },
       { name: "Import", href: "/hiring/import", icon: Upload },
+      { name: "Compliance / GDPR", href: "/hiring/compliance", icon: Shield },
     ],
   },
   {

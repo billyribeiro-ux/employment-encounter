@@ -14,13 +14,23 @@ import {
   ClipboardCheck,
   Search,
   Eye,
+  Zap,
+  Target,
+  Timer,
+  Star,
+  Brain,
+  Handshake,
+  UserPlus,
+  Activity,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
 import { useJobs } from "@/lib/hooks/use-jobs";
@@ -510,6 +520,147 @@ export default function DashboardPage() {
                       <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
                     </div>
                   </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 4 - Advanced KPIs */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Timer className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs font-medium text-muted-foreground">Time to Hire</span>
+                  </div>
+                  <p className="text-2xl font-bold">23d</p>
+                  <div className="flex items-center text-[10px] text-green-600 mt-0.5">
+                    <TrendingDown className="h-3 w-3 mr-0.5" />
+                    5 days faster
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="h-4 w-4 text-rose-600" />
+                    <span className="text-xs font-medium text-muted-foreground">Offer Accept Rate</span>
+                  </div>
+                  <p className="text-2xl font-bold">82%</p>
+                  <div className="flex items-center text-[10px] text-green-600 mt-0.5">
+                    <TrendingUp className="h-3 w-3 mr-0.5" />
+                    +7% vs last quarter
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Handshake className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-medium text-muted-foreground">Hires This Month</span>
+                  </div>
+                  <p className="text-2xl font-bold">7</p>
+                  <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
+                    Target: 10
+                    <Progress value={70} className="ml-2 h-1.5 w-16" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserPlus className="h-4 w-4 text-indigo-600" />
+                    <span className="text-xs font-medium text-muted-foreground">Referral Hires</span>
+                  </div>
+                  <p className="text-2xl font-bold">3</p>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    43% of total hires
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star className="h-4 w-4 text-amber-600" />
+                    <span className="text-xs font-medium text-muted-foreground">Candidate NPS</span>
+                  </div>
+                  <p className="text-2xl font-bold">72</p>
+                  <div className="flex items-center text-[10px] text-green-600 mt-0.5">
+                    <TrendingUp className="h-3 w-3 mr-0.5" />
+                    Excellent
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Row 5 - Source Breakdown + Activity Feed */}
+          <div className="grid gap-6 lg:grid-cols-5">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base">Hiring Sources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { source: "LinkedIn", count: 34, percent: 38, color: "bg-blue-500" },
+                    { source: "Referrals", count: 22, percent: 24, color: "bg-emerald-500" },
+                    { source: "Career Page", count: 18, percent: 20, color: "bg-purple-500" },
+                    { source: "Indeed", count: 10, percent: 11, color: "bg-amber-500" },
+                    { source: "Other", count: 6, percent: 7, color: "bg-gray-400" },
+                  ].map((item) => (
+                    <div key={item.source}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span>{item.source}</span>
+                        <span className="text-xs text-muted-foreground">{item.count} ({item.percent}%)</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.percent}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Recent Activity</CardTitle>
+                <Link href="/hiring/activity">
+                  <Button variant="ghost" size="sm" className="text-xs">
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { icon: UserPlus, text: "Sarah Chen accepted offer for Senior Engineer", time: "2 hours ago", color: "text-green-600" },
+                    { icon: ClipboardCheck, text: "Interview scorecard submitted for Marcus J.", time: "4 hours ago", color: "text-blue-600" },
+                    { icon: Briefcase, text: "New job posted: Product Manager, Growth", time: "6 hours ago", color: "text-purple-600" },
+                    { icon: Brain, text: "AI matched 12 candidates for Data Scientist role", time: "8 hours ago", color: "text-indigo-600" },
+                    { icon: Zap, text: "Auto-rejection sent to 5 unqualified applicants", time: "1 day ago", color: "text-amber-600" },
+                    { icon: Activity, text: "Pipeline report generated for Q1 review", time: "1 day ago", color: "text-muted-foreground" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className={`mt-0.5 ${item.color}`}>
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{item.text}</p>
+                        <p className="text-xs text-muted-foreground">{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
