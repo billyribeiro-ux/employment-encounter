@@ -113,6 +113,30 @@ pub async fn create_document(
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
+    // Enforce 50MB file size limit
+    const MAX_FILE_SIZE: i64 = 50 * 1024 * 1024; // 50MB
+    if payload.size_bytes > MAX_FILE_SIZE {
+        return Err(AppError::Validation(format!(
+            "File too large. Maximum size is 50MB, got {}MB",
+            payload.size_bytes / (1024 * 1024)
+        )));
+    }
+
+    // Validate MIME type
+    let allowed_types = [
+        "application/pdf", "image/jpeg", "image/png", "image/tiff",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel", "text/csv",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+    ];
+    if !allowed_types.iter().any(|t| payload.mime_type.starts_with(t)) {
+        return Err(AppError::Validation(format!(
+            "Unsupported file type: {}. Allowed: PDF, JPEG, PNG, TIFF, Excel, CSV, Word",
+            payload.mime_type
+        )));
+    }
+
     let id = Uuid::new_v4();
     let s3_key = format!(
         "tenants/{}/documents/{}/{}",

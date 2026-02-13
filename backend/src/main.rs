@@ -29,6 +29,8 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use axum::response::Response as AxumResponse;
+
 use config::Config;
 
 #[derive(Clone)]
@@ -38,6 +40,18 @@ pub struct AppState {
     pub ws_broadcast: ws::WsBroadcast,
     pub rate_limiter: middleware::rate_limit::RateLimiter,
     pub redis: Option<std::sync::Arc<fred::clients::RedisClient>>,
+}
+
+async fn security_headers(req: axum::extract::Request, next: axum::middleware::Next) -> AxumResponse {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    headers.insert(axum::http::header::HeaderName::from_static("x-content-type-options"), "nosniff".parse().unwrap());
+    headers.insert(axum::http::header::HeaderName::from_static("x-frame-options"), "DENY".parse().unwrap());
+    headers.insert(axum::http::header::HeaderName::from_static("x-xss-protection"), "1; mode=block".parse().unwrap());
+    headers.insert(axum::http::header::HeaderName::from_static("strict-transport-security"), "max-age=31536000; includeSubDomains".parse().unwrap());
+    headers.insert(axum::http::header::HeaderName::from_static("referrer-policy"), "strict-origin-when-cross-origin".parse().unwrap());
+    headers.insert(axum::http::header::HeaderName::from_static("permissions-policy"), "camera=(), microphone=(), geolocation=()".parse().unwrap());
+    response
 }
 
 #[tokio::main]
@@ -192,7 +206,7 @@ async fn main() -> anyhow::Result<()> {
         // Expenses
         .route("/expenses", get(expenses::handler::list_expenses))
         .route("/expenses", post(expenses::handler::create_expense))
-        .route("/expenses/{id}", delete(expenses::handler::delete_expense))
+        .route("/expenses/{id}", get(expenses::handler::get_expense).put(expenses::handler::update_expense).delete(expenses::handler::delete_expense))
         // Notifications
         .route("/notifications", get(notifications::handler::list_notifications))
         .route("/notifications", post(notifications::handler::create_notification))
@@ -230,6 +244,10 @@ async fn main() -> anyhow::Result<()> {
         // Auth (protected)
         .route("/auth/me", get(auth::handler::get_me))
         .route("/auth/logout", post(auth::handler::logout))
+        // Password change (protected)
+        .route("/auth/change-password", post(auth::handler::change_password))
+        // Email verification request (protected)
+        .route("/auth/request-verification", post(auth::handler::request_email_verification))
         // Audit log middleware (runs after auth, before handlers)
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
@@ -249,6 +267,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/auth/register", post(auth::handler::register))
         .route("/api/v1/auth/login", post(auth::handler::login))
         .route("/api/v1/auth/refresh", post(auth::handler::refresh_token))
+        .route("/api/v1/auth/forgot-password", post(auth::handler::forgot_password))
+        .route("/api/v1/auth/reset-password", post(auth::handler::reset_password))
+        .route("/api/v1/auth/verify-email", post(auth::handler::verify_email))
+        .route("/api/v1/auth/accept-invite", post(auth::handler::accept_invite))
         // WebSocket
         .route("/api/v1/ws", get(ws::ws_handler))
         // Stripe webhook (public, verified by signature)
@@ -262,6 +284,7 @@ async fn main() -> anyhow::Result<()> {
         ))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
+        .layer(axum_mw::from_fn(security_headers))
         .with_state(state);
 
     // Start server
