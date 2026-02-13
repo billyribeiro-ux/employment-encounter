@@ -60,3 +60,16 @@ pub struct ListTasksQuery {
     pub client_id: Option<Uuid>,
     pub search: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct BulkTaskIdsRequest {
+    pub ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BulkTaskUpdateRequest {
+    pub ids: Vec<Uuid>,
+    pub status: Option<String>,
+    pub assigned_to: Option<Uuid>,
+    pub priority: Option<String>,
+}

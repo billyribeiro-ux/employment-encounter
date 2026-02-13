@@ -61,3 +61,8 @@ pub struct ListDocumentsQuery {
     pub sort: Option<String>,
     pub order: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct BulkDocumentIdsRequest {
+    pub ids: Vec<Uuid>,
+}

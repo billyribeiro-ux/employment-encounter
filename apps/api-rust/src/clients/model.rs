@@ -83,3 +83,8 @@ pub struct PaginationMeta {
     pub total: i64,
     pub total_pages: i64,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct BulkIdsRequest {
+    pub ids: Vec<Uuid>,
+}

@@ -110,3 +110,31 @@ export function useDeleteDocument() {
     },
   });
 }
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+export function useBulkDeleteDocuments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.post<{ deleted: number }>("/documents/bulk-delete", { ids });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}
+
+// ── Download ─────────────────────────────────────────────────────────
+
+export function useDocumentDownloadUrl(id: string) {
+  return useQuery({
+    queryKey: ["documents", id, "download"],
+    queryFn: async () => {
+      const { data } = await api.get<{ url: string }>(`/documents/${id}/download`);
+      return data.url;
+    },
+    enabled: false, // only fetch on demand
+  });
+}

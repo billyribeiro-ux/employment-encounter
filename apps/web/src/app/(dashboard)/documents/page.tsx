@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Upload, Search, FileText, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,21 @@ import { UploadDocumentDialog } from "@/components/dashboard/upload-document-dia
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+};
+
+const tableRow = {
+  hidden: { opacity: 0, x: -8 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -64,8 +80,8 @@ export default function DocumentsPage() {
   const meta = data?.meta;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div className="space-y-6" variants={stagger} initial="hidden" animate="visible">
+      <motion.div variants={fadeUp} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
           <p className="text-muted-foreground">
@@ -78,16 +94,16 @@ export default function DocumentsPage() {
             Upload
           </Button>
         </UploadDocumentDialog>
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-4 flex-wrap">
+      <motion.div variants={fadeUp} className="flex items-center gap-4 flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search documents..."
         />
         <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[150px] bg-muted/50 border-0">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -111,170 +127,172 @@ export default function DocumentsPage() {
             Reset
           </Button>
         )}
-      </div>
+      </motion.div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            All Documents
-            {meta && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({meta.total})
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <TableSkeleton columns={5} rows={5} />
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-sm text-destructive">
-                Failed to load documents. Make sure the backend is running.
-              </p>
-            </div>
-          ) : documents.length === 0 && debouncedSearch ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                No documents match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">No documents yet</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                Upload your first document. AI will automatically categorize and
-                extract key information.
-              </p>
-              <UploadDocumentDialog>
-                <Button>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Document
-                </Button>
-              </UploadDocumentDialog>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm min-w-[600px]">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("name")}>
-                        <span className="flex items-center">Name{sortIcon("name")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("category")}>
-                        <span className="flex items-center">Category{sortIcon("category")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("size_bytes")}>
-                        <span className="flex items-center">Size{sortIcon("size_bytes")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium">Status</th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
-                        <span className="flex items-center">Uploaded{sortIcon("created_at")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {documents.map((doc) => (
-                      <tr key={doc.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-4 py-3 font-medium">{doc.filename}</td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {doc.category || "Uncategorized"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {formatBytes(doc.size_bytes)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              doc.verification_status === "verified"
-                                ? "default"
-                                : doc.verification_status === "pending"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                          >
-                            {doc.verification_status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {new Date(doc.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <ConfirmDialog
-                            title="Delete document?"
-                            description={`This will permanently delete "${doc.filename}".`}
-                            actionLabel="Delete"
-                            onConfirm={() => {
-                              deleteDoc.mutate(doc.id, {
-                                onSuccess: () => toast.success("Document deleted"),
-                                onError: () => toast.error("Failed to delete document"),
-                              });
-                            }}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </ConfirmDialog>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {meta && (meta.total_pages > 1 || meta.total > 10) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
-                    </p>
-                    <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                      <SelectTrigger className="w-[70px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= meta.total_pages}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
+      <motion.div variants={fadeUp}>
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">
+              All Documents
+              {meta && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({meta.total})
+                </span>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <TableSkeleton columns={5} rows={5} />
+            ) : isError ? (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-sm text-destructive">
+                  Failed to load documents. Make sure the backend is running.
+                </p>
+              </motion.div>
+            ) : documents.length === 0 && debouncedSearch ? (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
+                <Search className="h-8 w-8 text-muted-foreground mb-3" />
+                <h3 className="text-lg font-semibold mb-1">No results found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  No documents match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+                </p>
+              </motion.div>
+            ) : documents.length === 0 ? (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">No documents yet</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                  Upload your first document. AI will automatically categorize and
+                  extract key information.
+                </p>
+                <UploadDocumentDialog>
+                  <Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Document
+                  </Button>
+                </UploadDocumentDialog>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-md border overflow-hidden overflow-x-auto">
+                  <table className="w-full text-sm min-w-[600px]">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                          <span className="flex items-center">Name{sortIcon("name")}</span>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("category")}>
+                          <span className="flex items-center">Category{sortIcon("category")}</span>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("size_bytes")}>
+                          <span className="flex items-center">Size{sortIcon("size_bytes")}</span>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
+                          <span className="flex items-center">Uploaded{sortIcon("created_at")}</span>
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <motion.tbody variants={stagger} initial="hidden" animate="visible">
+                      {documents.map((doc) => (
+                        <motion.tr key={doc.id} variants={tableRow} className="border-b last:border-0 hover:bg-muted/30 transition-colors group">
+                          <td className="px-4 py-3 font-medium">{doc.filename}</td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {doc.category || "Uncategorized"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {formatBytes(doc.size_bytes)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={
+                                doc.verification_status === "verified"
+                                  ? "default"
+                                  : doc.verification_status === "pending"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {doc.verification_status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <ConfirmDialog
+                              title="Delete document?"
+                              description={`This will permanently delete "${doc.filename}".`}
+                              actionLabel="Delete"
+                              onConfirm={() => {
+                                deleteDoc.mutate(doc.id, {
+                                  onSuccess: () => toast.success("Document deleted"),
+                                  onError: () => toast.error("Failed to delete document"),
+                                });
+                              }}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </ConfirmDialog>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </motion.tbody>
+                  </table>
+                </div>
+
+                {meta && (meta.total_pages > 1 || meta.total > 10) && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
+                      </p>
+                      <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
+                        <SelectTrigger className="w-[70px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => p - 1)}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page >= meta.total_pages}
+                        onClick={() => setPage((p) => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }

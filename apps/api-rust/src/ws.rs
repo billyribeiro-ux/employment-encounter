@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
+use tokio::time::{interval, Duration};
 
 use crate::auth::jwt::validate_token;
 use crate::AppState;
@@ -208,13 +209,25 @@ async fn handle_socket(
     let connected = serde_json::json!({ "type": "connected", "user_id": user_id });
     let _ = socket.send(Message::Text(connected.to_string().into())).await;
 
+    let mut heartbeat = interval(Duration::from_secs(30));
+    let mut last_pong = tokio::time::Instant::now();
+
     loop {
         tokio::select! {
-            // Receive events from broadcast channel
+            _ = heartbeat.tick() => {
+                // Check if client is still responsive
+                if last_pong.elapsed() > Duration::from_secs(90) {
+                    tracing::warn!("WebSocket heartbeat timeout for user {}", user_id);
+                    break;
+                }
+                let ping = serde_json::json!({ "type": "ping" });
+                if socket.send(Message::Text(ping.to_string().into())).await.is_err() {
+                    break;
+                }
+            }
             event = rx.recv() => {
                 match event {
                     Ok(ws_event) => {
-                        // Filter: only send events for this tenant + this user (or tenant-wide)
                         if ws_event.tenant_id == tenant_id
                             && (ws_event.user_id == user_id || ws_event.user_id == uuid::Uuid::nil())
                         {
@@ -232,12 +245,11 @@ async fn handle_socket(
                     }
                 }
             }
-            // Receive messages from client (ping/pong, close)
             msg = socket.recv() => {
                 match msg {
                     Some(Ok(Message::Text(text))) => {
-                        // Handle client ping
-                        if text.as_str() == "ping" {
+                        if text.as_str() == "ping" || text.as_str() == "pong" {
+                            last_pong = tokio::time::Instant::now();
                             let pong = serde_json::json!({ "type": "pong" });
                             let _ = socket.send(Message::Text(pong.to_string().into())).await;
                         } else if let Ok(payload) = serde_json::from_str::<WsEventPayload>(text.as_str()) {
@@ -275,7 +287,11 @@ async fn handle_socket(
                         }
                     }
                     Some(Ok(Message::Ping(data))) => {
+                        last_pong = tokio::time::Instant::now();
                         let _ = socket.send(Message::Pong(data)).await;
+                    }
+                    Some(Ok(Message::Pong(_))) => {
+                        last_pong = tokio::time::Instant::now();
                     }
                     Some(Ok(Message::Close(_))) | None => {
                         break;

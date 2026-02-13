@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   Plus,
   CheckSquare,
@@ -34,6 +35,16 @@ import { CreateTaskDialog } from "@/components/dashboard/create-task-dialog";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 import { SearchInput } from "@/components/dashboard/search-input";
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 const COLUMNS = [
   { id: "todo", label: "To Do", color: "bg-slate-100" },
@@ -103,8 +114,8 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div className="space-y-6" variants={stagger} initial="hidden" animate="visible">
+      <motion.div variants={fadeUp} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
           <p className="text-muted-foreground">
@@ -117,16 +128,16 @@ export default function TasksPage() {
             Add Task
           </Button>
         </CreateTaskDialog>
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-4">
+      <motion.div variants={fadeUp} className="flex items-center gap-4">
         <SearchInput
           value={searchQuery}
           onChange={(v) => setSearchQuery(v)}
           placeholder="Search tasks..."
         />
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px] bg-muted/50 border-0">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -136,10 +147,10 @@ export default function TasksPage() {
             <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </motion.div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {COLUMNS.map((col) => (
             <div key={col.id} className={`rounded-lg p-3 ${col.color}`}>
               <Skeleton className="h-5 w-24 mb-3" />
@@ -150,63 +161,80 @@ export default function TasksPage() {
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
       ) : isError ? (
-        <div className="text-center py-12">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
           <p className="text-sm text-destructive">
             Failed to load tasks. Make sure the backend is running.
           </p>
-        </div>
+        </motion.div>
       ) : tasks.length === 0 && debouncedSearch ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Search className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                No tasks match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={fadeUp}>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="py-12">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center">
+                <Search className="h-8 w-8 text-muted-foreground mb-3" />
+                <h3 className="text-lg font-semibold mb-1">No results found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  No tasks match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+                </p>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : tasks.length === 0 && !addingToColumn ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <CheckSquare className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">No tasks yet</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                Create your first task to start organizing work across your
-                firm.
-              </p>
-              <Button onClick={() => setAddingToColumn("todo")}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Task
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={fadeUp}>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="py-12">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <CheckSquare className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">No tasks yet</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                  Create your first task to start organizing work across your
+                  firm.
+                </p>
+                <Button onClick={() => setAddingToColumn("todo")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Task
+                </Button>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
-          {COLUMNS.map((col) => {
+        <motion.div variants={fadeUp} className="grid grid-cols-4 gap-4 min-h-[60vh]">
+          {COLUMNS.map((col, colIndex) => {
             const columnTasks = getColumnTasks(col.id);
             return (
-              <div key={col.id} className="flex flex-col">
+              <motion.div
+                key={col.id}
+                className="flex flex-col"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: colIndex * 0.08, ease: [0.16, 1, 0.3, 1] as const }}
+              >
                 <div
                   className={`rounded-t-lg px-3 py-2 ${col.color} border border-b-0`}
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">{col.label}</h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {columnTasks.length}
-                    </Badge>
+                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{col.label}</h3>
+                    <motion.div
+                      key={columnTasks.length}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+                    >
+                      <Badge variant="secondary" className="text-xs">
+                        {columnTasks.length}
+                      </Badge>
+                    </motion.div>
                   </div>
                 </div>
 
-                <div
-                  className="flex-1 rounded-b-lg border bg-card p-2 space-y-2 min-h-[200px]"
+                <motion.div
+                  className="flex-1 rounded-b-lg border bg-card p-2 space-y-2 min-h-[200px] transition-colors"
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.add("bg-accent/50");
@@ -220,15 +248,26 @@ export default function TasksPage() {
                     const taskId = e.dataTransfer.getData("text/plain");
                     if (taskId) handleMoveTask(taskId, col.id);
                   }}
+                  initial={false}
+                  animate={{ backgroundColor: "var(--card)" }}
+                  transition={{ duration: 0.2 }}
                 >
-                  {columnTasks.map((task) => (
-                    <div
+                  {columnTasks.map((task, taskIndex) => (
+                    <motion.div
                       key={task.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: taskIndex * 0.04, ease: [0.16, 1, 0.3, 1] as const }}
+                      layout
                       draggable
-                      onDragStart={(e) =>
-                        e.dataTransfer.setData("text/plain", task.id)
-                      }
+                      onDragStart={(e) => {
+                        const dragEvent = e as unknown as React.DragEvent;
+                        if (dragEvent.dataTransfer) {
+                          dragEvent.dataTransfer.setData("text/plain", task.id);
+                        }
+                      }}
                       className="rounded-lg border bg-background p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing group"
+                      whileHover={{ y: -2 }}
                     >
                       <div className="flex items-start gap-2">
                         <GripVertical className="h-4 w-4 text-muted-foreground/40 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -281,11 +320,16 @@ export default function TasksPage() {
                           </Button>
                         </ConfirmDialog>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
 
                   {addingToColumn === col.id ? (
-                    <div className="rounded-lg border bg-background p-3">
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+                      className="rounded-lg border bg-background p-3"
+                    >
                       <Input
                         autoFocus
                         placeholder="Task title..."
@@ -321,7 +365,7 @@ export default function TasksPage() {
                           Cancel
                         </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   ) : (
                     <button
                       className="w-full rounded-lg border border-dashed p-2 text-xs text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground transition-colors"
@@ -331,12 +375,12 @@ export default function TasksPage() {
                       Add task
                     </button>
                   )}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

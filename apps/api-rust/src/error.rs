@@ -75,10 +75,12 @@ impl IntoResponse for AppError {
             }
         };
 
+        let request_id = uuid::Uuid::new_v4().to_string();
         let body = json!({
             "error": {
                 "code": code,
                 "message": message,
+                "request_id": request_id,
             }
         });
 

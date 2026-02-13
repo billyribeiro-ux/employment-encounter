@@ -24,7 +24,7 @@ pub async fn list_tasks(
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
     // Build dynamic WHERE clause from filters
-    let mut conditions = vec!["tenant_id = $1".to_string()];
+    let mut conditions = vec!["tenant_id = $1".to_string(), "deleted_at IS NULL".to_string()];
     let mut bind_idx = 2u32;
 
     if let Some(ref _search) = search_pattern {
@@ -115,7 +115,7 @@ pub async fn get_task(
     Path(task_id): Path<Uuid>,
 ) -> AppResult<Json<Task>> {
     let task: Task = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(task_id)
     .bind(claims.tid)
@@ -136,6 +136,13 @@ pub async fn create_task(
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
     let priority = payload.priority.as_deref().unwrap_or("medium");
+
+    let valid_priorities = ["low", "medium", "high", "urgent"];
+    if !valid_priorities.contains(&priority) {
+        return Err(AppError::Validation(format!(
+            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+        )));
+    }
 
     let task: Task = sqlx::query_as(
         "INSERT INTO tasks (tenant_id, title, description, client_id, assigned_to, due_date, priority, workflow_instance_id, workflow_step_index, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at",
@@ -175,6 +182,21 @@ pub async fn update_task(
     let title = payload.title.as_deref().unwrap_or(&existing.title);
     let status = payload.status.as_deref().unwrap_or(&existing.status);
     let priority = payload.priority.as_deref().unwrap_or(&existing.priority);
+
+    let valid_priorities = ["low", "medium", "high", "urgent"];
+    if !valid_priorities.contains(&priority) {
+        return Err(AppError::Validation(format!(
+            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+        )));
+    }
+
+    let valid_statuses = ["todo", "in_progress", "review", "done"];
+    if !valid_statuses.contains(&status) {
+        return Err(AppError::Validation(format!(
+            "Invalid status: '{}'. Must be one of: {}", status, valid_statuses.join(", ")
+        )));
+    }
+
     let sort_order = payload.sort_order.unwrap_or(existing.sort_order);
     let due_date = payload.due_date.or(existing.due_date);
     let assigned_to = payload.assigned_to.or(existing.assigned_to);
@@ -216,7 +238,7 @@ pub async fn delete_task(
     Path(task_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
-        "DELETE FROM tasks WHERE id = $1 AND tenant_id = $2",
+        "UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(task_id)
     .bind(claims.tid)
@@ -228,4 +250,94 @@ pub async fn delete_task(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+pub async fn bulk_update_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkTaskUpdateRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    // Validate status if provided
+    if let Some(ref status) = payload.status {
+        let valid_statuses = ["todo", "in_progress", "review", "done"];
+        if !valid_statuses.contains(&status.as_str()) {
+            return Err(AppError::Validation(format!(
+                "Invalid status: '{}'. Must be one of: {}",
+                status,
+                valid_statuses.join(", ")
+            )));
+        }
+    }
+
+    // Validate priority if provided
+    if let Some(ref priority) = payload.priority {
+        let valid_priorities = ["low", "medium", "high", "urgent"];
+        if !valid_priorities.contains(&priority.as_str()) {
+            return Err(AppError::Validation(format!(
+                "Invalid priority: '{}'. Must be one of: {}",
+                priority,
+                valid_priorities.join(", ")
+            )));
+        }
+    }
+
+    // Build dynamic update
+    let result = sqlx::query(
+        "UPDATE tasks SET \
+         status = COALESCE($3, status), \
+         assigned_to = COALESCE($4, assigned_to), \
+         priority = COALESCE($5, priority), \
+         completed_at = CASE WHEN COALESCE($3, status) = 'done' AND status != 'done' THEN NOW() \
+                             WHEN COALESCE($3, status) != 'done' THEN NULL \
+                             ELSE completed_at END, \
+         updated_at = NOW() \
+         WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .bind(payload.status.as_deref())
+    .bind(payload.assigned_to)
+    .bind(payload.priority.as_deref())
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "updated": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+pub async fn bulk_delete_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkTaskIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE tasks SET deleted_at = NOW() WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "deleted": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
 }

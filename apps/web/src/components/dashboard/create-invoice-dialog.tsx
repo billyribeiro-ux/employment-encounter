@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useCreateInvoice } from "@/lib/hooks/use-invoices";
+import { useClients } from "@/lib/hooks/use-clients";
 
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description required"),
@@ -53,6 +54,8 @@ function formatCents(cents: number): string {
 export function CreateInvoiceDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const createInvoice = useCreateInvoice();
+  const { data: clientsData } = useClients({ per_page: 100 });
+  const clients = clientsData?.data ?? [];
 
   const form = useForm<CreateInvoiceForm>({
     resolver: zodResolver(createInvoiceSchema),
@@ -113,9 +116,18 @@ export function CreateInvoiceDialog({ children }: { children: React.ReactNode })
                 name="client_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client ID</FormLabel>
+                    <FormLabel>Client</FormLabel>
                     <FormControl>
-                      <Input placeholder="Client UUID" {...field} />
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      >
+                        <option value="">Select a client</option>
+                        {clients.map((c: { id: string; name: string }) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

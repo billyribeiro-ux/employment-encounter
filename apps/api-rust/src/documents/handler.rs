@@ -113,6 +113,30 @@ pub async fn create_document(
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
+    // Enforce 50MB file size limit
+    const MAX_FILE_SIZE: i64 = 50 * 1024 * 1024; // 50MB
+    if payload.size_bytes > MAX_FILE_SIZE {
+        return Err(AppError::Validation(format!(
+            "File too large. Maximum size is 50MB, got {}MB",
+            payload.size_bytes / (1024 * 1024)
+        )));
+    }
+
+    // Validate MIME type
+    let allowed_types = [
+        "application/pdf", "image/jpeg", "image/png", "image/tiff",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel", "text/csv",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+    ];
+    if !allowed_types.iter().any(|t| payload.mime_type.starts_with(t)) {
+        return Err(AppError::Validation(format!(
+            "Unsupported file type: {}. Allowed: PDF, JPEG, PNG, TIFF, Excel, CSV, Word",
+            payload.mime_type
+        )));
+    }
+
     let id = Uuid::new_v4();
     let s3_key = format!(
         "tenants/{}/documents/{}/{}",
@@ -220,4 +244,98 @@ pub async fn delete_document(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+pub async fn bulk_delete_documents(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkDocumentIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE documents SET deleted_at = NOW(), verification_status = 'rejected' \
+         WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "deleted": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+// ── Soft Delete: Restore & Trash ─────────────────────────────────────
+
+pub async fn restore_document(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(doc_id): Path<Uuid>,
+) -> AppResult<Json<Document>> {
+    let doc: Document = sqlx::query_as(
+        "UPDATE documents SET deleted_at = NULL, verification_status = 'pending', updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NOT NULL \
+         RETURNING id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, \
+         category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, \
+         tax_year, version, created_at, updated_at",
+    )
+    .bind(doc_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Document not found in trash".to_string()))?;
+
+    Ok(Json(doc))
+}
+
+pub async fn list_documents_trash(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ListDocumentsQuery>,
+) -> AppResult<Json<PaginatedResponse<Document>>> {
+    let page = params.page.unwrap_or(1).max(1);
+    let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NOT NULL",
+    )
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    let documents: Vec<Document> = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, uploaded_by, filename, mime_type, size_bytes, s3_key, \
+         category, ai_confidence::FLOAT8 as ai_confidence, ai_extracted_data, verification_status, \
+         tax_year, version, created_at, updated_at \
+         FROM documents WHERE tenant_id = $1 AND deleted_at IS NOT NULL \
+         ORDER BY deleted_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(claims.tid)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+
+    let total_pages = (total as f64 / per_page as f64).ceil() as i64;
+
+    Ok(Json(PaginatedResponse {
+        data: documents,
+        meta: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
+    }))
 }

@@ -139,23 +139,24 @@ pub async fn invite_user(
         return Err(AppError::Conflict("User with this email already exists".to_string()));
     }
 
-    // Generate a random unusable password hash for invited users (they'll set it via invite link)
-    // Using a UUID-based random string ensures no two invited users share the same hash
-    let random_placeholder = format!("INVITED_{}", Uuid::new_v4());
-    let placeholder_hash = crate::auth::password::hash_password(&random_placeholder)
-        .unwrap_or_else(|_| "$argon2id$v=19$m=65536,t=3,p=4$RANDOM$RANDOM".to_string());
+    // Create invited user with real hashed temp password and invite token
+    let invite_token = Uuid::new_v4().to_string();
+    let temp_password = Uuid::new_v4().to_string();
+    let password_hash = crate::auth::password::hash_password(&temp_password)
+        .unwrap_or_else(|_| "INVALID_HASH".to_string());
 
     let user: UserProfile = sqlx::query_as(
-        "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, role, status) \
-         VALUES ($1, $2, $3, $4, $5, $6, 'invited') \
+        "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, role, status, invite_token) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'invited', $7) \
          RETURNING id, tenant_id, email, first_name, last_name, role, mfa_enabled, status, last_login_at, created_at, updated_at"
     )
     .bind(claims.tid)
     .bind(&normalized_email)
-    .bind(&placeholder_hash)
+    .bind(&password_hash)
     .bind(&payload.first_name)
     .bind(&payload.last_name)
     .bind(&payload.role)
+    .bind(&invite_token)
     .fetch_one(&state.db)
     .await?;
 
