@@ -18,6 +18,22 @@ pub struct Message {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct MessageWithSender {
+    pub id: Uuid,
+    pub tenant_id: Uuid,
+    pub client_id: Uuid,
+    pub sender_id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub content: String,
+    pub is_internal: bool,
+    pub is_read: bool,
+    pub read_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub sender_name: String,
+}
+
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateMessageRequest {
     pub client_id: Uuid,

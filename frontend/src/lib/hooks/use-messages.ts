@@ -13,6 +13,7 @@ export interface Message {
   read_at: string | null;
   created_at: string;
   updated_at: string;
+  sender_name?: string;
 }
 
 export interface CreateMessagePayload {
@@ -38,6 +39,7 @@ export function useMessages(clientId: string, params?: {
       return data;
     },
     enabled: !!clientId,
+    refetchInterval: 15000,
   });
 }
 
@@ -50,6 +52,7 @@ export function useCreateMessage() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.client_id] });
+      queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
     },
   });
 }
@@ -63,7 +66,32 @@ export function useMarkMessageRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
     },
+  });
+}
+
+export function useMarkConversationRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (clientId: string) => {
+      await api.put(`/messages/client/${clientId}/read-all`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
+    },
+  });
+}
+
+export function useUnreadCounts() {
+  return useQuery({
+    queryKey: ["unread-counts"],
+    queryFn: async () => {
+      const { data } = await api.get<Record<string, number>>("/messages/unread-counts");
+      return data;
+    },
+    refetchInterval: 30000,
   });
 }
 

@@ -219,7 +219,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/notifications/{id}", delete(notifications::handler::delete_notification))
         // Messages
         .route("/messages", post(messages::handler::create_message))
+        .route("/messages/unread-counts", get(messages::handler::get_unread_counts))
         .route("/messages/client/{client_id}", get(messages::handler::list_messages_for_client))
+        .route("/messages/client/{client_id}/read-all", put(messages::handler::mark_conversation_read))
         .route("/messages/{id}/read", put(messages::handler::mark_message_read))
         .route("/messages/{id}", delete(messages::handler::delete_message))
         // Settings

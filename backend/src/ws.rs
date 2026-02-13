@@ -142,6 +142,25 @@ pub enum WsEventPayload {
     RoomLeave {
         room_id: String,
     },
+
+    // Messaging
+    #[serde(rename = "typing")]
+    Typing {
+        client_id: uuid::Uuid,
+        user_id: uuid::Uuid,
+        user_name: String,
+    },
+    #[serde(rename = "stop_typing")]
+    StopTyping {
+        client_id: uuid::Uuid,
+        user_id: uuid::Uuid,
+    },
+    #[serde(rename = "message_read")]
+    MessageRead {
+        message_id: uuid::Uuid,
+        client_id: uuid::Uuid,
+        reader_id: uuid::Uuid,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -222,19 +241,34 @@ async fn handle_socket(
                             let pong = serde_json::json!({ "type": "pong" });
                             let _ = socket.send(Message::Text(pong.to_string().into())).await;
                         } else if let Ok(payload) = serde_json::from_str::<WsEventPayload>(text.as_str()) {
-                            match &payload {
+                            match payload {
                                 WsEventPayload::RoomJoin { room_id } => {
-                                    broadcast.join_room(room_id, tenant_id, user_id);
-                                    broadcast.send_to_room(room_id, user_id, payload);
+                                    broadcast.join_room(&room_id, tenant_id, user_id);
+                                    let rid = room_id.clone();
+                                    broadcast.send_to_room(&rid, user_id, WsEventPayload::RoomJoin { room_id });
                                 }
                                 WsEventPayload::RoomLeave { room_id } => {
-                                    broadcast.send_to_room(room_id, user_id, payload);
-                                    broadcast.leave_room(room_id, tenant_id, user_id);
+                                    let rid = room_id.clone();
+                                    broadcast.send_to_room(&rid, user_id, WsEventPayload::RoomLeave { room_id });
+                                    broadcast.leave_room(&rid, tenant_id, user_id);
                                 }
-                                WsEventPayload::RtcOffer { room_id, .. }
-                                | WsEventPayload::RtcAnswer { room_id, .. }
-                                | WsEventPayload::RtcIceCandidate { room_id, .. } => {
-                                    broadcast.send_to_room(room_id, user_id, payload);
+                                WsEventPayload::RtcOffer { room_id, sdp } => {
+                                    let rid = room_id.clone();
+                                    broadcast.send_to_room(&rid, user_id, WsEventPayload::RtcOffer { room_id, sdp });
+                                }
+                                WsEventPayload::RtcAnswer { room_id, sdp } => {
+                                    let rid = room_id.clone();
+                                    broadcast.send_to_room(&rid, user_id, WsEventPayload::RtcAnswer { room_id, sdp });
+                                }
+                                WsEventPayload::RtcIceCandidate { room_id, candidate } => {
+                                    let rid = room_id.clone();
+                                    broadcast.send_to_room(&rid, user_id, WsEventPayload::RtcIceCandidate { room_id, candidate });
+                                }
+                                WsEventPayload::Typing { client_id, user_name, .. } => {
+                                    broadcast.send_to_tenant(tenant_id, WsEventPayload::Typing { client_id, user_id, user_name });
+                                }
+                                WsEventPayload::StopTyping { client_id, .. } => {
+                                    broadcast.send_to_tenant(tenant_id, WsEventPayload::StopTyping { client_id, user_id });
                                 }
                                 _ => {}
                             }

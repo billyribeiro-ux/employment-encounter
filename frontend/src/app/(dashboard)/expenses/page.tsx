@@ -83,12 +83,28 @@ export default function ExpensesPage() {
             Track firm and client expenses
           </p>
         </div>
-        <CreateExpenseDialog>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Record Expense
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportToCSV(
+            expenses.map((exp) => ({
+              date: exp.date,
+              category: exp.category,
+              description: exp.description,
+              amount: formatCents(exp.amount_cents),
+              is_reimbursable: exp.is_reimbursable,
+              status: exp.status,
+            })),
+            "expenses"
+          )}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
-        </CreateExpenseDialog>
+          <CreateExpenseDialog>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Record Expense
+            </Button>
+          </CreateExpenseDialog>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">

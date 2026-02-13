@@ -47,6 +47,11 @@ export function useWebSocket() {
               break;
             case "message":
               queryClient.invalidateQueries({ queryKey: ["messages"] });
+              queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
+              break;
+            case "message_read":
+              queryClient.invalidateQueries({ queryKey: ["messages"] });
+              queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
               break;
             case "document_processed":
               queryClient.invalidateQueries({ queryKey: ["documents"] });
