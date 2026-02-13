@@ -12,6 +12,7 @@ mod middleware;
 mod payments;
 mod notifications;
 mod reports;
+mod search;
 mod settings;
 mod tasks;
 mod time_entries;
@@ -19,13 +20,15 @@ mod workflows;
 mod ws;
 
 use axum::{
-    http::{header, Method},
+    http::{header, HeaderName, Method},
     middleware as axum_mw,
     routing::{delete, get, patch, post, put},
     Router,
 };
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::propagate_header::PropagateHeaderLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -43,14 +46,39 @@ pub struct AppState {
 }
 
 async fn security_headers(req: axum::extract::Request, next: axum::middleware::Next) -> AxumResponse {
+    // Extract or generate X-Request-ID
+    let request_id = req
+        .headers()
+        .get("x-request-id")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
-    headers.insert(axum::http::header::HeaderName::from_static("x-content-type-options"), "nosniff".parse().unwrap());
-    headers.insert(axum::http::header::HeaderName::from_static("x-frame-options"), "DENY".parse().unwrap());
-    headers.insert(axum::http::header::HeaderName::from_static("x-xss-protection"), "1; mode=block".parse().unwrap());
-    headers.insert(axum::http::header::HeaderName::from_static("strict-transport-security"), "max-age=31536000; includeSubDomains".parse().unwrap());
-    headers.insert(axum::http::header::HeaderName::from_static("referrer-policy"), "strict-origin-when-cross-origin".parse().unwrap());
-    headers.insert(axum::http::header::HeaderName::from_static("permissions-policy"), "camera=(), microphone=(), geolocation=()".parse().unwrap());
+
+    // Existing security headers
+    headers.insert(HeaderName::from_static("x-content-type-options"), "nosniff".parse().unwrap());
+    headers.insert(HeaderName::from_static("x-frame-options"), "DENY".parse().unwrap());
+    headers.insert(HeaderName::from_static("x-xss-protection"), "1; mode=block".parse().unwrap());
+    headers.insert(HeaderName::from_static("strict-transport-security"), "max-age=31536000; includeSubDomains".parse().unwrap());
+    headers.insert(HeaderName::from_static("referrer-policy"), "strict-origin-when-cross-origin".parse().unwrap());
+    headers.insert(HeaderName::from_static("permissions-policy"), "camera=(), microphone=(), geolocation=()".parse().unwrap());
+
+    // Content-Security-Policy header
+    headers.insert(
+        HeaderName::from_static("content-security-policy"),
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            .parse()
+            .unwrap(),
+    );
+
+    // X-Request-ID propagation for tracing
+    headers.insert(
+        HeaderName::from_static("x-request-id"),
+        request_id.parse().unwrap(),
+    );
+
     response
 }
 
@@ -125,7 +153,7 @@ async fn main() -> anyhow::Result<()> {
         redis: redis_client,
     };
 
-    // Build CORS layer
+    // Build CORS layer (also allow X-CSRF-Token header for CSRF protection)
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::exact(
             config.cors_origin.parse().expect("Invalid CORS origin"),
@@ -142,19 +170,27 @@ async fn main() -> anyhow::Result<()> {
             header::CONTENT_TYPE,
             header::AUTHORIZATION,
             header::ACCEPT,
+            HeaderName::from_static("x-csrf-token"),
+            HeaderName::from_static("x-request-id"),
         ])
         .allow_credentials(true);
 
     // Authenticated routes (require JWT)
     let protected_routes = Router::new()
+        // Global search
+        .route("/search", get(search::handler::global_search))
         // Dashboard
         .route("/dashboard/stats", get(dashboard::handler::get_dashboard_stats))
         // Clients
         .route("/clients", get(clients::handler::list_clients))
         .route("/clients", post(clients::handler::create_client))
+        .route("/clients/bulk-delete", post(clients::handler::bulk_delete_clients))
+        .route("/clients/bulk-archive", post(clients::handler::bulk_archive_clients))
+        .route("/clients/trash", get(clients::handler::list_clients_trash))
         .route("/clients/{id}", get(clients::handler::get_client))
         .route("/clients/{id}", put(clients::handler::update_client))
         .route("/clients/{id}", delete(clients::handler::delete_client))
+        .route("/clients/{id}/restore", post(clients::handler::restore_client))
         .route("/clients/{id}/documents", get(clients::handler::list_client_documents))
         .route("/clients/{id}/time-entries", get(clients::handler::list_client_time_entries))
         .route("/clients/{id}/invoices", get(clients::handler::list_client_invoices))
@@ -170,18 +206,27 @@ async fn main() -> anyhow::Result<()> {
         // Documents
         .route("/documents", get(documents::handler::list_documents))
         .route("/documents", post(documents::handler::create_document))
+        .route("/documents/bulk-delete", post(documents::handler::bulk_delete_documents))
+        .route("/documents/trash", get(documents::handler::list_documents_trash))
         .route("/documents/{id}", get(documents::handler::get_document))
         .route("/documents/{id}", patch(documents::handler::update_document))
         .route("/documents/{id}", delete(documents::handler::delete_document))
+        .route("/documents/{id}/restore", post(documents::handler::restore_document))
         // Invoices
         .route("/invoices", get(invoices::handler::list_invoices))
         .route("/invoices", post(invoices::handler::create_invoice))
+        .route("/invoices/bulk-send", post(invoices::handler::bulk_send_invoices))
+        .route("/invoices/bulk-delete", post(invoices::handler::bulk_delete_invoices))
+        .route("/invoices/trash", get(invoices::handler::list_invoices_trash))
+        .route("/invoices/recurring", get(invoices::handler::list_recurring_invoices).post(invoices::handler::create_recurring_invoice))
+        .route("/invoices/recurring/{id}", delete(invoices::handler::delete_recurring_invoice))
         .route("/invoices/{id}", get(invoices::handler::get_invoice))
         .route("/invoices/{id}", delete(invoices::handler::delete_invoice))
         .route("/invoices/{id}/pdf", get(invoices::handler::generate_invoice_pdf))
         .route("/invoices/{id}/status", patch(invoices::handler::update_invoice_status))
         .route("/invoices/{id}/send", post(invoices::handler::send_invoice))
         .route("/invoices/{id}/payment", post(invoices::handler::record_payment))
+        .route("/invoices/{id}/restore", post(invoices::handler::restore_invoice))
         // Workflows
         .route("/workflow-templates", get(workflows::handler::list_templates))
         .route("/workflow-templates", post(workflows::handler::create_template))
@@ -195,6 +240,8 @@ async fn main() -> anyhow::Result<()> {
         // Tasks
         .route("/tasks", get(tasks::handler::list_tasks))
         .route("/tasks", post(tasks::handler::create_task))
+        .route("/tasks/bulk-update", post(tasks::handler::bulk_update_tasks))
+        .route("/tasks/bulk-delete", post(tasks::handler::bulk_delete_tasks))
         .route("/tasks/{id}", get(tasks::handler::get_task))
         .route("/tasks/{id}", put(tasks::handler::update_task))
         .route("/tasks/{id}", delete(tasks::handler::delete_task))
@@ -271,19 +318,31 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/auth/reset-password", post(auth::handler::reset_password))
         .route("/api/v1/auth/verify-email", post(auth::handler::verify_email))
         .route("/api/v1/auth/accept-invite", post(auth::handler::accept_invite))
+        // MFA login verification (public -- authenticated by mfa_token in body)
+        .route("/api/v1/auth/mfa/verify-login", post(auth::handler::verify_mfa_login))
         // WebSocket
         .route("/api/v1/ws", get(ws::ws_handler))
         // Stripe webhook (public, verified by signature)
         .route("/api/v1/webhooks/stripe", post(payments::handler::stripe_webhook))
         // Protected API routes
         .nest("/api/v1", protected_routes)
-        // Layers
+        // Layers (applied bottom-up: last added runs first)
+        // 1. Request body size limit (10MB) to prevent DoS via large payloads
+        .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10 MB
+        // 2. CSRF protection (double-submit cookie)
+        .layer(axum_mw::from_fn(middleware::csrf::csrf_protection))
+        // 3. Per-endpoint rate limiting
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
             middleware::rate_limit::rate_limit,
         ))
+        // 4. HTTP tracing
         .layer(TraceLayer::new_for_http())
+        // 5. Propagate X-Request-ID from incoming request to response
+        .layer(PropagateHeaderLayer::new(HeaderName::from_static("x-request-id")))
+        // 6. CORS
         .layer(cors)
+        // 7. Security headers (CSP, HSTS, X-Frame-Options, X-Request-ID, etc.)
         .layer(axum_mw::from_fn(security_headers))
         .with_state(state);
 

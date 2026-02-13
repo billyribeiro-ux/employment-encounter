@@ -153,3 +153,101 @@ export function useUpdateInvoiceStatus() {
     },
   });
 }
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+export function useBulkSendInvoices() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.post<{ sent: number }>("/invoices/bulk-send", { ids });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+export function useBulkDeleteInvoices() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.post<{ deleted: number }>("/invoices/bulk-delete", { ids });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+}
+
+// ── Recurring Invoices ───────────────────────────────────────────────
+
+export interface RecurringInvoice {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  schedule: "weekly" | "monthly" | "quarterly" | "annually";
+  next_date: string;
+  line_items: {
+    description: string;
+    quantity: number;
+    unit_price_cents: number;
+  }[];
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useRecurringInvoices(params?: {
+  page?: number;
+  per_page?: number;
+  client_id?: string;
+}) {
+  return useQuery({
+    queryKey: ["invoices", "recurring", params],
+    queryFn: async () => {
+      const { data } = await api.get<PaginatedResponse<RecurringInvoice>>(
+        "/invoices/recurring",
+        { params }
+      );
+      return data;
+    },
+  });
+}
+
+export function useCreateRecurringInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      client_id: string;
+      schedule: "weekly" | "monthly" | "quarterly" | "annually";
+      line_items: {
+        description: string;
+        quantity: number;
+        unit_price_cents: number;
+      }[];
+      notes?: string;
+    }) => {
+      const { data } = await api.post<RecurringInvoice>("/invoices/recurring", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices", "recurring"] });
+    },
+  });
+}
+
+export function useDeleteRecurringInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/invoices/recurring/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices", "recurring"] });
+    },
+  });
+}

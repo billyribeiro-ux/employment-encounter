@@ -35,7 +35,7 @@ pub struct CreateInvoiceRequest {
     pub line_items: Vec<CreateLineItemRequest>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct CreateLineItemRequest {
     #[validate(length(min = 1, max = 1000))]
     pub description: String,
@@ -67,4 +67,52 @@ pub struct RecordPaymentRequest {
     pub method: String,
     pub stripe_payment_id: Option<String>,
     pub notes: Option<String>,
+}
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct BulkInvoiceIdsRequest {
+    pub ids: Vec<uuid::Uuid>,
+}
+
+// ── Recurring Invoices ───────────────────────────────────────────────
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct RecurringInvoice {
+    pub id: uuid::Uuid,
+    pub tenant_id: uuid::Uuid,
+    pub client_id: uuid::Uuid,
+    pub schedule: String,
+    pub next_issue_date: chrono::NaiveDate,
+    pub notes: Option<String>,
+    pub line_items: serde_json::Value,
+    pub subtotal_cents: i64,
+    pub tax_cents: i64,
+    pub total_cents: i64,
+    pub currency: String,
+    pub is_active: bool,
+    pub last_issued_at: Option<DateTime<Utc>>,
+    pub invoices_generated: i32,
+    pub created_by: uuid::Uuid,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct CreateRecurringInvoiceRequest {
+    pub client_id: uuid::Uuid,
+    pub schedule: String,
+    pub next_issue_date: chrono::NaiveDate,
+    pub notes: Option<String>,
+    pub line_items: Vec<CreateLineItemRequest>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct ListRecurringInvoicesQuery {
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
+    pub client_id: Option<uuid::Uuid>,
+    pub is_active: Option<bool>,
 }

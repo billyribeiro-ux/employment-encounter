@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,17 +20,19 @@ import {
   ArrowLeft,
   Rocket,
   Sparkles,
+  SkipForward,
+  PartyPopper,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const STEPS = [
-  { id: 1, title: "Firm Profile", icon: Building2, description: "Set up your firm details" },
-  { id: 2, title: "Team Members", icon: Users, description: "Invite your team" },
-  { id: 3, title: "Client Import", icon: FileText, description: "Import existing clients" },
-  { id: 4, title: "Billing Setup", icon: CreditCard, description: "Configure billing" },
-  { id: 5, title: "Integrations", icon: Shield, description: "Connect your tools" },
-  { id: 6, title: "Preferences", icon: CheckCircle2, description: "Customize your workspace" },
-  { id: 7, title: "Launch", icon: Rocket, description: "You're ready to go!" },
+  { id: 1, title: "Firm Profile", icon: Building2, description: "Set up your firm details", skippable: false },
+  { id: 2, title: "Team Members", icon: Users, description: "Invite your team", skippable: true },
+  { id: 3, title: "Client Import", icon: FileText, description: "Import existing clients", skippable: true },
+  { id: 4, title: "Billing Setup", icon: CreditCard, description: "Configure billing", skippable: true },
+  { id: 5, title: "Integrations", icon: Shield, description: "Connect your tools", skippable: true },
+  { id: 6, title: "Preferences", icon: CheckCircle2, description: "Customize your workspace", skippable: true },
+  { id: 7, title: "Launch", icon: Rocket, description: "You're ready to go!", skippable: false },
 ];
 
 const slideVariants = {
@@ -61,25 +63,242 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
+// Animated illustrations for each step
+function StepIllustration({ step }: { step: number }) {
+  const illustrations: Record<number, React.ReactNode> = {
+    1: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <motion.div
+          className="absolute"
+          animate={{ y: [0, -8, 0], rotate: [0, 3, -3, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-lg">
+              <Building2 className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-24 rounded-full bg-primary/15 animate-pulse" />
+              <div className="h-3 w-16 rounded-full bg-primary/10 animate-pulse" style={{ animationDelay: "0.2s" }} />
+              <div className="h-3 w-20 rounded-full bg-primary/10 animate-pulse" style={{ animationDelay: "0.4s" }} />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    ),
+    2: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+            >
+              <motion.div
+                className="h-14 w-14 rounded-full flex items-center justify-center text-sm font-bold shadow-md"
+                style={{
+                  background: i === 0 ? "linear-gradient(135deg, #3b82f6, #1d4ed8)" :
+                    i === 1 ? "linear-gradient(135deg, #8b5cf6, #6d28d9)" :
+                    "linear-gradient(135deg, #10b981, #059669)",
+                  color: "white",
+                }}
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 2, delay: i * 0.3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                {["JD", "AK", "SM"][i]}
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    ),
+    3: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          className="flex flex-col items-center"
+        >
+          <div className="relative">
+            <div className="h-16 w-20 rounded-lg bg-gradient-to-b from-emerald-500/20 to-emerald-500/5 border-2 border-dashed border-emerald-500/30 flex items-center justify-center">
+              <FileText className="h-7 w-7 text-emerald-600" />
+            </div>
+            <motion.div
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <ArrowRight className="h-3 w-3 text-white" />
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+    ),
+    4: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center shadow-lg">
+              <CreditCard className="h-7 w-7 text-amber-600" />
+            </div>
+            <div className="space-y-1.5">
+              <motion.div
+                className="h-4 w-16 rounded bg-green-500/30"
+                animate={{ width: ["64px", "80px", "64px"] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <div className="text-[10px] font-mono text-muted-foreground">$150/hr</div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    ),
+    5: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          {[Shield, CreditCard, FileText].map((Icon, i) => (
+            <motion.div
+              key={i}
+              animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 3, delay: i * 0.4, repeat: Infinity, ease: "easeInOut" }}
+              className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center shadow-md"
+            >
+              <Icon className="h-6 w-6 text-violet-600" />
+            </motion.div>
+          ))}
+          <motion.div
+            className="flex gap-1"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    ),
+    6: (
+      <div className="relative w-full h-32 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute h-24 w-24 rounded-full border-2 border-dashed border-primary/20"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/20 to-chart-2/20 flex items-center justify-center shadow-lg"
+        >
+          <CheckCircle2 className="h-7 w-7 text-primary" />
+        </motion.div>
+      </div>
+    ),
+  };
+
+  return illustrations[step] || null;
+}
+
+// Confetti particle component
+function ConfettiParticle({ delay, index }: { delay: number; index: number }) {
+  const colors = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#06b6d4"];
+  const color = colors[index % colors.length];
+  const startX = Math.random() * 100;
+  const endX = startX + (Math.random() - 0.5) * 60;
+  const size = 6 + Math.random() * 8;
+  const rotation = Math.random() * 720 - 360;
+
+  return (
+    <motion.div
+      className="absolute pointer-events-none"
+      style={{
+        left: `${startX}%`,
+        top: "-5%",
+        width: size,
+        height: size,
+        borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+        backgroundColor: color,
+      }}
+      initial={{ opacity: 0, y: -20, rotate: 0 }}
+      animate={{
+        opacity: [0, 1, 1, 0],
+        y: ["-5%", "110%"],
+        x: [`${startX}%`, `${endX}%`],
+        rotate: rotation,
+      }}
+      transition={{
+        duration: 2.5 + Math.random() * 1.5,
+        delay,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      }}
+    />
+  );
+}
+
+function Confetti() {
+  const [particles, setParticles] = useState<number[]>([]);
+
+  useEffect(() => {
+    setParticles(Array.from({ length: 60 }, (_, i) => i));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
+      {particles.map((i) => (
+        <ConfettiParticle key={i} index={i} delay={Math.random() * 0.8} />
+      ))}
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(0);
   const [firmData, setFirmData] = useState({ name: "", phone: "", email: "", website: "", address: "" });
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < STEPS.length) {
+      setCompletedSteps((prev) => new Set([...prev, currentStep]));
       setDirection(1);
       setCurrentStep(currentStep + 1);
     }
-  };
+  }, [currentStep]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentStep > 1) {
       setDirection(-1);
       setCurrentStep(currentStep - 1);
     }
-  };
+  }, [currentStep]);
+
+  const handleSkipStep = useCallback(() => {
+    if (currentStep < STEPS.length) {
+      setDirection(1);
+      setCurrentStep(currentStep + 1);
+    }
+  }, [currentStep]);
+
+  const handleGoToLaunch = useCallback(() => {
+    setDirection(1);
+    setCurrentStep(7);
+  }, []);
+
+  // Trigger confetti when reaching the final step
+  useEffect(() => {
+    if (currentStep === 7) {
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
 
   const handleComplete = async () => {
     // Persist firm data if filled
@@ -94,35 +313,70 @@ export default function OnboardingPage() {
     router.push("/dashboard");
   };
 
+  const currentStepData = STEPS[currentStep - 1];
+  const progress = ((currentStep) / STEPS.length) * 100;
+
   return (
     <motion.div
-      className="mx-auto max-w-3xl space-y-6"
+      className="mx-auto max-w-3xl space-y-6 relative"
       initial="hidden"
       animate="visible"
       variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
     >
+      {showConfetti && <Confetti />}
+
       <motion.div variants={fadeUp}>
         <h1 className="text-2xl font-bold tracking-tight">Welcome to CPA Platform</h1>
         <p className="text-sm text-muted-foreground">Let&apos;s get your firm set up in a few quick steps</p>
       </motion.div>
 
-      {/* Animated Progress */}
-      <motion.div variants={fadeUp} className="flex items-center gap-1">
-        {STEPS.map((step) => (
-          <div key={step.id} className="flex-1 flex flex-col items-center gap-1">
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-primary"
-                initial={{ width: "0%" }}
-                animate={{ width: step.id <= currentStep ? "100%" : "0%" }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
-              />
-            </div>
-            <span className={`text-[10px] transition-colors ${step.id === currentStep ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-              {step.title}
-            </span>
+      {/* Progress Indicator */}
+      <motion.div variants={fadeUp} className="space-y-3">
+        {/* Overall progress bar */}
+        <div className="relative">
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-chart-2"
+              initial={{ width: "0%" }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+            />
           </div>
-        ))}
+          <motion.div
+            className="absolute -top-1 h-4 w-4 rounded-full bg-primary shadow-lg shadow-primary/30 border-2 border-background"
+            initial={{ left: "0%" }}
+            animate={{ left: `calc(${progress}% - 8px)` }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+          />
+        </div>
+
+        {/* Step indicators */}
+        <div className="flex items-center gap-1">
+          {STEPS.map((step) => (
+            <div key={step.id} className="flex-1 flex flex-col items-center gap-1">
+              <motion.div
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-300 ${
+                  step.id < currentStep
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : step.id === currentStep
+                    ? "bg-primary/15 text-primary ring-2 ring-primary/30"
+                    : "bg-muted text-muted-foreground"
+                }`}
+                animate={step.id === currentStep ? { scale: [1, 1.1, 1] } : {}}
+                transition={{ duration: 1.5, repeat: step.id === currentStep ? Infinity : 0, ease: "easeInOut" }}
+              >
+                {step.id < currentStep || completedSteps.has(step.id) ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  step.id
+                )}
+              </motion.div>
+              <span className={`text-[9px] leading-tight text-center transition-colors ${step.id === currentStep ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                {step.title}
+              </span>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* Step Content with page-flip animation */}
@@ -164,6 +418,17 @@ export default function OnboardingPage() {
                 exit="exit"
                 className="space-y-4"
               >
+                {/* Animated illustration */}
+                {currentStep < 7 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
+                  >
+                    <StepIllustration step={currentStep} />
+                  </motion.div>
+                )}
+
                 {currentStep === 1 && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -265,8 +530,8 @@ export default function OnboardingPage() {
                       <div className="space-y-2">
                         <Label>Currency</Label>
                         <select className="flex h-9 w-full rounded-md bg-muted/50 px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                          <option value="USD">USD — US Dollar</option>
-                          <option value="CAD">CAD — Canadian Dollar</option>
+                          <option value="USD">USD -- US Dollar</option>
+                          <option value="CAD">CAD -- Canadian Dollar</option>
                         </select>
                       </div>
                     </div>
@@ -348,24 +613,61 @@ export default function OnboardingPage() {
 
                 {currentStep === 7 && (
                   <motion.div
-                    className="flex flex-col items-center justify-center py-8 text-center"
+                    className="flex flex-col items-center justify-center py-8 text-center relative"
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
                   >
                     <motion.div
                       className="rounded-full bg-green-500/10 p-4 mb-4"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <Sparkles className="h-8 w-8 text-green-600" />
+                      <PartyPopper className="h-8 w-8 text-green-600" />
                     </motion.div>
-                    <h3 className="text-xl font-bold mb-2">You&apos;re all set!</h3>
-                    <p className="text-sm text-muted-foreground max-w-md mb-6">
+                    <motion.h3
+                      className="text-xl font-bold mb-2"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5 }}
+                    >
+                      You&apos;re all set!
+                    </motion.h3>
+                    <motion.p
+                      className="text-sm text-muted-foreground max-w-md mb-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                    >
                       Your CPA Platform workspace is ready. Start by adding clients, tracking time,
                       or exploring the dashboard.
-                    </p>
-                    <div className="flex gap-3">
+                    </motion.p>
+
+                    {/* Completion stats */}
+                    <motion.div
+                      className="flex items-center gap-4 mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.5 }}
+                    >
+                      <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        {completedSteps.size} steps completed
+                      </Badge>
+                      {completedSteps.size < 6 && (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                          <SkipForward className="mr-1 h-3 w-3" />
+                          {6 - completedSteps.size} skipped
+                        </Badge>
+                      )}
+                    </motion.div>
+
+                    <motion.div
+                      className="flex gap-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.5 }}
+                    >
                       <Button variant="outline" onClick={() => router.push("/clients")}>
                         Add Clients
                       </Button>
@@ -373,7 +675,7 @@ export default function OnboardingPage() {
                         Go to Dashboard
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </motion.div>
@@ -390,7 +692,13 @@ export default function OnboardingPage() {
             Back
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => { setDirection(1); setCurrentStep(7); }} className="text-muted-foreground">
+            {currentStepData.skippable && (
+              <Button variant="ghost" onClick={handleSkipStep} className="text-muted-foreground group">
+                <SkipForward className="mr-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                Skip this step
+              </Button>
+            )}
+            <Button variant="ghost" onClick={handleGoToLaunch} className="text-muted-foreground">
               Skip Setup
             </Button>
             <Button onClick={handleNext} className="shadow-sm">

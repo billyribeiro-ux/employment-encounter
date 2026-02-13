@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/auth-store";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { CommandPalette } from "@/components/command-palette";
+import { KeyboardShortcutsModal } from "@/components/keyboard-shortcuts-modal";
+import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 
 const pageVariants = {
   initial: {
@@ -37,13 +41,56 @@ const pageVariants = {
   },
 };
 
+function DashboardShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  const handleOpenCommandPalette = useCallback(() => setCommandPaletteOpen(true), []);
+  const handleToggleShortcuts = useCallback(() => setShortcutsOpen((v) => !v), []);
+
+  useKeyboardShortcuts({
+    onOpenCommandPalette: handleOpenCommandPalette,
+    onShowHelp: handleToggleShortcuts,
+  });
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header />
+        <main id="main-content" className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <ErrorBoundary>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  variants={pageVariants as never}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </ErrorBoundary>
+          </div>
+        </main>
+      </div>
+
+      {/* Global overlays */}
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+      <KeyboardShortcutsModal open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    </div>
+  );
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { isAuthenticated, isLoading, setUser } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
@@ -111,27 +158,5 @@ export default function DashboardLayout({
     return null;
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                variants={pageVariants as never}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return <DashboardShell>{children}</DashboardShell>;
 }

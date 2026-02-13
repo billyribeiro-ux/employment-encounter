@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -49,6 +50,17 @@ import {
   Link2,
   ShieldCheck,
   UserPlus,
+  Bell,
+  BellRing,
+  Smartphone,
+  Key,
+  Copy,
+  RotateCcw,
+  Download,
+  FileJson,
+  FileSpreadsheet,
+  AlertTriangle,
+  XCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -92,12 +104,51 @@ const stagger = {
   visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 
+interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Notification preferences local state
+  const [notifPrefs, setNotifPrefs] = useState({
+    email_deadlines: true,
+    email_invoices: true,
+    email_documents: true,
+    email_tasks: true,
+    inapp_deadlines: true,
+    inapp_invoices: true,
+    inapp_documents: true,
+    inapp_tasks: true,
+    push_deadlines: false,
+    push_invoices: false,
+    push_documents: false,
+    push_tasks: false,
+  });
+
+  // API keys local state
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
+    {
+      id: "1",
+      name: "Production API Key",
+      prefix: "sk_live_...3x8f",
+      created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      last_used_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+  ]);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
 
   // Fetch profile
   const { data: profile } = useQuery({
@@ -230,6 +281,50 @@ export default function SettingsPage() {
     staff_accountant: "bg-slate-500/10 text-slate-700 dark:text-slate-400",
   };
 
+  const toggleNotifPref = useCallback((key: keyof typeof notifPrefs) => {
+    setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+    toast.success("Notification preference updated");
+  }, []);
+
+  const handleGenerateApiKey = useCallback(() => {
+    if (!newKeyName.trim()) {
+      toast.error("Please enter a name for the API key");
+      return;
+    }
+    const fakeKey = `sk_live_${Array.from({ length: 32 }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]).join("")}`;
+    const newKey: ApiKey = {
+      id: String(Date.now()),
+      name: newKeyName,
+      prefix: `sk_live_...${fakeKey.slice(-4)}`,
+      created_at: new Date().toISOString(),
+      last_used_at: null,
+    };
+    setApiKeys((prev) => [...prev, newKey]);
+    setGeneratedKey(fakeKey);
+    setNewKeyName("");
+    toast.success("API key generated");
+  }, [newKeyName]);
+
+  const handleRevokeApiKey = useCallback((id: string) => {
+    setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    toast.success("API key revoked");
+  }, []);
+
+  const handleExport = useCallback((format: "csv" | "json") => {
+    toast.success(`Exporting data as ${format.toUpperCase()}...`);
+    // In a real implementation, this would call an API endpoint
+    setTimeout(() => {
+      toast.success(`${format.toUpperCase()} export completed`);
+    }, 1500);
+  }, []);
+
+  const handleDeleteAccount = useCallback(() => {
+    if (deleteConfirmText !== "DELETE") return;
+    toast.success("Account deletion requested. You will receive a confirmation email.");
+    setShowDeleteDialog(false);
+    setDeleteConfirmText("");
+  }, [deleteConfirmText]);
+
   return (
     <motion.div className="space-y-6" variants={stagger} initial="hidden" animate="visible">
       <motion.div variants={fadeUp}>
@@ -243,7 +338,9 @@ export default function SettingsPage() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="firm">Firm</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
@@ -486,6 +583,76 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
+          {/* === NOTIFICATIONS TAB === */}
+          <TabsContent value="notifications">
+            <div className="space-y-4">
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Bell className="h-5 w-5" /> Notification Preferences
+                  </CardTitle>
+                  <CardDescription>Choose how you want to be notified</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Header row */}
+                    <div className="grid grid-cols-4 gap-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <div>Notification Type</div>
+                      <div className="flex items-center gap-1.5 justify-center">
+                        <Mail className="h-3.5 w-3.5" /> Email
+                      </div>
+                      <div className="flex items-center gap-1.5 justify-center">
+                        <BellRing className="h-3.5 w-3.5" /> In-App
+                      </div>
+                      <div className="flex items-center gap-1.5 justify-center">
+                        <Smartphone className="h-3.5 w-3.5" /> Push
+                      </div>
+                    </div>
+                    <Separator />
+
+                    {[
+                      { label: "Deadline Reminders", desc: "Upcoming filing and compliance deadlines", key: "deadlines" },
+                      { label: "Invoice Updates", desc: "Payment received, invoice overdue, etc.", key: "invoices" },
+                      { label: "Document Activity", desc: "New uploads, verification status changes", key: "documents" },
+                      { label: "Task Assignments", desc: "New tasks assigned to you or your team", key: "tasks" },
+                    ].map((item) => (
+                      <motion.div
+                        key={item.key}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+                        className="grid grid-cols-4 gap-4 items-center py-2"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{item.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                        </div>
+                        <div className="flex justify-center">
+                          <Switch
+                            checked={notifPrefs[`email_${item.key}` as keyof typeof notifPrefs]}
+                            onCheckedChange={() => toggleNotifPref(`email_${item.key}` as keyof typeof notifPrefs)}
+                          />
+                        </div>
+                        <div className="flex justify-center">
+                          <Switch
+                            checked={notifPrefs[`inapp_${item.key}` as keyof typeof notifPrefs]}
+                            onCheckedChange={() => toggleNotifPref(`inapp_${item.key}` as keyof typeof notifPrefs)}
+                          />
+                        </div>
+                        <div className="flex justify-center">
+                          <Switch
+                            checked={notifPrefs[`push_${item.key}` as keyof typeof notifPrefs]}
+                            onCheckedChange={() => toggleNotifPref(`push_${item.key}` as keyof typeof notifPrefs)}
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* === INTEGRATIONS TAB === */}
           <TabsContent value="integrations">
             <div className="space-y-4">
@@ -509,6 +676,247 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          {/* === API KEYS TAB === */}
+          <TabsContent value="api-keys">
+            <div className="space-y-4">
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Key className="h-5 w-5" /> API Keys
+                  </CardTitle>
+                  <CardDescription>Manage API keys for programmatic access to your account</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Generate new key */}
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <h3 className="text-sm font-semibold">Generate New Key</h3>
+                    <div className="flex gap-3">
+                      <Input
+                        placeholder="Key name (e.g., Production, CI/CD)"
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        className="bg-background h-9"
+                      />
+                      <Button size="sm" onClick={handleGenerateApiKey} className="shrink-0">
+                        <Key className="mr-2 h-3.5 w-3.5" />
+                        Generate
+                      </Button>
+                    </div>
+
+                    <AnimatePresence>
+                      {generatedKey && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                              <AlertTriangle className="h-4 w-4" />
+                              <p className="text-xs font-semibold">Copy your key now. It will not be shown again.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 rounded bg-background px-3 py-2 text-xs font-mono break-all">
+                                {generatedKey}
+                              </code>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(generatedKey);
+                                  toast.success("API key copied to clipboard");
+                                }}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setGeneratedKey(null)} className="text-xs">
+                              Dismiss
+                            </Button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Existing keys */}
+                  <div className="space-y-2">
+                    {apiKeys.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center border rounded-lg border-dashed">
+                        <Key className="h-6 w-6 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">No API keys yet</p>
+                      </div>
+                    ) : (
+                      apiKeys.map((key) => (
+                        <motion.div
+                          key={key.id}
+                          layout
+                          className="flex items-center justify-between rounded-lg border p-3 card-hover"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                              <Key className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{key.name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <code className="font-mono">{key.prefix}</code>
+                                <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
+                                {key.last_used_at && (
+                                  <span>Last used {new Date(key.last_used_at).toLocaleDateString()}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                <RotateCcw className="mr-1.5 h-3 w-3" />
+                                Revoke
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Revoke API key?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will immediately revoke &quot;{key.name}&quot;. Any applications using this key will lose access.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRevokeApiKey(key.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Revoke Key
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Export Data Section */}
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Download className="h-5 w-5" /> Export Data
+                  </CardTitle>
+                  <CardDescription>Download your data in various formats</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <motion.div
+                      whileHover={{ scale: 1.01 }}
+                      transition={{ duration: 0.2 }}
+                      className="rounded-lg border p-4 cursor-pointer card-hover"
+                      onClick={() => handleExport("csv")}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
+                          <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Export as CSV</p>
+                          <p className="text-xs text-muted-foreground">Spreadsheet-compatible format</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.01 }}
+                      transition={{ duration: 0.2 }}
+                      className="rounded-lg border p-4 cursor-pointer card-hover"
+                      onClick={() => handleExport("json")}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                          <FileJson className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Export as JSON</p>
+                          <p className="text-xs text-muted-foreground">Machine-readable format</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Danger Zone */}
+              <Card className="border-0 shadow-sm border-l-4 border-l-destructive/50">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" /> Danger Zone
+                  </CardTitle>
+                  <CardDescription>Irreversible and destructive actions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">Delete Account</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Permanently delete your account and all associated data. This cannot be undone.
+                        </p>
+                      </div>
+                      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Delete Account
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                              <AlertTriangle className="h-5 w-5" />
+                              Delete your account?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="space-y-3">
+                              <span className="block">This action is permanent and cannot be undone. All your data including:</span>
+                              <span className="block text-sm">
+                                - All clients and their records<br />
+                                - All documents and files<br />
+                                - All invoices and payments<br />
+                                - All time entries<br />
+                                - Team member associations
+                              </span>
+                              <span className="block font-medium text-foreground">
+                                Type <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">DELETE</code> to confirm:
+                              </span>
+                            </AlertDialogDescription>
+                            <Input
+                              value={deleteConfirmText}
+                              onChange={(e) => setDeleteConfirmText(e.target.value)}
+                              placeholder="Type DELETE to confirm"
+                              className="mt-2 font-mono"
+                            />
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              disabled={deleteConfirmText !== "DELETE"}
+                              onClick={handleDeleteAccount}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Permanently Delete Account
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
