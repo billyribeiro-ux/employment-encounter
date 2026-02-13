@@ -1,0 +1,19 @@
+{
+  "name": "talent-os",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "check": "turbo run check",
+    "api:dev": "cd apps/api-rust && cargo run",
+    "web:dev": "cd apps/web && npm run dev",
+    "db:migrate": "cd apps/api-rust && cargo run -- migrate"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
