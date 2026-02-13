@@ -38,43 +38,59 @@ pub async fn list_invoices(
     };
     let order_clause = format!("ORDER BY {} {}", sort_col, sort_dir);
 
-    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2)",
-        )
-        .bind(claims.tid)
-        .bind(pattern)
-        .fetch_one(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
-    };
+    // Build dynamic WHERE clause with all supported filters
+    let mut conditions = vec!["tenant_id = $1".to_string()];
+    let mut bind_idx = 2u32;
 
-    let invoices: Vec<Invoice> = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2) {} LIMIT $3 OFFSET $4", order_clause),
-        )
-        .bind(claims.tid)
-        .bind(pattern)
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 {} LIMIT $2 OFFSET $3", order_clause),
-        )
-        .bind(claims.tid)
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(&state.db)
-        .await?
-    };
+    if search_pattern.is_some() {
+        conditions.push(format!(
+            "(LOWER(COALESCE(invoice_number, '')) LIKE ${idx} OR LOWER(COALESCE(notes, '')) LIKE ${idx})",
+            idx = bind_idx
+        ));
+        bind_idx += 1;
+    }
+    if params.status.is_some() {
+        conditions.push(format!("status = ${}", bind_idx));
+        bind_idx += 1;
+    }
+    if params.client_id.is_some() {
+        conditions.push(format!("client_id = ${}", bind_idx));
+        bind_idx += 1;
+    }
+
+    let where_clause = conditions.join(" AND ");
+    let select_cols = "id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at";
+    let count_sql = format!("SELECT COUNT(*) FROM invoices WHERE {}", where_clause);
+    let data_sql = format!(
+        "SELECT {} FROM invoices WHERE {} {} LIMIT ${} OFFSET ${}",
+        select_cols, where_clause, order_clause, bind_idx, bind_idx + 1
+    );
+
+    // Build count query
+    let mut count_q = sqlx::query_as::<_, (i64,)>(&count_sql).bind(claims.tid);
+    if let Some(ref pattern) = search_pattern {
+        count_q = count_q.bind(pattern);
+    }
+    if let Some(ref status) = params.status {
+        count_q = count_q.bind(status);
+    }
+    if let Some(client_id) = params.client_id {
+        count_q = count_q.bind(client_id);
+    }
+    let (total,) = count_q.fetch_one(&state.db).await?;
+
+    // Build data query
+    let mut data_q = sqlx::query_as::<_, Invoice>(&data_sql).bind(claims.tid);
+    if let Some(ref pattern) = search_pattern {
+        data_q = data_q.bind(pattern);
+    }
+    if let Some(ref status) = params.status {
+        data_q = data_q.bind(status);
+    }
+    if let Some(client_id) = params.client_id {
+        data_q = data_q.bind(client_id);
+    }
+    let invoices = data_q.bind(per_page).bind(offset).fetch_all(&state.db).await?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 
@@ -123,15 +139,16 @@ pub async fn create_invoice(
 
     let id = Uuid::new_v4();
 
-    // Generate invoice number
-    let (count,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1",
+    // Generate invoice number using MAX to avoid race conditions
+    let (next_num,): (i64,) = sqlx::query_as(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 5) AS BIGINT)), 0) + 1 \
+         FROM invoices WHERE tenant_id = $1 AND invoice_number LIKE 'INV-%'",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
     .await?;
 
-    let invoice_number = format!("INV-{:05}", count + 1);
+    let invoice_number = format!("INV-{:05}", next_num);
 
     // Calculate totals
     let subtotal_cents: i64 = payload
@@ -410,6 +427,14 @@ pub async fn generate_invoice_pdf(
         format!("${:.2}", c as f64 / 100.0)
     };
 
+    let html_escape = |s: &str| -> String {
+        s.replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+            .replace('\'', "&#x27;")
+    };
+
     let due_date_str = invoice
         .due_date
         .map(|d| d.format("%B %d, %Y").to_string())
@@ -427,7 +452,7 @@ pub async fn generate_invoice_pdf(
              <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{:.2}</td>\
              <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{}</td>\
              <td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>{}</td></tr>",
-            li.description,
+            html_escape(&li.description),
             li.quantity,
             fmt_cents(li.unit_price_cents),
             fmt_cents(li.total_cents),
@@ -490,20 +515,20 @@ th{{text-align:left;padding:10px 8px;border-bottom:2px solid #333;font-size:13px
 </table>
 {notes_section}
 </body></html>"#,
-        firm = firm_name,
-        client = client_name,
-        inv_num = invoice.invoice_number,
+        firm = html_escape(&firm_name),
+        client = html_escape(&client_name),
+        inv_num = html_escape(&invoice.invoice_number),
         issued = issued_date_str,
         due = due_date_str,
-        status = invoice.status,
-        status_lower = invoice.status.to_lowercase(),
+        status = html_escape(&invoice.status),
+        status_lower = html_escape(&invoice.status.to_lowercase()),
         rows = rows_html,
         subtotal = fmt_cents(invoice.subtotal_cents),
         tax = fmt_cents(invoice.tax_cents),
         total = fmt_cents(invoice.total_cents),
         paid = fmt_cents(invoice.amount_paid_cents),
         balance = fmt_cents(invoice.total_cents - invoice.amount_paid_cents),
-        notes_section = invoice.notes.as_ref().map(|n| format!("<div class='notes'><strong>Notes:</strong> {}</div>", n)).unwrap_or_default(),
+        notes_section = invoice.notes.as_ref().map(|n| format!("<div class='notes'><strong>Notes:</strong> {}</div>", html_escape(n))).unwrap_or_default(),
     );
 
     Ok((

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/auth-store";
+import { api } from "@/lib/api";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 
@@ -23,7 +24,7 @@ export default function DashboardLayout({
       return;
     }
 
-    // Hydrate user from token payload (base64 decode JWT claims)
+    // Check token expiry first
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       if (payload.exp * 1000 < Date.now()) {
@@ -32,17 +33,25 @@ export default function DashboardLayout({
         router.push("/login");
         return;
       }
-      setUser({
-        id: payload.sub,
-        tenant_id: payload.tid,
-        role: payload.role,
-        email: "",
-        first_name: "",
-        last_name: "",
-      });
     } catch {
       router.push("/login");
+      return;
     }
+
+    // Hydrate user from API for complete profile data
+    const hydrateUser = async () => {
+      try {
+        const { data } = await api.get("/auth/me");
+        setUser(data);
+      } catch {
+        // Token might be invalid, redirect to login
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        router.push("/login");
+      }
+    };
+
+    hydrateUser();
   }, [router, setUser]);
 
   if (isLoading) {

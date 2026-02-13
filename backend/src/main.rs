@@ -19,13 +19,17 @@ mod workflows;
 mod ws;
 
 use axum::{
-    http::{header, Method},
+    extract::Request,
+    http::{header, HeaderValue, Method},
     middleware as axum_mw,
+    middleware::Next,
+    response::Response,
     routing::{delete, get, patch, post, put},
     Router,
 };
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -38,6 +42,17 @@ pub struct AppState {
     pub ws_broadcast: ws::WsBroadcast,
     pub rate_limiter: middleware::rate_limit::RateLimiter,
     pub redis: Option<std::sync::Arc<fred::clients::RedisClient>>,
+}
+
+async fn security_headers(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    headers.insert("x-content-type-options", HeaderValue::from_static("nosniff"));
+    headers.insert("x-frame-options", HeaderValue::from_static("DENY"));
+    headers.insert("x-xss-protection", HeaderValue::from_static("1; mode=block"));
+    headers.insert("referrer-policy", HeaderValue::from_static("strict-origin-when-cross-origin"));
+    headers.insert("permissions-policy", HeaderValue::from_static("camera=(), microphone=(), geolocation=()"));
+    response
 }
 
 #[tokio::main]
@@ -103,6 +118,7 @@ async fn main() -> anyhow::Result<()> {
     if let Some(ref redis) = redis_client {
         rate_limiter = rate_limiter.with_redis(redis.clone());
     }
+    rate_limiter.spawn_cleanup_task();
     let state = AppState {
         db,
         config: config.clone(),
@@ -260,16 +276,45 @@ async fn main() -> anyhow::Result<()> {
             state.clone(),
             middleware::rate_limit::rate_limit,
         ))
+        .layer(axum_mw::from_fn(security_headers))
+        .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10MB max body
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(state);
 
-    // Start server
+    // Start server with graceful shutdown
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Server listening on {}", addr);
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
+    tracing::info!("Server shutdown complete");
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => { tracing::info!("Received Ctrl+C, starting graceful shutdown"); },
+        _ = terminate => { tracing::info!("Received SIGTERM, starting graceful shutdown"); },
+    }
 }

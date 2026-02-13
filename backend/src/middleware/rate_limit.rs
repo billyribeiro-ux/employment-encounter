@@ -67,6 +67,25 @@ impl RateLimiter {
         Ok(count <= self.max_requests as i64)
     }
 
+    /// Spawn a background task that periodically cleans up expired rate limit entries.
+    pub fn spawn_cleanup_task(&self) {
+        let windows = self.windows.clone();
+        let window_duration = self.window_duration;
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(300)); // every 5 minutes
+            loop {
+                interval.tick().await;
+                let mut map = windows.lock().await;
+                let now = Instant::now();
+                map.retain(|_, (_, start)| now.duration_since(*start) <= window_duration);
+                let remaining = map.len();
+                if remaining > 0 {
+                    tracing::debug!("Rate limiter cleanup: {} entries remaining", remaining);
+                }
+            }
+        });
+    }
+
     async fn check_memory(&self, key: &str) -> bool {
         let mut windows = self.windows.lock().await;
         let now = Instant::now();

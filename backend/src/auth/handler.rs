@@ -75,9 +75,12 @@ pub async fn register(
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
-    // Check if email already exists
-    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE email = $1")
-        .bind(&payload.email)
+    // Normalize email to prevent case-sensitivity bypass
+    let normalized_email = payload.email.trim().to_lowercase();
+
+    // Check if email already exists (case-insensitive)
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE LOWER(email) = $1")
+        .bind(&normalized_email)
         .fetch_one(&state.db)
         .await?;
 
@@ -108,7 +111,7 @@ pub async fn register(
     )
     .bind(user_id)
     .bind(tenant_id)
-    .bind(&payload.email)
+    .bind(&normalized_email)
     .bind(&password_hash)
     .bind(&payload.first_name)
     .bind(&payload.last_name)
@@ -125,7 +128,7 @@ pub async fn register(
             refresh_token,
             user: UserResponse {
                 id: user_id,
-                email: payload.email,
+                email: normalized_email,
                 first_name: payload.first_name,
                 last_name: payload.last_name,
                 role: "admin".to_string(),
@@ -144,14 +147,15 @@ pub async fn login(
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
+    let normalized_email = payload.email.trim().to_lowercase();
     let ip = security::extract_ip(&headers);
     let ua = security::extract_user_agent(&headers);
 
-    // Find user by email
+    // Find user by email (case-insensitive)
     let user: UserRow = sqlx::query_as(
-        "SELECT id, tenant_id, email, password_hash, first_name, last_name, role, status, failed_login_count, locked_until FROM users WHERE email = $1",
+        "SELECT id, tenant_id, email, password_hash, first_name, last_name, role, status, failed_login_count, locked_until FROM users WHERE LOWER(email) = $1",
     )
-    .bind(&payload.email)
+    .bind(&normalized_email)
     .fetch_optional(&state.db)
     .await?
     .ok_or_else(|| AppError::Unauthorized("Invalid email or password".to_string()))?;

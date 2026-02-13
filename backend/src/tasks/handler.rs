@@ -23,43 +23,78 @@ pub async fn list_tasks(
 
     let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
 
-    let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2)",
-        )
-        .bind(claims.tid)
-        .bind(pattern)
-        .fetch_one(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
-    };
+    // Build dynamic WHERE clause from filters
+    let mut conditions = vec!["tenant_id = $1".to_string()];
+    let mut bind_idx = 2u32;
 
-    let tasks: Vec<Task> = if let Some(ref pattern) = search_pattern {
-        sqlx::query_as(
-            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) ORDER BY sort_order, created_at DESC LIMIT $3 OFFSET $4",
-        )
-        .bind(claims.tid)
-        .bind(pattern)
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(&state.db)
-        .await?
-    } else {
-        sqlx::query_as(
-            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 ORDER BY sort_order, created_at DESC LIMIT $2 OFFSET $3",
-        )
-        .bind(claims.tid)
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(&state.db)
-        .await?
-    };
+    if let Some(ref _search) = search_pattern {
+        conditions.push(format!(
+            "(LOWER(title) LIKE ${idx} OR LOWER(COALESCE(description, '')) LIKE ${idx})",
+            idx = bind_idx
+        ));
+        bind_idx += 1;
+    }
+    if params.status.is_some() {
+        conditions.push(format!("status = ${}", bind_idx));
+        bind_idx += 1;
+    }
+    if params.priority.is_some() {
+        conditions.push(format!("priority = ${}", bind_idx));
+        bind_idx += 1;
+    }
+    if params.assigned_to.is_some() {
+        conditions.push(format!("assigned_to = ${}", bind_idx));
+        bind_idx += 1;
+    }
+    if params.client_id.is_some() {
+        conditions.push(format!("client_id = ${}", bind_idx));
+        bind_idx += 1;
+    }
+
+    let where_clause = conditions.join(" AND ");
+    let count_sql = format!("SELECT COUNT(*) FROM tasks WHERE {}", where_clause);
+    let data_sql = format!(
+        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE {} ORDER BY sort_order, created_at DESC LIMIT ${} OFFSET ${}",
+        where_clause, bind_idx, bind_idx + 1
+    );
+
+    // Build count query with dynamic binds
+    let mut count_q = sqlx::query_as::<_, (i64,)>(&count_sql).bind(claims.tid);
+    if let Some(ref pattern) = search_pattern {
+        count_q = count_q.bind(pattern);
+    }
+    if let Some(ref status) = params.status {
+        count_q = count_q.bind(status);
+    }
+    if let Some(ref priority) = params.priority {
+        count_q = count_q.bind(priority);
+    }
+    if let Some(assigned_to) = params.assigned_to {
+        count_q = count_q.bind(assigned_to);
+    }
+    if let Some(client_id) = params.client_id {
+        count_q = count_q.bind(client_id);
+    }
+    let (total,) = count_q.fetch_one(&state.db).await?;
+
+    // Build data query with dynamic binds
+    let mut data_q = sqlx::query_as::<_, Task>(&data_sql).bind(claims.tid);
+    if let Some(ref pattern) = search_pattern {
+        data_q = data_q.bind(pattern);
+    }
+    if let Some(ref status) = params.status {
+        data_q = data_q.bind(status);
+    }
+    if let Some(ref priority) = params.priority {
+        data_q = data_q.bind(priority);
+    }
+    if let Some(assigned_to) = params.assigned_to {
+        data_q = data_q.bind(assigned_to);
+    }
+    if let Some(client_id) = params.client_id {
+        data_q = data_q.bind(client_id);
+    }
+    let tasks = data_q.bind(per_page).bind(offset).fetch_all(&state.db).await?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 

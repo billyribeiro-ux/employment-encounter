@@ -123,12 +123,15 @@ pub async fn invite_user(
         return Err(AppError::Validation(format!("Invalid role: {}", payload.role)));
     }
 
-    // Check duplicate email
+    // Normalize email for case-insensitive comparison
+    let normalized_email = payload.email.trim().to_lowercase();
+
+    // Check duplicate email (case-insensitive)
     let existing: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE tenant_id = $1 AND email = $2"
+        "SELECT id FROM users WHERE tenant_id = $1 AND LOWER(email) = $2"
     )
     .bind(claims.tid)
-    .bind(&payload.email)
+    .bind(&normalized_email)
     .fetch_optional(&state.db)
     .await?;
 
@@ -136,8 +139,11 @@ pub async fn invite_user(
         return Err(AppError::Conflict("User with this email already exists".to_string()));
     }
 
-    // Create invited user with placeholder password (they'll set it via invite link)
-    let placeholder_hash = "$argon2id$v=19$m=65536,t=3,p=4$PLACEHOLDER$PLACEHOLDER";
+    // Generate a random unusable password hash for invited users (they'll set it via invite link)
+    // Using a UUID-based random string ensures no two invited users share the same hash
+    let random_placeholder = format!("INVITED_{}", Uuid::new_v4());
+    let placeholder_hash = crate::auth::password::hash_password(&random_placeholder)
+        .unwrap_or_else(|_| "$argon2id$v=19$m=65536,t=3,p=4$RANDOM$RANDOM".to_string());
 
     let user: UserProfile = sqlx::query_as(
         "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, role, status) \
@@ -145,8 +151,8 @@ pub async fn invite_user(
          RETURNING id, tenant_id, email, first_name, last_name, role, mfa_enabled, status, last_login_at, created_at, updated_at"
     )
     .bind(claims.tid)
-    .bind(&payload.email)
-    .bind(placeholder_hash)
+    .bind(&normalized_email)
+    .bind(&placeholder_hash)
     .bind(&payload.first_name)
     .bind(&payload.last_name)
     .bind(&payload.role)
