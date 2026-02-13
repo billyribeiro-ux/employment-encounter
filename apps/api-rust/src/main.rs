@@ -9,6 +9,8 @@ mod dashboard;
 mod documents;
 mod error;
 mod expenses;
+mod flags;
+mod interviews;
 mod invoices;
 mod jobs;
 mod meetings;
@@ -18,6 +20,7 @@ mod payments;
 mod notifications;
 mod reports;
 mod settings;
+mod shortcuts;
 mod subscriptions;
 mod tasks;
 mod time_entries;
@@ -280,6 +283,17 @@ async fn main() -> anyhow::Result<()> {
         .route("/video-rooms/{id}/join", post(video_rooms::handler::join_room))
         .route("/video-rooms/{id}/end", post(video_rooms::handler::end_room))
         .route("/video-rooms/{id}/sessions", get(video_rooms::handler::list_sessions))
+        // Interviews (spec-compliant namespace)
+        .route("/interviews/rooms", post(interviews::handler::create_room))
+        .route("/interviews/rooms/{id}/token", post(interviews::handler::issue_token))
+        .route("/interviews/sessions/{id}/events", post(interviews::handler::record_session_event))
+        .route("/interviews/sessions/{id}/feedback", post(interviews::handler::submit_feedback))
+        // Shortcuts
+        .route("/shortcuts", get(shortcuts::handler::get_shortcuts))
+        .route("/shortcuts", patch(shortcuts::handler::update_shortcuts))
+        .route("/shortcuts/usage-events", post(shortcuts::handler::record_usage_event))
+        // Feature Flags
+        .route("/flags", get(flags::handler::get_flags))
         // Messages
         .route("/messages", post(messages::handler::create_message))
         .route("/messages/unread-counts", get(messages::handler::get_unread_counts))
