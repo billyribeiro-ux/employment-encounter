@@ -1,12 +1,9 @@
 use axum::{
-    body::Body,
     extract::Request,
     http::{HeaderMap, Method, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use sqlx::PgPool;
-use uuid::Uuid;
 
 use crate::AppState;
 

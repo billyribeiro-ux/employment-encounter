@@ -1,3 +1,5 @@
+#![allow(dead_code, clippy::type_complexity, clippy::too_many_arguments)]
+
 mod applications;
 mod auth;
 mod candidates;

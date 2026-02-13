@@ -3,7 +3,6 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use uuid::Uuid;
 
 use crate::auth::jwt::Claims;
 use crate::error::{AppError, AppResult};

@@ -248,6 +248,7 @@ export function Sidebar() {
   // ---- State: sidebar width collapsed (icon-only) ----
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsNarrow(readLocalStorage(STORAGE_KEY_COLLAPSED, false));
   }, []);
   const toggleNarrow = useCallback(() => {
@@ -261,6 +262,7 @@ export function Sidebar() {
   // ---- State: pinned items ----
   const [pinnedNames, setPinnedNames] = useState<string[]>(DEFAULT_PINNED);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPinnedNames(readLocalStorage(STORAGE_KEY_PINNED, DEFAULT_PINNED));
   }, []);
   const togglePin = useCallback((name: string) => {
@@ -292,6 +294,7 @@ export function Sidebar() {
   // Auto-expand active section on route change
   useEffect(() => {
     if (activeSectionLabel) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpandedSections((prev) => {
         if (prev.has(activeSectionLabel)) return prev;
         const next = new Set(prev);

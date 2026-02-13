@@ -792,6 +792,7 @@ export default function CareerPageBuilder() {
 
   useEffect(() => {
     if (savedConfig) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig({
         is_published: savedConfig.is_published,
         hero_headline: savedConfig.hero_headline || DEFAULT_CONFIG.hero_headline,
@@ -962,11 +963,10 @@ export default function CareerPageBuilder() {
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-left ${
-                      activeSection === section.id
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-left ${activeSection === section.id
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    }`}
+                      }`}
                   >
                     <section.icon className="h-4 w-4 flex-shrink-0" />
                     {section.label}

@@ -648,7 +648,7 @@ function SubmitReferralDialog() {
 
 function ShareJobDialog({ position }: { position: OpenPosition }) {
   const [open, setOpen] = useState(false);
-  const referralCode = `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const [referralCode] = useState(() => `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
   const shareLink = `https://careers.company.com/jobs/${position.id}?ref=${referralCode}`;
 
   function copyLink() {
@@ -1135,13 +1135,12 @@ export default function ReferralsPage() {
                               {entry.badge ? (
                                 <Badge
                                   variant="outline"
-                                  className={`gap-1 ${
-                                    entry.badge === "Gold"
-                                      ? "border-yellow-300 text-yellow-700 dark:text-yellow-400"
-                                      : entry.badge === "Silver"
+                                  className={`gap-1 ${entry.badge === "Gold"
+                                    ? "border-yellow-300 text-yellow-700 dark:text-yellow-400"
+                                    : entry.badge === "Silver"
                                       ? "border-slate-300 text-slate-600 dark:text-slate-400"
                                       : "border-amber-300 text-amber-700 dark:text-amber-400"
-                                  }`}
+                                    }`}
                                 >
                                   {badgeIcon(entry.badge)}
                                   {entry.badge}

@@ -58,7 +58,7 @@ pub async fn list_pools(
          WHERE tp.tenant_id = $1
          GROUP BY tp.id ORDER BY tp.name",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -76,11 +76,11 @@ pub async fn create_pool(
          VALUES ($1, $2, $3, $4, $5::uuid)
          RETURNING id::text, name, description, pool_type, created_at, 0::bigint as member_count",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .bind(&body.name)
     .bind(&body.description)
     .bind(body.pool_type.unwrap_or_else(|| "custom".to_string()))
-    .bind(&claims.sub)
+    .bind(claims.sub)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -103,7 +103,7 @@ pub async fn list_members(
          ORDER BY tpm.added_at DESC",
     )
     .bind(&pool_id)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -129,7 +129,7 @@ pub async fn add_member(
     .bind(&body.candidate_email)
     .bind(&body.source)
     .bind(&body.notes)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;

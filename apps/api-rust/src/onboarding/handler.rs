@@ -54,7 +54,7 @@ pub async fn list_templates(
         "SELECT id::text, name, role_type, phases, is_default, created_at
          FROM onboarding_templates WHERE tenant_id = $1 ORDER BY name",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -71,7 +71,7 @@ pub async fn list_instances(
                 start_date, status, progress_percent, tasks, documents, created_at
          FROM onboarding_instances WHERE tenant_id = $1 ORDER BY start_date DESC",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -94,7 +94,7 @@ pub async fn create_instance(
          RETURNING id::text, new_hire_name, new_hire_email, job_title, department,
                    start_date, status, progress_percent, tasks, documents, created_at",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .bind(&body.template_id)
     .bind(&body.new_hire_name)
     .bind(&body.new_hire_email)
@@ -133,7 +133,7 @@ pub async fn update_progress(
     .bind(progress)
     .bind(tasks)
     .bind(&id)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;

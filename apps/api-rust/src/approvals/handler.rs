@@ -63,7 +63,7 @@ pub async fn list_requests(
     query.push_str(" ORDER BY created_at DESC LIMIT 50");
 
     let requests = sqlx::query_as::<_, ApprovalRequest>(&query)
-        .bind(&claims.tid)
+        .bind(claims.tid)
         .fetch_all(&state.db)
         .await
         .map_err(AppError::Database)?;
@@ -82,11 +82,11 @@ pub async fn create_request(
          RETURNING id::text, request_type, title, description, requester_id::text,
                    current_step, status, metadata, created_at"
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .bind(&body.request_type)
     .bind(&body.title)
     .bind(&body.description)
-    .bind(&claims.sub)
+    .bind(claims.sub)
     .bind(body.metadata.unwrap_or(serde_json::json!({})))
     .bind(&body.workflow_id)
     .fetch_one(&state.db)
@@ -109,10 +109,10 @@ pub async fn decide_request(
          FROM approval_requests WHERE id = $1::uuid AND tenant_id = $5",
     )
     .bind(&id)
-    .bind(&claims.sub)
+    .bind(claims.sub)
     .bind(&body.decision)
     .bind(&body.comment)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .execute(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -130,7 +130,7 @@ pub async fn decide_request(
     )
     .bind(new_status)
     .bind(&id)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .execute(&state.db)
     .await
     .map_err(AppError::Database)?;

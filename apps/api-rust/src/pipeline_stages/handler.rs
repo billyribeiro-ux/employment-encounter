@@ -31,7 +31,7 @@ pub async fn list_templates(
         "SELECT id::text, name, description, is_default, stages, created_at
          FROM pipeline_templates WHERE tenant_id = $1 ORDER BY is_default DESC, name",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -49,7 +49,7 @@ pub async fn create_template(
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id::text, name, description, is_default, stages, created_at",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .bind(&body.name)
     .bind(&body.description)
     .bind(&body.stages)

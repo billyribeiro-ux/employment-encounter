@@ -61,7 +61,7 @@ pub async fn list_assessments(
                 avg_score::float8 as avg_score, created_at
          FROM assessments WHERE tenant_id = $1 ORDER BY created_at DESC",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -81,7 +81,7 @@ pub async fn create_assessment(
                    questions, passing_score, is_active, usage_count,
                    avg_score::float8 as avg_score, created_at"
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .bind(&body.title)
     .bind(&body.description)
     .bind(&body.category)
@@ -111,7 +111,7 @@ pub async fn list_submissions(
          ORDER BY s.created_at DESC",
     )
     .bind(&assessment_id)
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;

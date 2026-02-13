@@ -841,7 +841,7 @@ pub async fn forgot_password(
     let user: Option<(Uuid, Uuid, String)> = sqlx::query_as(
         "SELECT id, tenant_id, email FROM users WHERE LOWER(email) = $1 AND status = 'active'",
     )
-    .bind(&payload.email.trim().to_lowercase())
+    .bind(payload.email.trim().to_lowercase())
     .fetch_optional(&state.db)
     .await?;
 

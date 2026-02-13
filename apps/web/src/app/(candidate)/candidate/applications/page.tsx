@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -143,11 +144,10 @@ function StageTimeline({ applicationId }: { applicationId: string }) {
           <div key={event.id} className="relative flex gap-3">
             <div className="absolute -left-6 mt-1.5">
               <div
-                className={`h-3 w-3 rounded-full border-2 ${
-                  index === 0
+                className={`h-3 w-3 rounded-full border-2 ${index === 0
                     ? "border-primary bg-primary"
                     : "border-muted-foreground/30 bg-background"
-                }`}
+                  }`}
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -481,12 +481,12 @@ export default function CandidateApplicationsPage() {
               Clear Filters
             </Button>
           ) : (
-            <a href="/jobs">
+            <Link href="/jobs">
               <Button>
                 <Briefcase className="mr-2 h-4 w-4" />
                 Browse Jobs
               </Button>
-            </a>
+            </Link>
           )}
         </div>
       ) : (

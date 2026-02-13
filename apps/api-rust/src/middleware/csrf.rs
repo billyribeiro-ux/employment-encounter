@@ -118,11 +118,9 @@ fn extract_cookie_token(req: &Request) -> Option<String> {
         .and_then(|cookies| {
             cookies.split(';').find_map(|cookie| {
                 let cookie = cookie.trim();
-                if let Some(value) = cookie.strip_prefix(&format!("{}=", CSRF_COOKIE_NAME)) {
-                    Some(value.to_string())
-                } else {
-                    None
-                }
+                cookie
+                    .strip_prefix(&format!("{}=", CSRF_COOKIE_NAME))
+                    .map(|value| value.to_string())
             })
         })
 }

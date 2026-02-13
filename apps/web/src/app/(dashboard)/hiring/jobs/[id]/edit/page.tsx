@@ -166,7 +166,7 @@ export default function JobEditPage({
   }, [job, initialized]);
 
   useEffect(() => {
-    populateForm();
+    populateForm(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [populateForm]);
 
   function handleSubmit(e: React.FormEvent) {

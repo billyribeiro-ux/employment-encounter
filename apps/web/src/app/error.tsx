@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
 export default function GlobalError({
@@ -59,13 +60,13 @@ export default function GlobalError({
             <RefreshCw className="h-4 w-4" />
             Try again
           </button>
-          <a
+          <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-6 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Home className="h-4 w-4" />
             Go home
-          </a>
+          </Link>
         </div>
 
         {/* Branding */}

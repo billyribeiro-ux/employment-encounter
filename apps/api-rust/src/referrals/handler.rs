@@ -39,7 +39,7 @@ pub async fn list_referrals(
                 reward_amount::float8 as reward_amount, reward_status, created_at
          FROM referrals WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100",
     )
-    .bind(&claims.tid)
+    .bind(claims.tid)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -59,8 +59,8 @@ pub async fn create_referral(
                    job_id::text, relationship, notes, status,
                    reward_amount::float8 as reward_amount, reward_status, created_at"
     )
-    .bind(&claims.tid)
-    .bind(&claims.sub)
+    .bind(claims.tid)
+    .bind(claims.sub)
     .bind(&body.candidate_name)
     .bind(&body.candidate_email)
     .bind(&body.job_id)

@@ -72,6 +72,7 @@ mod tests {
             role: role.to_string(),
             exp: 0,
             iat: 0,
+            jti: None,
         }
     }
 
