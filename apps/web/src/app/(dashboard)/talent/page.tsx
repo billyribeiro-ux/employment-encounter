@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,7 +51,7 @@ import { Separator } from "@/components/ui/separator";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { useCandidates, type CandidateProfile } from "@/lib/hooks/use-candidates";
-import { useJobs, type JobPost } from "@/lib/hooks/use-jobs";
+import { useJobs } from "@/lib/hooks/use-jobs";
 import { useCreateApplication } from "@/lib/hooks/use-applications";
 import { calculateMatchScore, type MatchResult } from "@/lib/hooks/use-matching";
 import { useDebounce } from "@/lib/hooks/use-debounce";
