@@ -75,6 +75,19 @@ export default function TimePage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportToCSV(
+            entries.map((e) => ({
+              date: e.date,
+              description: e.description,
+              duration_minutes: e.duration_minutes,
+              is_billable: e.is_billable,
+              created_at: e.created_at,
+            })),
+            "time_entries"
+          )}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
           <CreateTimeEntryDialog mode="manual">
             <Button variant="outline">
               <Plus className="mr-2 h-4 w-4" />
