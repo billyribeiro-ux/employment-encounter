@@ -45,6 +45,10 @@ export default function DashboardLayout({
       try {
         const { data } = await api.get("/auth/me");
         setUser(data);
+        // Redirect candidates to their portal
+        if (data.role === "candidate") {
+          router.push("/candidate");
+        }
       } catch {
         // Token might be invalid, redirect to login
         localStorage.removeItem("access_token");

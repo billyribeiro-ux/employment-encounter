@@ -16,9 +16,11 @@ mod jobs;
 mod meetings;
 mod messages;
 mod middleware;
+mod offers;
 mod payments;
 mod notifications;
 mod reports;
+mod scorecards;
 mod settings;
 mod shortcuts;
 mod subscriptions;
@@ -161,6 +163,7 @@ async fn main() -> anyhow::Result<()> {
     let protected_routes = Router::new()
         // Dashboard
         .route("/dashboard/stats", get(dashboard::handler::get_dashboard_stats))
+        .route("/dashboard/hiring-stats", get(dashboard::handler::get_hiring_stats))
         // Clients
         .route("/clients", get(clients::handler::list_clients))
         .route("/clients", post(clients::handler::create_client))
@@ -237,6 +240,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/candidates/{id}/skills/{skill_id}", delete(candidates::handler::delete_candidate_skill))
         .route("/candidates/{id}/documents", get(candidates::handler::list_candidate_documents))
         .route("/candidates/{id}/documents", post(candidates::handler::upload_candidate_document))
+        // Candidate Notes
+        .route("/candidates/{id}/notes", get(candidates::handler::list_candidate_notes))
+        .route("/candidates/{id}/notes", post(candidates::handler::create_candidate_note))
+        .route("/candidates/{id}/notes/{note_id}", put(candidates::handler::update_candidate_note))
+        .route("/candidates/{id}/notes/{note_id}", delete(candidates::handler::delete_candidate_note))
+        // Candidate Favorites
+        .route("/favorites", get(candidates::handler::list_favorites))
+        .route("/favorites", post(candidates::handler::add_favorite))
+        .route("/favorites/{id}", delete(candidates::handler::remove_favorite))
         // Jobs
         .route("/jobs", get(jobs::handler::list_jobs))
         .route("/jobs", post(jobs::handler::create_job))
@@ -252,6 +264,24 @@ async fn main() -> anyhow::Result<()> {
         .route("/applications/{id}/history", get(applications::handler::get_stage_history))
         .route("/applications/{id}/reject", post(applications::handler::reject_application))
         .route("/applications/{id}/withdraw", post(applications::handler::withdraw_application))
+        // Scorecards
+        .route("/scorecards", get(scorecards::handler::list_scorecards))
+        .route("/scorecards", post(scorecards::handler::create_scorecard))
+        .route("/scorecards/summary/{application_id}", get(scorecards::handler::get_scorecard_summary))
+        .route("/scorecards/{id}", get(scorecards::handler::get_scorecard))
+        .route("/scorecards/{id}", put(scorecards::handler::update_scorecard))
+        .route("/scorecards/{id}", delete(scorecards::handler::delete_scorecard))
+        // Decision Records
+        .route("/decision-records", get(scorecards::handler::list_decision_records))
+        .route("/decision-records", post(scorecards::handler::create_decision_record))
+        // Offers
+        .route("/offers", get(offers::handler::list_offers))
+        .route("/offers", post(offers::handler::create_offer))
+        .route("/offers/{id}", get(offers::handler::get_offer))
+        .route("/offers/{id}", put(offers::handler::update_offer))
+        .route("/offers/{id}/send", post(offers::handler::send_offer))
+        .route("/offers/{id}/accept", post(offers::handler::accept_offer))
+        .route("/offers/{id}/decline", post(offers::handler::decline_offer))
         // Subscriptions
         .route("/plans", get(subscriptions::handler::list_plans))
         .route("/subscription", get(subscriptions::handler::get_current_subscription))
@@ -344,8 +374,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/health", get(auth::handler::health))
         // Auth (public)
         .route("/api/v1/auth/register", post(auth::handler::register))
+        .route("/api/v1/auth/register-candidate", post(auth::handler::register_candidate))
         .route("/api/v1/auth/login", post(auth::handler::login))
         .route("/api/v1/auth/refresh", post(auth::handler::refresh_token))
+        // Public job listings (no auth required)
+        .route("/api/v1/public/jobs", get(jobs::handler::list_public_jobs))
+        .route("/api/v1/public/jobs/{id}", get(jobs::handler::get_public_job))
         // WebSocket
         .route("/api/v1/ws", get(ws::ws_handler))
         // Stripe webhook (public, verified by signature)

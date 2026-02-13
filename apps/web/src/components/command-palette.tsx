@@ -18,6 +18,12 @@ import {
   Receipt,
   LayoutDashboard,
   Keyboard,
+  ClipboardCheck,
+  FileSignature,
+  Star,
+  Bell,
+  Plus,
+  CalendarClock,
 } from "lucide-react";
 
 interface CommandItem {
@@ -56,23 +62,29 @@ export function CommandPalette() {
   );
 
   const commands: CommandItem[] = [
-    // Navigation
-    { id: "dashboard", label: "Go to Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, shortcut: "G D", action: () => navigate("/dashboard"), group: "Navigation" },
-    { id: "talent", label: "Go to Talent Discovery", icon: <Users className="h-4 w-4" />, shortcut: "G T", action: () => navigate("/talent"), group: "Navigation" },
-    { id: "hiring", label: "Go to Jobs & Pipeline", icon: <Briefcase className="h-4 w-4" />, shortcut: "G J", action: () => navigate("/hiring"), group: "Navigation" },
-    { id: "conversations", label: "Go to Conversations", icon: <MessageSquare className="h-4 w-4" />, shortcut: "G C", action: () => navigate("/conversations"), group: "Navigation" },
-    { id: "scheduling", label: "Go to Scheduling", icon: <Calendar className="h-4 w-4" />, shortcut: "G S", action: () => navigate("/scheduling"), group: "Navigation" },
-    { id: "conference", label: "Go to Conference", icon: <Video className="h-4 w-4" />, shortcut: "G V", action: () => navigate("/conference"), group: "Navigation" },
-    { id: "billing", label: "Go to Billing", icon: <CreditCard className="h-4 w-4" />, shortcut: "G B", action: () => navigate("/billing"), group: "Navigation" },
-    { id: "settings", label: "Go to Settings", icon: <Settings className="h-4 w-4" />, action: () => navigate("/settings"), group: "Navigation" },
+    // Hiring
+    { id: "dashboard", label: "Go to Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, shortcut: "G D", action: () => navigate("/dashboard"), group: "Hiring" },
+    { id: "hiring", label: "Go to Jobs & Pipeline", icon: <Briefcase className="h-4 w-4" />, shortcut: "G J", action: () => navigate("/hiring"), group: "Hiring" },
+    { id: "evaluate", label: "Go to Evaluation Center", icon: <ClipboardCheck className="h-4 w-4" />, shortcut: "G E", action: () => navigate("/hiring/evaluate"), group: "Hiring" },
+    { id: "talent", label: "Go to Talent Discovery", icon: <Search className="h-4 w-4" />, shortcut: "G T", action: () => navigate("/talent"), group: "Hiring" },
+    { id: "offers", label: "Go to Offers", icon: <FileSignature className="h-4 w-4" />, shortcut: "G O", action: () => navigate("/hiring/offers"), group: "Hiring" },
+    { id: "create-job", label: "Create New Job", icon: <Plus className="h-4 w-4" />, action: () => navigate("/hiring/jobs/new"), group: "Hiring" },
+    // Communication
+    { id: "conversations", label: "Go to Conversations", icon: <MessageSquare className="h-4 w-4" />, shortcut: "G C", action: () => navigate("/conversations"), group: "Communication" },
+    { id: "scheduling", label: "Go to Scheduling", icon: <CalendarClock className="h-4 w-4" />, shortcut: "G S", action: () => navigate("/scheduling"), group: "Communication" },
+    { id: "conference", label: "Go to Conference", icon: <Video className="h-4 w-4" />, shortcut: "G V", action: () => navigate("/conference"), group: "Communication" },
+    { id: "notifications", label: "Go to Notifications", icon: <Bell className="h-4 w-4" />, shortcut: "G N", action: () => navigate("/notifications"), group: "Communication" },
     // Operations
-    { id: "clients", label: "Go to Clients", icon: <Users className="h-4 w-4" />, action: () => navigate("/clients"), group: "Operations" },
     { id: "documents", label: "Go to Documents", icon: <FileText className="h-4 w-4" />, action: () => navigate("/documents"), group: "Operations" },
+    { id: "workflows", label: "Go to Workflows", icon: <Clock className="h-4 w-4" />, action: () => navigate("/workflows"), group: "Operations" },
     { id: "tasks", label: "Go to Tasks", icon: <Clock className="h-4 w-4" />, action: () => navigate("/tasks"), group: "Operations" },
-    { id: "invoices", label: "Go to Invoices", icon: <Receipt className="h-4 w-4" />, action: () => navigate("/invoices"), group: "Operations" },
+    { id: "calendar", label: "Go to Calendar", icon: <Calendar className="h-4 w-4" />, action: () => navigate("/calendar"), group: "Operations" },
     // Insights
     { id: "analytics", label: "Go to Analytics", icon: <BarChart3 className="h-4 w-4" />, action: () => navigate("/analytics"), group: "Insights" },
     { id: "reports", label: "Go to Reports", icon: <FileText className="h-4 w-4" />, action: () => navigate("/reports"), group: "Insights" },
+    // Account
+    { id: "billing", label: "Go to Billing", icon: <CreditCard className="h-4 w-4" />, shortcut: "G B", action: () => navigate("/billing"), group: "Account" },
+    { id: "settings", label: "Go to Settings", icon: <Settings className="h-4 w-4" />, action: () => navigate("/settings"), group: "Account" },
   ];
 
   if (!open) return null;
@@ -103,7 +115,7 @@ export function CommandPalette() {
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
               No results found.
             </Command.Empty>
-            {["Navigation", "Operations", "Insights"].map((group) => {
+            {["Hiring", "Communication", "Operations", "Insights", "Account"].map((group) => {
               const groupCommands = commands.filter((c) => c.group === group);
               if (groupCommands.length === 0) return null;
               return (

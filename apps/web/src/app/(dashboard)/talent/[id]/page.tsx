@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,6 +17,11 @@ import {
   Download,
   ExternalLink,
   Star,
+  StickyNote,
+  Plus,
+  Edit2,
+  Trash2,
+  ClipboardCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,11 +29,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 import {
   useCandidate,
   useCandidateSkills,
 } from "@/lib/hooks/use-candidates";
+import {
+  useCandidateNotes,
+  useCreateCandidateNote,
+  useUpdateCandidateNote,
+  useDeleteCandidateNote,
+} from "@/lib/hooks/use-candidate-notes";
+import type { CandidateNote } from "@/lib/hooks/use-candidate-notes";
+import { useIsFavorite, useAddFavorite, useRemoveFavorite } from "@/lib/hooks/use-favorites";
+import { useApplications } from "@/lib/hooks/use-applications";
+import { toast } from "sonner";
 
 function formatSalary(cents: number | null): string {
   if (!cents) return "Not specified";
@@ -66,6 +92,29 @@ function proficiencyColor(level: string | null) {
   }
 }
 
+function noteTypeBadge(noteType: string) {
+  switch (noteType) {
+    case "interview":
+      return "default" as const;
+    case "feedback":
+      return "secondary" as const;
+    case "general":
+      return "outline" as const;
+    default:
+      return "outline" as const;
+  }
+}
+
+function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function CandidateDetailPage({
   params,
 }: {
@@ -74,6 +123,80 @@ export default function CandidateDetailPage({
   const { id } = use(params);
   const { data: candidate, isLoading, isError } = useCandidate(id);
   const { data: skills } = useCandidateSkills(id);
+  const { data: notes, isLoading: notesLoading } = useCandidateNotes(id);
+  const createNote = useCreateCandidateNote(id);
+  const updateNote = useUpdateCandidateNote(id);
+  const deleteNote = useDeleteCandidateNote(id);
+  const { data: favoriteStatus } = useIsFavorite(id);
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+  const { data: applicationsData } = useApplications({ candidate_id: id, per_page: 10 });
+
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [newNoteType, setNewNoteType] = useState("general");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
+  const isFavorited = favoriteStatus?.is_favorite ?? false;
+  const favoriteId = favoriteStatus?.favorite_id ?? null;
+  const applications = applicationsData?.data ?? [];
+  const allNotes = notes ?? [];
+
+  function handleToggleFavorite() {
+    if (isFavorited && favoriteId) {
+      removeFavorite.mutate(favoriteId, {
+        onSuccess: () => toast.success("Removed from shortlist"),
+        onError: () => toast.error("Failed to update shortlist"),
+      });
+    } else {
+      addFavorite.mutate(
+        { candidate_id: id },
+        {
+          onSuccess: () => toast.success("Added to shortlist"),
+          onError: () => toast.error("Failed to update shortlist"),
+        }
+      );
+    }
+  }
+
+  function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newNoteContent.trim()) return;
+    createNote.mutate(
+      {
+        content: newNoteContent.trim(),
+        note_type: newNoteType,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Note added");
+          setNewNoteContent("");
+          setNewNoteType("general");
+        },
+        onError: () => toast.error("Failed to add note"),
+      }
+    );
+  }
+
+  function handleUpdateNote(noteId: string) {
+    if (!editContent.trim()) return;
+    updateNote.mutate(
+      { id: noteId, content: editContent.trim() },
+      {
+        onSuccess: () => {
+          toast.success("Note updated");
+          setEditingId(null);
+          setEditContent("");
+        },
+        onError: () => toast.error("Failed to update note"),
+      }
+    );
+  }
+
+  function startEditing(note: CandidateNote) {
+    setEditingId(note.id);
+    setEditContent(note.content);
+  }
 
   if (isLoading) {
     return (
@@ -166,6 +289,17 @@ export default function CandidateDetailPage({
           )}
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className={isFavorited ? "text-amber-500 border-amber-200" : ""}
+            onClick={handleToggleFavorite}
+            disabled={addFavorite.isPending || removeFavorite.isPending}
+          >
+            <Star
+              className={`mr-2 h-4 w-4 ${isFavorited ? "fill-current" : ""}`}
+            />
+            {isFavorited ? "Shortlisted" : "Shortlist"}
+          </Button>
           <Button variant="outline">
             <MessageSquare className="mr-2 h-4 w-4" />
             Message
@@ -231,11 +365,75 @@ export default function CandidateDetailPage({
         </Card>
       </div>
 
+      {/* Applications score summary */}
+      {applications.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              Applications ({applications.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {applications.map((app) => (
+                <div
+                  key={app.id}
+                  className="flex items-center justify-between rounded-md border p-3 hover:bg-muted/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {app.job_title || "Unknown Position"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge variant="outline" className="text-[10px]">
+                          {app.stage.replace(/_/g, " ")}
+                        </Badge>
+                        <Badge
+                          variant={
+                            app.status === "rejected"
+                              ? "destructive"
+                              : app.status === "hired"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="text-[10px]"
+                        >
+                          {app.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {app.screening_score != null && (
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        <span className="text-xs font-semibold">
+                          {app.screening_score}
+                        </span>
+                      </div>
+                    )}
+                    <Link href={`/hiring/evaluate/${app.id}`}>
+                      <Button variant="outline" size="sm" className="h-7 text-xs">
+                        <ClipboardCheck className="mr-1 h-3 w-3" />
+                        Evaluate
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="experience">Experience</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
@@ -396,6 +594,172 @@ export default function CandidateDetailPage({
                         >
                           {skill.proficiency_level}
                         </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Notes tab */}
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <StickyNote className="h-4 w-4" />
+                Notes ({allNotes.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAddNote} className="space-y-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Select value={newNoteType} onValueChange={setNewNoteType}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="interview">Interview</SelectItem>
+                      <SelectItem value="feedback">Feedback</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground">Type</span>
+                </div>
+                <Textarea
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  placeholder="Add a note about this candidate..."
+                  rows={3}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!newNoteContent.trim() || createNote.isPending}
+                  >
+                    {createNote.isPending ? "Adding..." : "Add Note"}
+                  </Button>
+                </div>
+              </form>
+
+              <Separator className="my-4" />
+
+              {notesLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : allNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <StickyNote className="h-8 w-8 text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    No notes yet. Add the first note above.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allNotes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="rounded-md border p-3 group hover:bg-muted/30"
+                    >
+                      {editingId === note.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={3}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpdateNote(note.id)}
+                              disabled={updateNote.isPending}
+                            >
+                              {updateNote.isPending ? "Saving..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-[10px]">
+                                  {(note.author_name || "U")
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs font-medium">
+                                {note.author_name || "Unknown"}
+                              </span>
+                              <Badge
+                                variant={noteTypeBadge(note.note_type)}
+                                className="text-[10px]"
+                              >
+                                {note.note_type}
+                              </Badge>
+                              {note.is_private && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px]"
+                                >
+                                  Private
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground"
+                                onClick={() => startEditing(note)}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <ConfirmDialog
+                                title="Delete note?"
+                                description="This will permanently delete this note."
+                                actionLabel="Delete"
+                                onConfirm={() =>
+                                  deleteNote.mutate(note.id, {
+                                    onSuccess: () =>
+                                      toast.success("Note deleted"),
+                                    onError: () =>
+                                      toast.error("Failed to delete note"),
+                                  })
+                                }
+                              >
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  disabled={deleteNote.isPending}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </ConfirmDialog>
+                            </div>
+                          </div>
+                          <p className="text-sm mt-2 whitespace-pre-wrap">
+                            {note.content}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-2">
+                            {formatDateTime(note.created_at)}
+                            {note.updated_at !== note.created_at && " (edited)"}
+                          </p>
+                        </>
                       )}
                     </div>
                   ))}

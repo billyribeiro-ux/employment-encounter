@@ -401,3 +401,101 @@ pub async fn logout(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+// ── Candidate Self-Registration ──────────────────────────────────────────
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct RegisterCandidateRequest {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 12, max = 128))]
+    pub password: String,
+    #[validate(length(min = 1, max = 100))]
+    pub first_name: String,
+    #[validate(length(min = 1, max = 100))]
+    pub last_name: String,
+}
+
+pub async fn register_candidate(
+    State(state): State<AppState>,
+    Json(payload): Json<RegisterCandidateRequest>,
+) -> AppResult<(StatusCode, Json<AuthResponse>)> {
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let normalized_email = payload.email.trim().to_lowercase();
+
+    // Check if email already exists
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE LOWER(email) = $1")
+        .bind(&normalized_email)
+        .fetch_one(&state.db)
+        .await?;
+
+    if row.0 > 0 {
+        return Err(AppError::Conflict("Email already registered".to_string()));
+    }
+
+    let password_hash = password::hash_password(&payload.password)?;
+
+    // Create a tenant for the candidate (candidates get their own tenant context)
+    let tenant_id = Uuid::new_v4();
+    let tenant_name = format!("{} {}", &payload.first_name, &payload.last_name);
+    let tenant_slug = slug::slugify(&tenant_name);
+
+    sqlx::query(
+        "INSERT INTO tenants (id, name, slug, tier, status, kms_key_id) \
+         VALUES ($1, $2, $3, 'solo', 'active', 'dev-key')"
+    )
+    .bind(tenant_id)
+    .bind(&tenant_name)
+    .bind(&tenant_slug)
+    .execute(&state.db)
+    .await?;
+
+    // Create user with candidate role
+    let user_id = Uuid::new_v4();
+
+    sqlx::query(
+        "INSERT INTO users (id, tenant_id, email, password_hash, first_name, last_name, role, status) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'candidate', 'active')"
+    )
+    .bind(user_id)
+    .bind(tenant_id)
+    .bind(&normalized_email)
+    .bind(&password_hash)
+    .bind(&payload.first_name)
+    .bind(&payload.last_name)
+    .execute(&state.db)
+    .await?;
+
+    // Create candidate_profiles row
+    sqlx::query(
+        "INSERT INTO candidate_profiles (tenant_id, user_id, headline) \
+         VALUES ($1, $2, $3)"
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(format!("{} {}", &payload.first_name, &payload.last_name))
+    .execute(&state.db)
+    .await?;
+
+    let access_token = jwt::create_access_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
+    let refresh_token = jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(AuthResponse {
+            access_token,
+            refresh_token,
+            user: UserResponse {
+                id: user_id,
+                email: normalized_email,
+                first_name: payload.first_name,
+                last_name: payload.last_name,
+                role: "candidate".to_string(),
+                tenant_id,
+            },
+        }),
+    ))
+}

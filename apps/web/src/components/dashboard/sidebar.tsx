@@ -11,7 +11,6 @@ import {
   BarChart3,
   Calendar,
   Settings,
-  Building2,
   FolderOpen,
   CheckSquare,
   Wallet,
@@ -23,6 +22,10 @@ import {
   UserCheck,
   CreditCard,
   CalendarClock,
+  ClipboardCheck,
+  Star,
+  FileSignature,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,23 +39,29 @@ const sections: NavSection[] = [
     label: "Hiring",
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Talent Discovery", href: "/talent", icon: Search },
       { name: "Jobs & Pipeline", href: "/hiring", icon: Briefcase },
+      { name: "Evaluation Center", href: "/hiring/evaluate", icon: ClipboardCheck },
+      { name: "Talent Discovery", href: "/talent", icon: Search },
+      { name: "Shortlisted", href: "/hiring/evaluate?tab=shortlisted", icon: Star },
+      { name: "Offers", href: "/hiring/offers", icon: FileSignature },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
       { name: "Conversations", href: "/conversations", icon: MessageSquare },
       { name: "Scheduling", href: "/scheduling", icon: CalendarClock },
       { name: "Conference", href: "/conference", icon: Video },
+      { name: "Notifications", href: "/notifications", icon: Bell },
     ],
   },
   {
     label: "Operations",
     items: [
-      { name: "Clients", href: "/clients", icon: Users },
       { name: "Documents", href: "/documents", icon: FileText },
       { name: "Workflows", href: "/workflows", icon: FolderOpen },
       { name: "Tasks", href: "/tasks", icon: CheckSquare },
-      { name: "Time Tracking", href: "/time", icon: Clock },
-      { name: "Invoices", href: "/invoices", icon: Receipt },
-      { name: "Expenses", href: "/expenses", icon: Wallet },
+      { name: "Calendar", href: "/calendar", icon: Calendar },
     ],
   },
   {
@@ -60,7 +69,6 @@ const sections: NavSection[] = [
     items: [
       { name: "Analytics", href: "/analytics", icon: BarChart3 },
       { name: "Reports", href: "/reports", icon: PieChart },
-      { name: "Calendar", href: "/calendar", icon: Calendar },
     ],
   },
   {
@@ -119,7 +127,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t p-4">
-        <p className="text-xs text-muted-foreground">Talent OS v0.2.0</p>
+        <p className="text-xs text-muted-foreground">Talent OS v1.0.0</p>
       </div>
     </aside>
   );

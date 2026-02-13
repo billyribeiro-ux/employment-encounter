@@ -10,6 +10,7 @@ export interface JobPost {
   description: string | null;
   requirements: string | null;
   responsibilities: string | null;
+  benefits: string | null;
   department: string | null;
   employment_type: string;
   experience_level: string | null;
@@ -21,6 +22,12 @@ export interface JobPost {
   salary_max_cents: number | null;
   salary_currency: string;
   show_salary: boolean;
+  equity_offered: boolean;
+  visibility: string;
+  max_applications: number | null;
+  is_urgent: boolean;
+  skills_required: string[];
+  skills_preferred: string[];
   status: string;
   published_at: string | null;
   closes_at: string | null;
@@ -36,6 +43,7 @@ export interface CreateJobPayload {
   description?: string;
   requirements?: string;
   responsibilities?: string;
+  benefits?: string;
   department?: string;
   employment_type?: string;
   experience_level?: string;
@@ -47,6 +55,12 @@ export interface CreateJobPayload {
   salary_max_cents?: number;
   salary_currency?: string;
   show_salary?: boolean;
+  equity_offered?: boolean;
+  visibility?: string;
+  max_applications?: number;
+  is_urgent?: boolean;
+  skills_required?: string[];
+  skills_preferred?: string[];
   closes_at?: string;
 }
 
@@ -55,6 +69,7 @@ export interface UpdateJobPayload {
   description?: string;
   requirements?: string;
   responsibilities?: string;
+  benefits?: string;
   department?: string;
   employment_type?: string;
   experience_level?: string;
@@ -66,6 +81,12 @@ export interface UpdateJobPayload {
   salary_max_cents?: number;
   salary_currency?: string;
   show_salary?: boolean;
+  equity_offered?: boolean;
+  visibility?: string;
+  max_applications?: number;
+  is_urgent?: boolean;
+  skills_required?: string[];
+  skills_preferred?: string[];
   closes_at?: string;
 }
 

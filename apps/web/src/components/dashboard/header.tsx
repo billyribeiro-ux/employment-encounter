@@ -30,18 +30,22 @@ import { useWebSocket } from "@/lib/hooks/use-websocket";
 
 const SEARCH_PAGES = [
   { keywords: ["dashboard", "home", "overview"], href: "/dashboard" },
-  { keywords: ["client", "clients", "customer"], href: "/clients" },
+  { keywords: ["hiring", "jobs", "pipeline", "positions"], href: "/hiring" },
+  { keywords: ["evaluate", "score", "scorecard", "review", "assessment"], href: "/hiring/evaluate" },
+  { keywords: ["talent", "candidate", "search", "discover"], href: "/talent" },
+  { keywords: ["offer", "offers", "compensation", "package"], href: "/hiring/offers" },
+  { keywords: ["conversation", "conversations", "chat", "messaging"], href: "/conversations" },
+  { keywords: ["schedule", "scheduling", "interview", "meeting"], href: "/scheduling" },
+  { keywords: ["conference", "video", "call"], href: "/conference" },
+  { keywords: ["notification", "notifications", "alerts"], href: "/notifications" },
   { keywords: ["document", "documents", "file", "upload"], href: "/documents" },
-  { keywords: ["workflow", "workflows", "pipeline"], href: "/workflows" },
+  { keywords: ["workflow", "workflows", "automation"], href: "/workflows" },
   { keywords: ["task", "tasks", "kanban", "todo"], href: "/tasks" },
-  { keywords: ["time", "timer", "hours", "tracking"], href: "/time" },
-  { keywords: ["invoice", "invoices", "billing", "payment"], href: "/invoices" },
-  { keywords: ["expense", "expenses", "cost"], href: "/expenses" },
-  { keywords: ["analytics", "metrics", "chart"], href: "/analytics" },
-  { keywords: ["report", "reports", "profit", "loss", "cashflow", "utilization"], href: "/reports" },
-  { keywords: ["message", "messages", "chat", "messaging"], href: "/messages" },
-  { keywords: ["calendar", "deadline", "compliance", "filing"], href: "/calendar" },
-  { keywords: ["settings", "profile", "firm", "team", "security"], href: "/settings" },
+  { keywords: ["calendar", "deadline", "compliance"], href: "/calendar" },
+  { keywords: ["analytics", "metrics", "chart", "funnel"], href: "/analytics" },
+  { keywords: ["report", "reports", "data"], href: "/reports" },
+  { keywords: ["billing", "subscription", "plan", "payment"], href: "/billing" },
+  { keywords: ["settings", "profile", "team", "security"], href: "/settings" },
 ];
 
 export function Header() {

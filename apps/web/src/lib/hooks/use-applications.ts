@@ -158,7 +158,7 @@ export function useStageHistory(applicationId: string) {
     queryKey: ["applications", applicationId, "stage-history"],
     queryFn: async () => {
       const { data } = await api.get<ApplicationStageEvent[]>(
-        `/applications/${applicationId}/stage`
+        `/applications/${applicationId}/history`
       );
       return data;
     },

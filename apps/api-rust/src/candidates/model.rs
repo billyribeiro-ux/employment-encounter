@@ -129,3 +129,61 @@ pub struct ListCandidatesQuery {
     pub location_country: Option<String>,
     pub skill: Option<String>,
 }
+
+// ── Candidate Notes ──────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct CandidateNote {
+    pub id: Uuid,
+    pub tenant_id: Uuid,
+    pub candidate_id: Uuid,
+    pub application_id: Option<Uuid>,
+    pub author_id: Uuid,
+    pub content: String,
+    pub is_private: Option<bool>,
+    pub note_type: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateNoteRequest {
+    pub application_id: Option<Uuid>,
+    pub content: String,
+    pub is_private: Option<bool>,
+    pub note_type: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateNoteRequest {
+    pub content: Option<String>,
+    pub is_private: Option<bool>,
+    pub note_type: Option<String>,
+}
+
+// ── Candidate Favorites ──────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct CandidateFavorite {
+    pub id: Uuid,
+    pub tenant_id: Uuid,
+    pub candidate_id: Uuid,
+    pub user_id: Uuid,
+    pub job_id: Option<Uuid>,
+    pub tags: Vec<String>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateFavoriteRequest {
+    pub candidate_id: Uuid,
+    pub job_id: Option<Uuid>,
+    pub tags: Option<Vec<String>>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListFavoritesQuery {
+    pub job_id: Option<Uuid>,
+}

@@ -5,20 +5,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
   FileText,
-  Clock,
-  Receipt,
-  BarChart3,
-  Calendar,
   Settings,
-  Building2,
   FolderOpen,
   CheckSquare,
-  Wallet,
   Menu,
   MessageSquare,
+  BarChart3,
   PieChart,
+  Calendar,
+  Video,
+  Search,
+  Briefcase,
+  UserCheck,
+  CreditCard,
+  CalendarClock,
+  ClipboardCheck,
+  Star,
+  FileSignature,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,17 +35,21 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Clients", href: "/clients", icon: Users },
+  { name: "Jobs & Pipeline", href: "/hiring", icon: Briefcase },
+  { name: "Evaluation Center", href: "/hiring/evaluate", icon: ClipboardCheck },
+  { name: "Talent Discovery", href: "/talent", icon: Search },
+  { name: "Offers", href: "/hiring/offers", icon: FileSignature },
+  { name: "Conversations", href: "/conversations", icon: MessageSquare },
+  { name: "Scheduling", href: "/scheduling", icon: CalendarClock },
+  { name: "Conference", href: "/conference", icon: Video },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Workflows", href: "/workflows", icon: FolderOpen },
   { name: "Tasks", href: "/tasks", icon: CheckSquare },
-  { name: "Time Tracking", href: "/time", icon: Clock },
-  { name: "Invoices", href: "/invoices", icon: Receipt },
-  { name: "Expenses", href: "/expenses", icon: Wallet },
+  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: PieChart },
-  { name: "Messages", href: "/messages", icon: MessageSquare },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
+  { name: "Billing", href: "/billing", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -58,9 +67,9 @@ export function MobileSidebar() {
       <SheetContent side="left" className="w-64 p-0">
         <div className="flex h-16 items-center gap-2 border-b px-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Building2 className="h-4 w-4" />
+            <UserCheck className="h-4 w-4" />
           </div>
-          <span className="text-lg font-semibold">CPA Platform</span>
+          <span className="text-lg font-semibold">Talent OS</span>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navigation.map((item) => {
@@ -85,7 +94,7 @@ export function MobileSidebar() {
           })}
         </nav>
         <div className="border-t p-4">
-          <p className="text-xs text-muted-foreground">v0.1.0 MVP</p>
+          <p className="text-xs text-muted-foreground">Talent OS v1.0.0</p>
         </div>
       </SheetContent>
     </Sheet>

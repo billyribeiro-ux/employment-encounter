@@ -45,7 +45,7 @@ export function useCurrentSubscription() {
   return useQuery({
     queryKey: ["subscription"],
     queryFn: async () => {
-      const { data } = await api.get<Subscription>("/billing/subscription");
+      const { data } = await api.get<Subscription>("/subscription");
       return data;
     },
   });
@@ -55,7 +55,7 @@ export function usePlans() {
   return useQuery({
     queryKey: ["plans"],
     queryFn: async () => {
-      const { data } = await api.get<Plan[]>("/billing/plans");
+      const { data } = await api.get<Plan[]>("/plans");
       return data;
     },
   });
@@ -65,7 +65,7 @@ export function useUsage() {
   return useQuery({
     queryKey: ["usage"],
     queryFn: async () => {
-      const { data } = await api.get<Usage>("/billing/usage");
+      const { data } = await api.get<Usage>("/subscription/usage");
       return data;
     },
   });
@@ -75,7 +75,7 @@ export function useChangePlan() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (planId: string) => {
-      const { data } = await api.put<Subscription>("/billing/subscription", {
+      const { data } = await api.put<Subscription>("/subscription/plan", {
         plan_id: planId,
       });
       return data;
@@ -83,6 +83,36 @@ export function useChangePlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
       queryClient.invalidateQueries({ queryKey: ["usage"] });
+    },
+  });
+}
+
+export function useCreateSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (planId: string) => {
+      const { data } = await api.post<Subscription>("/subscription", {
+        plan_id: planId,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["usage"] });
+      queryClient.invalidateQueries({ queryKey: ["plans"] });
+    },
+  });
+}
+
+export function useCancelSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<Subscription>("/subscription/cancel");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
     },
   });
 }

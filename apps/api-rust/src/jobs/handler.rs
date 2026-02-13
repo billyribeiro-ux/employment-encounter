@@ -371,3 +371,93 @@ pub async fn publish_job(
 
     Ok(Json(job))
 }
+
+// ── Public Job Endpoints (no auth required) ──────────────────────────────
+
+pub async fn list_public_jobs(
+    State(state): State<AppState>,
+    Query(params): Query<PublicJobsQuery>,
+) -> AppResult<Json<serde_json::Value>> {
+    let page = params.page.unwrap_or(1).max(1);
+    let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+
+    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let work_mode_filter = params.work_mode.as_deref().unwrap_or("");
+    let employment_type_filter = params.employment_type.as_deref().unwrap_or("");
+    let location_country_filter = params.location_country.as_deref().unwrap_or("");
+    let search_str = params.search.as_deref().unwrap_or("");
+    let search_pat = search_pattern.as_deref().unwrap_or("");
+
+    let jobs: Vec<PublicJobPost> = sqlx::query_as(
+        "SELECT id, title, department, description, requirements, responsibilities, benefits, \
+         location_city, location_state, location_country, work_mode, employment_type, \
+         seniority_level, salary_min_cents, salary_max_cents, salary_currency, equity_offered, \
+         skills_required, skills_preferred, posted_at, closes_at, created_at \
+         FROM job_posts \
+         WHERE status IN ('open') \
+         AND visibility = 'public' \
+         AND ($1 = '' OR LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) \
+         AND ($3 = '' OR work_mode = $3) \
+         AND ($4 = '' OR employment_type = $4) \
+         AND ($5 = '' OR location_country = $5) \
+         ORDER BY posted_at DESC NULLS LAST, created_at DESC \
+         LIMIT $6 OFFSET $7"
+    )
+    .bind(search_str)
+    .bind(search_pat)
+    .bind(work_mode_filter)
+    .bind(employment_type_filter)
+    .bind(location_country_filter)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM job_posts \
+         WHERE status IN ('open') \
+         AND visibility = 'public' \
+         AND ($1 = '' OR LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) \
+         AND ($3 = '' OR work_mode = $3) \
+         AND ($4 = '' OR employment_type = $4) \
+         AND ($5 = '' OR location_country = $5)"
+    )
+    .bind(search_str)
+    .bind(search_pat)
+    .bind(work_mode_filter)
+    .bind(employment_type_filter)
+    .bind(location_country_filter)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "data": jobs,
+        "meta": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total as f64 / per_page as f64).ceil() as i64
+        }
+    })))
+}
+
+pub async fn get_public_job(
+    State(state): State<AppState>,
+    Path(job_id): Path<Uuid>,
+) -> AppResult<Json<PublicJobPost>> {
+    let job: PublicJobPost = sqlx::query_as(
+        "SELECT id, title, department, description, requirements, responsibilities, benefits, \
+         location_city, location_state, location_country, work_mode, employment_type, \
+         seniority_level, salary_min_cents, salary_max_cents, salary_currency, equity_offered, \
+         skills_required, skills_preferred, posted_at, closes_at, created_at \
+         FROM job_posts \
+         WHERE id = $1 AND status IN ('open') AND visibility = 'public'"
+    )
+    .bind(job_id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Job not found".to_string()))?;
+
+    Ok(Json(job))
+}

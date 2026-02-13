@@ -13,6 +13,8 @@ import {
   X,
   Star,
   ArrowRight,
+  ClipboardCheck,
+  BarChart3,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ import {
   useRejectApplication,
 } from "@/lib/hooks/use-applications";
 import type { Application } from "@/lib/hooks/use-applications";
+import { useFavorites, useAddFavorite, useRemoveFavorite } from "@/lib/hooks/use-favorites";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
 
@@ -75,6 +78,9 @@ function PipelineCard({
   onReject,
   isAdvancing,
   isRejecting,
+  isFavorited,
+  onToggleFavorite,
+  isFavoriteLoading,
 }: {
   application: Application;
   stageIndex: number;
@@ -82,6 +88,9 @@ function PipelineCard({
   onReject: (id: string) => void;
   isAdvancing: boolean;
   isRejecting: boolean;
+  isFavorited: boolean;
+  onToggleFavorite: (candidateId: string) => void;
+  isFavoriteLoading: boolean;
 }) {
   const nextStage =
     stageIndex < PIPELINE_STAGES.length - 1
@@ -93,23 +102,41 @@ function PipelineCard({
     <div className="rounded-lg border bg-background p-3 shadow-sm hover:shadow-md transition-shadow group">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium leading-tight truncate">
+          <Link
+            href={`/hiring/evaluate/${application.id}`}
+            className="text-sm font-medium leading-tight truncate hover:underline block"
+          >
             {application.candidate_name || "Unknown Candidate"}
-          </p>
+          </Link>
           {application.candidate_headline && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
               {application.candidate_headline}
             </p>
           )}
         </div>
-        {application.screening_score != null && (
-          <div className="flex items-center gap-1 text-amber-500 shrink-0">
-            <Star className="h-3 w-3 fill-current" />
-            <span className="text-[10px] font-semibold">
-              {application.screening_score}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => onToggleFavorite(application.candidate_id)}
+            disabled={isFavoriteLoading}
+            className="hover:scale-110 transition-transform"
+          >
+            <Star
+              className={`h-3.5 w-3.5 ${
+                isFavorited
+                  ? "text-amber-500 fill-amber-500"
+                  : "text-muted-foreground/30"
+              }`}
+            />
+          </button>
+          {application.screening_score != null && (
+            <div className="flex items-center gap-0.5 text-amber-500 ml-1">
+              <Star className="h-3 w-3 fill-current" />
+              <span className="text-[10px] font-semibold">
+                {application.screening_score}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mt-2">
@@ -138,6 +165,16 @@ function PipelineCard({
               {nextStage.label}
             </Button>
           )}
+          <Link href={`/hiring/evaluate/${application.id}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              title="Evaluate"
+            >
+              <ClipboardCheck className="h-3 w-3" />
+            </Button>
+          </Link>
           <ConfirmDialog
             title="Reject candidate?"
             description={`This will reject ${application.candidate_name || "this candidate"} from the pipeline.`}
@@ -174,6 +211,14 @@ export default function JobPipelinePage({
   const advanceStage = useAdvanceStage();
   const rejectApplication = useRejectApplication();
 
+  const { data: favoritesData } = useFavorites({ per_page: 200 });
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+
+  const favoriteMap = new Map(
+    (favoritesData?.data ?? []).map((f) => [f.candidate_id, f.id])
+  );
+
   const applications = applicationsData?.data ?? [];
 
   function getStageApplications(stageId: string): Application[] {
@@ -198,6 +243,24 @@ export default function JobPipelinePage({
         onError: () => toast.error("Failed to reject candidate"),
       }
     );
+  }
+
+  function handleToggleFavorite(candidateId: string) {
+    const existingId = favoriteMap.get(candidateId);
+    if (existingId) {
+      removeFavorite.mutate(existingId, {
+        onSuccess: () => toast.success("Removed from shortlist"),
+        onError: () => toast.error("Failed to update shortlist"),
+      });
+    } else {
+      addFavorite.mutate(
+        { candidate_id: candidateId },
+        {
+          onSuccess: () => toast.success("Added to shortlist"),
+          onError: () => toast.error("Failed to update shortlist"),
+        }
+      );
+    }
   }
 
   if (jobLoading) {
@@ -293,6 +356,20 @@ export default function JobPipelinePage({
             </span>
           </div>
         </div>
+        <div className="flex gap-2">
+          <Link href="/hiring/evaluate">
+            <Button variant="outline" size="sm">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Evaluation Center
+            </Button>
+          </Link>
+          <Link href="/hiring/analytics">
+            <Button variant="outline" size="sm">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Pipeline board */}
@@ -354,6 +431,11 @@ export default function JobPipelinePage({
                         onReject={handleReject}
                         isAdvancing={advanceStage.isPending}
                         isRejecting={rejectApplication.isPending}
+                        isFavorited={favoriteMap.has(app.candidate_id)}
+                        onToggleFavorite={handleToggleFavorite}
+                        isFavoriteLoading={
+                          addFavorite.isPending || removeFavorite.isPending
+                        }
                       />
                     ))}
                     {stageApps.length === 0 && (

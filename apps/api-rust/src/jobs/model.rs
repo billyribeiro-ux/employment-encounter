@@ -107,3 +107,39 @@ pub struct ListJobsQuery {
     pub seniority_level: Option<String>,
     pub is_urgent: Option<bool>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct PublicJobsQuery {
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
+    pub search: Option<String>,
+    pub work_mode: Option<String>,
+    pub employment_type: Option<String>,
+    pub location_country: Option<String>,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct PublicJobPost {
+    pub id: Uuid,
+    pub title: String,
+    pub department: Option<String>,
+    pub description: Option<String>,
+    pub requirements: Option<String>,
+    pub responsibilities: Option<String>,
+    pub benefits: Option<String>,
+    pub location_city: Option<String>,
+    pub location_state: Option<String>,
+    pub location_country: Option<String>,
+    pub work_mode: String,
+    pub employment_type: String,
+    pub seniority_level: Option<String>,
+    pub salary_min_cents: Option<i64>,
+    pub salary_max_cents: Option<i64>,
+    pub salary_currency: String,
+    pub equity_offered: bool,
+    pub skills_required: Vec<String>,
+    pub skills_preferred: Vec<String>,
+    pub posted_at: Option<DateTime<Utc>>,
+    pub closes_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}

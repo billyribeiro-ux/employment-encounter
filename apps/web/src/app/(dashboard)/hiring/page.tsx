@@ -17,6 +17,8 @@ import {
   Eye,
   Trash2,
   MoreHorizontal,
+  Pencil,
+  ClipboardCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -252,6 +254,12 @@ export default function HiringPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/hiring/evaluate">
+            <Button variant="outline">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Evaluation Center
+            </Button>
+          </Link>
           <Button
             variant="outline"
             onClick={() =>
@@ -271,12 +279,12 @@ export default function HiringPage() {
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <CreateJobDialog>
+          <Link href="/hiring/jobs/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Create Job
             </Button>
-          </CreateJobDialog>
+          </Link>
         </div>
       </div>
 
@@ -459,12 +467,12 @@ export default function HiringPage() {
                 Create your first job posting to start receiving applications
                 from candidates.
               </p>
-              <CreateJobDialog>
+              <Link href="/hiring/jobs/new">
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Job
                 </Button>
-              </CreateJobDialog>
+              </Link>
             </div>
           ) : (
             <div className="space-y-4">
@@ -555,6 +563,15 @@ export default function HiringPage() {
                                 className="h-8 w-8"
                               >
                                 <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/hiring/jobs/${job.id}/edit`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <Pencil className="h-4 w-4" />
                               </Button>
                             </Link>
                             <ConfirmDialog

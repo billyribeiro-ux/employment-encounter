@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::auth::jwt::Claims;
 use crate::error::{AppError, AppResult};
+#[allow(unused_imports)]
 use crate::candidates::model::*;
 use crate::AppState;
 
@@ -321,4 +322,179 @@ pub async fn list_candidate_documents(
     .await?;
 
     Ok(Json(documents))
+}
+
+// ── Candidate Notes ──────────────────────────────────────────────────────
+
+pub async fn list_candidate_notes(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(candidate_id): Path<Uuid>,
+) -> AppResult<Json<Vec<CandidateNote>>> {
+    let notes: Vec<CandidateNote> = sqlx::query_as(
+        "SELECT * FROM candidate_notes \
+         WHERE candidate_id = $1 AND tenant_id = $2 \
+         ORDER BY created_at DESC"
+    )
+    .bind(candidate_id)
+    .bind(claims.tid)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(notes))
+}
+
+pub async fn create_candidate_note(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(candidate_id): Path<Uuid>,
+    Json(payload): Json<CreateNoteRequest>,
+) -> AppResult<(StatusCode, Json<CandidateNote>)> {
+    if payload.content.is_empty() {
+        return Err(crate::error::AppError::Validation("content is required".to_string()));
+    }
+
+    let is_private = payload.is_private.unwrap_or(false);
+    let note_type = payload.note_type.as_deref().unwrap_or("general");
+
+    let note: CandidateNote = sqlx::query_as(
+        "INSERT INTO candidate_notes \
+         (tenant_id, candidate_id, application_id, author_id, content, is_private, note_type) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         RETURNING *"
+    )
+    .bind(claims.tid)
+    .bind(candidate_id)
+    .bind(payload.application_id)
+    .bind(claims.sub)
+    .bind(&payload.content)
+    .bind(is_private)
+    .bind(note_type)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(note)))
+}
+
+pub async fn update_candidate_note(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((candidate_id, note_id)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<UpdateNoteRequest>,
+) -> AppResult<Json<CandidateNote>> {
+    let note: CandidateNote = sqlx::query_as(
+        "UPDATE candidate_notes SET \
+         content = COALESCE($4, content), \
+         is_private = COALESCE($5, is_private), \
+         note_type = COALESCE($6, note_type), \
+         updated_at = NOW() \
+         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3 \
+         RETURNING *"
+    )
+    .bind(note_id)
+    .bind(candidate_id)
+    .bind(claims.tid)
+    .bind(&payload.content)
+    .bind(payload.is_private)
+    .bind(&payload.note_type)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| crate::error::AppError::NotFound("Note not found".to_string()))?;
+
+    Ok(Json(note))
+}
+
+pub async fn delete_candidate_note(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((candidate_id, note_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<StatusCode> {
+    let result = sqlx::query(
+        "DELETE FROM candidate_notes \
+         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3"
+    )
+    .bind(note_id)
+    .bind(candidate_id)
+    .bind(claims.tid)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(crate::error::AppError::NotFound("Note not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+// ── Candidate Favorites ──────────────────────────────────────────────────
+
+pub async fn list_favorites(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ListFavoritesQuery>,
+) -> AppResult<Json<Vec<CandidateFavorite>>> {
+    let job_id_filter = params.job_id.map(|id| id.to_string()).unwrap_or_default();
+
+    let favorites: Vec<CandidateFavorite> = sqlx::query_as(
+        "SELECT * FROM candidate_favorites \
+         WHERE tenant_id = $1 AND user_id = $2 \
+         AND ($3 = '' OR job_id::text = $3) \
+         ORDER BY created_at DESC"
+    )
+    .bind(claims.tid)
+    .bind(claims.sub)
+    .bind(&job_id_filter)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(favorites))
+}
+
+pub async fn add_favorite(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<CreateFavoriteRequest>,
+) -> AppResult<(StatusCode, Json<CandidateFavorite>)> {
+    let tags = payload.tags.unwrap_or_default();
+
+    let favorite: CandidateFavorite = sqlx::query_as(
+        "INSERT INTO candidate_favorites \
+         (tenant_id, candidate_id, user_id, job_id, tags, notes) \
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         ON CONFLICT (tenant_id, candidate_id, user_id, job_id) DO UPDATE SET \
+         tags = EXCLUDED.tags, notes = EXCLUDED.notes \
+         RETURNING *"
+    )
+    .bind(claims.tid)
+    .bind(payload.candidate_id)
+    .bind(claims.sub)
+    .bind(payload.job_id)
+    .bind(&tags)
+    .bind(&payload.notes)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(favorite)))
+}
+
+pub async fn remove_favorite(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    let result = sqlx::query(
+        "DELETE FROM candidate_favorites \
+         WHERE id = $1 AND tenant_id = $2 AND user_id = $3"
+    )
+    .bind(id)
+    .bind(claims.tid)
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(crate::error::AppError::NotFound("Favorite not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
