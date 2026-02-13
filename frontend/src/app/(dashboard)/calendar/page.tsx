@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -32,6 +33,16 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 function statusIcon(status: string) {
   switch (status) {
@@ -87,8 +98,8 @@ export default function CalendarPage() {
   const completed = deadlines.filter((d) => d.status === "completed");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-6">
+      <motion.div variants={fadeUp} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Compliance Calendar
@@ -103,16 +114,16 @@ export default function CalendarPage() {
             Add Deadline
           </Button>
         </CreateDeadlineDialog>
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-4">
+      <motion.div variants={fadeUp} className="flex items-center gap-4">
         <SearchInput
           value={searchQuery}
           onChange={(v) => { setSearchQuery(v); setPage(1); }}
           placeholder="Search deadlines..."
         />
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px] bg-muted/50 border-0">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -122,246 +133,278 @@ export default function CalendarPage() {
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </motion.div>
 
       {!isLoading && !isError && deadlines.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-medium">Overdue</span>
-              </div>
-              <p className="text-2xl font-bold mt-1">{overdue.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-medium">Upcoming</span>
-              </div>
-              <p className="text-2xl font-bold mt-1">{upcoming.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Completed</span>
-              </div>
-              <p className="text-2xl font-bold mt-1">{completed.length}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <motion.div variants={stagger} initial="hidden" animate="visible" className="grid gap-4 md:grid-cols-3">
+          <motion.div variants={fadeUp}>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm font-medium">Overdue</span>
+                </div>
+                <p className="text-2xl font-bold mt-1">{overdue.length}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium">Upcoming</span>
+                </div>
+                <p className="text-2xl font-bold mt-1">{upcoming.length}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium">Completed</span>
+                </div>
+                <p className="text-2xl font-bold mt-1">{completed.length}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Deadlines
-            {meta && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({meta.total})
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-48 mb-1" />
-                    <Skeleton className="h-3 w-32" />
+      <motion.div variants={fadeUp}>
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">
+              Deadlines
+              {meta && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({meta.total})
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-48 mb-1" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-6 w-20" />
                   </div>
-                  <Skeleton className="h-6 w-20" />
-                </div>
-              ))}
-            </div>
-          ) : isError ? (
-            <div className="text-center py-12">
-              <p className="text-sm text-destructive">
-                Failed to load deadlines. Make sure the backend is running.
-              </p>
-            </div>
-          ) : deadlines.length === 0 && debouncedSearch ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                No deadlines match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          ) : deadlines.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+                ))}
               </div>
-              <h3 className="text-lg font-semibold mb-1">
-                No deadlines yet
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm mb-4">
-                Add compliance deadlines to track IRS filing dates, state
-                deadlines, and custom reminders for your clients.
-              </p>
-              <CreateDeadlineDialog>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Deadline
-                </Button>
-              </CreateDeadlineDialog>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {deadlines.map((dl) => {
-                const days = daysUntil(dl.due_date);
-                const urgencyClass =
-                  dl.status === "completed"
-                    ? "border-l-green-500"
-                    : days < 0
-                      ? "border-l-red-500"
-                      : days <= 7
-                        ? "border-l-amber-500"
-                        : days <= 30
-                          ? "border-l-yellow-400"
-                          : "border-l-blue-400";
+            ) : isError ? (
+              <div className="text-center py-12">
+                <p className="text-sm text-destructive">
+                  Failed to load deadlines. Make sure the backend is running.
+                </p>
+              </div>
+            ) : deadlines.length === 0 && debouncedSearch ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-12 text-center"
+              >
+                <Search className="h-8 w-8 text-muted-foreground mb-3" />
+                <h3 className="text-base font-semibold mb-1">No results found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  No deadlines match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
+                </p>
+              </motion.div>
+            ) : deadlines.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-12 text-center"
+              >
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-base font-semibold mb-1">
+                  No deadlines yet
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-4">
+                  Add compliance deadlines to track IRS filing dates, state
+                  deadlines, and custom reminders for your clients.
+                </p>
+                <CreateDeadlineDialog>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Deadline
+                  </Button>
+                </CreateDeadlineDialog>
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                {deadlines.map((dl, i) => {
+                  const days = daysUntil(dl.due_date);
+                  const urgencyClass =
+                    dl.status === "completed"
+                      ? "border-l-green-500"
+                      : days < 0
+                        ? "border-l-red-500"
+                        : days <= 7
+                          ? "border-l-amber-500"
+                          : days <= 30
+                            ? "border-l-yellow-400"
+                            : "border-l-blue-400";
 
-                return (
-                  <div
-                    key={dl.id}
-                    className={`rounded-lg border border-l-4 ${urgencyClass} p-4 hover:bg-muted/30 transition-colors`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        {statusIcon(dl.status)}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-sm">
-                              {dl.filing_type}
-                            </h4>
-                            <Badge variant={statusVariant(dl.status)}>
-                              {dl.status}
-                            </Badge>
-                            {dl.extension_filed && (
-                              <Badge variant="outline">Extended</Badge>
-                            )}
+                  return (
+                    <motion.div
+                      key={dl.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                    >
+                      <div
+                        className={`rounded-lg border border-l-4 ${urgencyClass} p-4 hover:bg-muted/30 transition-colors`}
+                      >
+                        <motion.div
+                          className="absolute left-0 top-0 bottom-0 w-1"
+                          initial={{ scaleY: 0 }}
+                          animate={{ scaleY: 1 }}
+                          transition={{ delay: i * 0.06 + 0.2, duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+                          style={{ originY: 0 }}
+                        />
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            {statusIcon(dl.status)}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-sm">
+                                  {dl.filing_type}
+                                </h4>
+                                <Badge
+                                  variant={statusVariant(dl.status)}
+                                  className={dl.status === "overdue" ? "animate-pulse" : ""}
+                                >
+                                  {dl.status}
+                                </Badge>
+                                {dl.extension_filed && (
+                                  <Badge variant="outline">Extended</Badge>
+                                )}
+                              </div>
+                              {dl.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {dl.description}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Due:{" "}
+                                {new Date(dl.due_date).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  }
+                                )}
+                                {dl.extended_due_date &&
+                                  ` (ext: ${new Date(
+                                    dl.extended_due_date
+                                  ).toLocaleDateString()})`}
+                                {dl.status !== "completed" && (
+                                  <span
+                                    className={
+                                      days < 0
+                                        ? "text-red-600 font-medium"
+                                        : days <= 7
+                                          ? "text-amber-600 font-medium"
+                                          : ""
+                                    }
+                                  >
+                                    {" "}
+                                    ·{" "}
+                                    {days < 0
+                                      ? `${Math.abs(days)}d overdue`
+                                      : days === 0
+                                        ? "Due today"
+                                        : `${days}d remaining`}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
-                          {dl.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {dl.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Due:{" "}
-                            {new Date(dl.due_date).toLocaleDateString(
-                              "en-US",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
-                            {dl.extended_due_date &&
-                              ` (ext: ${new Date(
-                                dl.extended_due_date
-                              ).toLocaleDateString()})`}
+                          <div className="flex gap-1">
                             {dl.status !== "completed" && (
-                              <span
-                                className={
-                                  days < 0
-                                    ? "text-red-600 font-medium"
-                                    : days <= 7
-                                      ? "text-amber-600 font-medium"
-                                      : ""
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={updateDeadline.isPending}
+                                onClick={() =>
+                                  updateDeadline.mutate(
+                                    { id: dl.id, status: "completed" },
+                                    {
+                                      onSuccess: () => toast.success("Deadline marked complete"),
+                                      onError: () => toast.error("Failed to update deadline"),
+                                    }
+                                  )
                                 }
                               >
-                                {" "}
-                                ·{" "}
-                                {days < 0
-                                  ? `${Math.abs(days)}d overdue`
-                                  : days === 0
-                                    ? "Due today"
-                                    : `${days}d remaining`}
-                              </span>
+                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                Complete
+                              </Button>
                             )}
-                          </p>
+                            <ConfirmDialog
+                              title="Delete Deadline"
+                              description="Are you sure you want to delete this deadline? This cannot be undone."
+                              onConfirm={async () => {
+                                try {
+                                  await deleteDeadline.mutateAsync(dl.id);
+                                  toast.success("Deadline deleted");
+                                } catch {
+                                  toast.error("Failed to delete deadline");
+                                }
+                              }}
+                            >
+                              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </ConfirmDialog>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        {dl.status !== "completed" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={updateDeadline.isPending}
-                            onClick={() =>
-                              updateDeadline.mutate(
-                                { id: dl.id, status: "completed" },
-                                {
-                                  onSuccess: () => toast.success("Deadline marked complete"),
-                                  onError: () => toast.error("Failed to update deadline"),
-                                }
-                              )
-                            }
-                          >
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            Complete
-                          </Button>
-                        )}
-                        <ConfirmDialog
-                          title="Delete Deadline"
-                          description="Are you sure you want to delete this deadline? This cannot be undone."
-                          onConfirm={async () => {
-                            try {
-                              await deleteDeadline.mutateAsync(dl.id);
-                              toast.success("Deadline deleted");
-                            } catch {
-                              toast.error("Failed to delete deadline");
-                            }
-                          }}
-                        >
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </ConfirmDialog>
-                      </div>
+                    </motion.div>
+                  );
+                })}
+
+                {meta && meta.total_pages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => p - 1)}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page >= meta.total_pages}
+                        onClick={() => setPage((p) => p + 1)}
+                      >
+                        Next
+                      </Button>
                     </div>
                   </div>
-                );
-              })}
-
-              {meta && meta.total_pages > 1 && (
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= meta.total_pages}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }

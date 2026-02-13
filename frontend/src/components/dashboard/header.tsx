@@ -91,7 +91,7 @@ export function Header() {
   );
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-6">
       {/* Mobile menu */}
       <MobileSidebar />
 
@@ -102,7 +102,7 @@ export function Header() {
           <Input
             ref={searchRef}
             placeholder="Search pages... (⌘K)"
-            className="pl-9"
+            className="pl-9 bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}

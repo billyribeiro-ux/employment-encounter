@@ -8,11 +8,14 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-Dwarnings"
+  DATABASE_URL: postgres://cpa:cpa_test@localhost:5432/cpa_test
+  REDIS_URL: redis://localhost:6379
+  JWT_SECRET: ci_test_secret_that_is_long_enough_for_hmac_256_validation
+  CORS_ORIGIN: http://localhost:3000
 
 jobs:
   backend-check:
-    name: Backend — Check & Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,46 +28,42 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: backend
-      - name: Check formatting
+      - name: Format check
         run: cargo fmt --check
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Build
-        run: cargo build
+        run: cargo build --all-targets
 
   backend-test:
-    name: Backend — Tests
     runs-on: ubuntu-latest
+    needs: backend-check
     defaults:
       run:
         working-directory: backend
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine
         env:
+          POSTGRES_DB: cpa_test
           POSTGRES_USER: cpa
-          POSTGRES_PASSWORD: cpa_dev_password
-          POSTGRES_DB: cpa_platform
+          POSTGRES_PASSWORD: cpa_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -U cpa -d cpa_test"
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:7
+        image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgres://cpa:cpa_dev_password@localhost:5432/cpa_platform
-      REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci_test_secret_that_is_long_enough_for_hmac_256
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -72,10 +71,9 @@ jobs:
         with:
           workspaces: backend
       - name: Run tests
-        run: cargo test --all
+        run: cargo test --all --verbose
 
   frontend-check:
-    name: Frontend — Typecheck & Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -87,16 +85,15 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
       - name: TypeScript check
         run: npx tsc --noEmit
       - name: Lint
         run: npx next lint
 
   frontend-build:
-    name: Frontend — Build
     runs-on: ubuntu-latest
+    needs: frontend-check
     defaults:
       run:
         working-directory: frontend
@@ -107,19 +104,79 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
       - name: Build
         run: npm run build
 
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [frontend-build, backend-test]
+    defaults:
+      run:
+        working-directory: frontend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cpa_test
+          POSTGRES_USER: cpa
+          POSTGRES_PASSWORD: cpa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cpa -d cpa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npx playwright test
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14
+
   security-scan:
-    name: Security — OWASP Dependency Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Audit backend dependencies
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Rust security audit
         working-directory: backend
-        run: cargo audit || true
-      - name: Audit frontend dependencies
+        run: cargo audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend deps
         working-directory: frontend
-        run: npm audit --production || true
+        run: npm ci
+      - name: NPM security audit
+        working-directory: frontend
+        run: npm audit --production --audit-level=high

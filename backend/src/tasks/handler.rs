@@ -102,6 +102,13 @@ pub async fn create_task(
 
     let priority = payload.priority.as_deref().unwrap_or("medium");
 
+    let valid_priorities = ["low", "medium", "high", "urgent"];
+    if !valid_priorities.contains(&priority) {
+        return Err(AppError::Validation(format!(
+            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+        )));
+    }
+
     let task: Task = sqlx::query_as(
         "INSERT INTO tasks (tenant_id, title, description, client_id, assigned_to, due_date, priority, workflow_instance_id, workflow_step_index, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at",
     )
@@ -140,6 +147,21 @@ pub async fn update_task(
     let title = payload.title.as_deref().unwrap_or(&existing.title);
     let status = payload.status.as_deref().unwrap_or(&existing.status);
     let priority = payload.priority.as_deref().unwrap_or(&existing.priority);
+
+    let valid_priorities = ["low", "medium", "high", "urgent"];
+    if !valid_priorities.contains(&priority) {
+        return Err(AppError::Validation(format!(
+            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+        )));
+    }
+
+    let valid_statuses = ["todo", "in_progress", "review", "done"];
+    if !valid_statuses.contains(&status) {
+        return Err(AppError::Validation(format!(
+            "Invalid status: '{}'. Must be one of: {}", status, valid_statuses.join(", ")
+        )));
+    }
+
     let sort_order = payload.sort_order.unwrap_or(existing.sort_order);
     let due_date = payload.due_date.or(existing.due_date);
     let assigned_to = payload.assigned_to.or(existing.assigned_to);

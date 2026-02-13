@@ -113,6 +113,56 @@ pub async fn create_expense(
     Ok((StatusCode::CREATED, Json(expense)))
 }
 
+pub async fn get_expense(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(expense_id): Path<Uuid>,
+) -> AppResult<Json<Expense>> {
+    let expense: Expense = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at FROM expenses WHERE id = $1 AND tenant_id = $2",
+    )
+    .bind(expense_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Expense not found".to_string()))?;
+
+    Ok(Json(expense))
+}
+
+pub async fn update_expense(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(expense_id): Path<Uuid>,
+    Json(payload): Json<UpdateExpenseRequest>,
+) -> AppResult<Json<Expense>> {
+    let expense: Expense = sqlx::query_as(
+        "UPDATE expenses SET \
+         category = COALESCE($3, category), \
+         description = COALESCE($4, description), \
+         amount_cents = COALESCE($5, amount_cents), \
+         date = COALESCE($6, date), \
+         is_reimbursable = COALESCE($7, is_reimbursable), \
+         status = COALESCE($8, status), \
+         updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 \
+         RETURNING id, tenant_id, client_id, user_id, category, description, amount_cents, date, receipt_document_id, is_reimbursable, status, created_at, updated_at",
+    )
+    .bind(expense_id)
+    .bind(claims.tid)
+    .bind(payload.category.as_deref())
+    .bind(payload.description.as_deref())
+    .bind(payload.amount_cents)
+    .bind(payload.date)
+    .bind(payload.is_reimbursable)
+    .bind(payload.status.as_deref())
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Expense not found".to_string()))?;
+
+    Ok(Json(expense))
+}
+
 pub async fn delete_expense(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,

@@ -349,3 +349,239 @@ pub async fn logout(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+// === Password Reset ===
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ForgotPasswordRequest {
+    #[validate(email)]
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    #[validate(length(min = 12, max = 128))]
+    pub new_password: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    #[validate(length(min = 12, max = 128))]
+    pub new_password: String,
+}
+
+pub async fn forgot_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ForgotPasswordRequest>,
+) -> AppResult<StatusCode> {
+    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+
+    // Always return OK to prevent email enumeration
+    let user: Option<(Uuid, Uuid, String)> = sqlx::query_as(
+        "SELECT id, tenant_id, email FROM users WHERE email = $1 AND status = 'active'"
+    )
+    .bind(&payload.email)
+    .fetch_optional(&state.db)
+    .await?;
+
+    if let Some((user_id, tenant_id, _email)) = user {
+        let reset_token = Uuid::new_v4().to_string();
+        let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
+
+        sqlx::query(
+            "INSERT INTO password_reset_tokens (user_id, tenant_id, token, expires_at) VALUES ($1, $2, $3, $4) \
+             ON CONFLICT (user_id) DO UPDATE SET token = $3, expires_at = $4, created_at = NOW()"
+        )
+        .bind(user_id)
+        .bind(tenant_id)
+        .bind(&reset_token)
+        .bind(expires_at)
+        .execute(&state.db)
+        .await?;
+
+        // In production: send email via Resend with reset link containing token
+        tracing::info!("Password reset requested for user {}, token: {}", user_id, reset_token);
+    }
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn reset_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ResetPasswordRequest>,
+) -> AppResult<StatusCode> {
+    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let record: Option<(Uuid, Uuid)> = sqlx::query_as(
+        "SELECT user_id, tenant_id FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL"
+    )
+    .bind(&payload.token)
+    .fetch_optional(&state.db)
+    .await?;
+
+    let (user_id, _tenant_id) = record.ok_or_else(|| AppError::Validation("Invalid or expired reset token".to_string()))?;
+
+    let password_hash = password::hash_password(&payload.new_password)?;
+
+    sqlx::query("UPDATE users SET password_hash = $2, failed_login_count = 0, locked_until = NULL, updated_at = NOW() WHERE id = $1")
+        .bind(user_id)
+        .bind(&password_hash)
+        .execute(&state.db)
+        .await?;
+
+    sqlx::query("UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&state.db)
+        .await?;
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    Extension(claims): Extension<jwt::Claims>,
+    Json(payload): Json<ChangePasswordRequest>,
+) -> AppResult<StatusCode> {
+    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let (current_hash,): (String,) = sqlx::query_as(
+        "SELECT password_hash FROM users WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    if !password::verify_password(&payload.current_password, &current_hash)? {
+        return Err(AppError::Unauthorized("Current password is incorrect".to_string()));
+    }
+
+    let new_hash = password::hash_password(&payload.new_password)?;
+
+    sqlx::query("UPDATE users SET password_hash = $3, updated_at = NOW() WHERE id = $1 AND tenant_id = $2")
+        .bind(claims.sub)
+        .bind(claims.tid)
+        .bind(&new_hash)
+        .execute(&state.db)
+        .await?;
+
+    security::log_security_event(
+        state.db.clone(), Some(claims.tid), Some(claims.sub),
+        SecurityEventType::PasswordChanged,
+        "Password changed successfully".to_string(),
+        None, None, None,
+    );
+
+    Ok(StatusCode::OK)
+}
+
+// === Email Verification ===
+
+pub async fn request_email_verification(
+    State(state): State<AppState>,
+    Extension(claims): Extension<jwt::Claims>,
+) -> AppResult<StatusCode> {
+    let verification_token = Uuid::new_v4().to_string();
+    let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
+
+    sqlx::query(
+        "UPDATE users SET email_verification_token = $3, email_verification_expires = $4, updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .bind(&verification_token)
+    .bind(expires_at)
+    .execute(&state.db)
+    .await?;
+
+    // In production: send verification email
+    tracing::info!("Email verification requested for user {}, token: {}", claims.sub, verification_token);
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VerifyEmailRequest {
+    pub token: String,
+}
+
+pub async fn verify_email(
+    State(state): State<AppState>,
+    Json(payload): Json<VerifyEmailRequest>,
+) -> AppResult<StatusCode> {
+    let result = sqlx::query(
+        "UPDATE users SET email_verified = TRUE, email_verification_token = NULL, email_verification_expires = NULL, updated_at = NOW() \
+         WHERE email_verification_token = $1 AND email_verification_expires > NOW()"
+    )
+    .bind(&payload.token)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::Validation("Invalid or expired verification token".to_string()));
+    }
+
+    Ok(StatusCode::OK)
+}
+
+// === Accept Invite (set password for invited users) ===
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct AcceptInviteRequest {
+    pub token: String,
+    #[validate(length(min = 12, max = 128))]
+    pub password: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+}
+
+pub async fn accept_invite(
+    State(state): State<AppState>,
+    Json(payload): Json<AcceptInviteRequest>,
+) -> AppResult<Json<AuthResponse>> {
+    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+
+    // Find invited user by invite token
+    let user: Option<UserRow> = sqlx::query_as(
+        "SELECT id, tenant_id, email, password_hash, first_name, last_name, role, status, failed_login_count, locked_until \
+         FROM users WHERE invite_token = $1 AND status = 'invited'"
+    )
+    .bind(&payload.token)
+    .fetch_optional(&state.db)
+    .await?;
+
+    let user = user.ok_or_else(|| AppError::NotFound("Invalid or expired invite".to_string()))?;
+
+    let password_hash = password::hash_password(&payload.password)?;
+    let first_name = payload.first_name.as_deref().unwrap_or(&user.first_name);
+    let last_name = payload.last_name.as_deref().unwrap_or(&user.last_name);
+
+    sqlx::query(
+        "UPDATE users SET password_hash = $2, first_name = $3, last_name = $4, status = 'active', invite_token = NULL, updated_at = NOW() WHERE id = $1"
+    )
+    .bind(user.id)
+    .bind(&password_hash)
+    .bind(first_name)
+    .bind(last_name)
+    .execute(&state.db)
+    .await?;
+
+    let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+    let refresh_token = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+
+    Ok(Json(AuthResponse {
+        access_token,
+        refresh_token,
+        user: UserResponse {
+            id: user.id,
+            email: user.email,
+            first_name: first_name.to_string(),
+            last_name: last_name.to_string(),
+            role: user.role,
+            tenant_id: user.tenant_id,
+        },
+    }))
+}

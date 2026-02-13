@@ -197,12 +197,41 @@ pub async fn update_invoice_status(
     Path(invoice_id): Path<Uuid>,
     Json(payload): Json<UpdateInvoiceStatusRequest>,
 ) -> AppResult<Json<Invoice>> {
-    let valid_statuses = ["draft", "sent", "viewed", "paid", "overdue", "cancelled", "void"];
-    if !valid_statuses.contains(&payload.status.as_str()) {
+    // Fetch current status
+    let (current_status,): (String,) = sqlx::query_as(
+        "SELECT status FROM invoices WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invoice not found".to_string()))?;
+
+    // Validate state transitions
+    let valid_transitions: &[(&str, &[&str])] = &[
+        ("draft", &["sent", "cancelled"]),
+        ("sent", &["viewed", "paid", "overdue", "cancelled"]),
+        ("viewed", &["paid", "overdue", "cancelled"]),
+        ("overdue", &["paid", "cancelled", "sent"]),
+        ("cancelled", &["draft"]),
+        ("void", &[]),
+    ];
+
+    let allowed = valid_transitions
+        .iter()
+        .find(|(from, _)| *from == current_status.as_str())
+        .map(|(_, to)| to.contains(&payload.status.as_str()))
+        .unwrap_or(false);
+
+    if !allowed {
         return Err(AppError::Validation(format!(
-            "Invalid status: {}. Must be one of: {}",
+            "Cannot transition invoice from '{}' to '{}'. Allowed transitions: {}",
+            current_status,
             payload.status,
-            valid_statuses.join(", ")
+            valid_transitions.iter()
+                .find(|(from, _)| *from == current_status.as_str())
+                .map(|(_, to)| to.join(", "))
+                .unwrap_or_else(|| "none".to_string())
         )));
     }
 
