@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -45,7 +45,7 @@ pub struct DecisionBody {
 
 pub async fn list_requests(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Query(params): Query<ListParams>,
 ) -> Result<Json<Vec<ApprovalRequest>>, AppError> {
     let mut query = String::from(
@@ -64,7 +64,7 @@ pub async fn list_requests(
 
     let requests = sqlx::query_as::<_, ApprovalRequest>(&query)
         .bind(&claims.tid)
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .map_err(AppError::Database)?;
 
@@ -73,7 +73,7 @@ pub async fn list_requests(
 
 pub async fn create_request(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreateApprovalRequest>,
 ) -> Result<(StatusCode, Json<ApprovalRequest>), AppError> {
     let request = sqlx::query_as::<_, ApprovalRequest>(
@@ -89,7 +89,7 @@ pub async fn create_request(
     .bind(&claims.sub)
     .bind(body.metadata.unwrap_or(serde_json::json!({})))
     .bind(&body.workflow_id)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -98,7 +98,7 @@ pub async fn create_request(
 
 pub async fn decide_request(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<DecisionBody>,
 ) -> Result<Json<serde_json::Value>, AppError> {
@@ -113,7 +113,7 @@ pub async fn decide_request(
     .bind(&body.decision)
     .bind(&body.comment)
     .bind(&claims.tid)
-    .execute(&pool)
+    .execute(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -131,7 +131,7 @@ pub async fn decide_request(
     .bind(new_status)
     .bind(&id)
     .bind(&claims.tid)
-    .execute(&pool)
+    .execute(&state.db)
     .await
     .map_err(AppError::Database)?;
 

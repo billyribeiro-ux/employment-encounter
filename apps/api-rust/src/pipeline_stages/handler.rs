@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -25,14 +25,14 @@ pub struct CreatePipelineTemplate {
 
 pub async fn list_templates(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<PipelineTemplate>>, AppError> {
     let templates = sqlx::query_as::<_, PipelineTemplate>(
         "SELECT id::text, name, description, is_default, stages, created_at
          FROM pipeline_templates WHERE tenant_id = $1 ORDER BY is_default DESC, name"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -41,7 +41,7 @@ pub async fn list_templates(
 
 pub async fn create_template(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreatePipelineTemplate>,
 ) -> Result<(StatusCode, Json<PipelineTemplate>), AppError> {
     let template = sqlx::query_as::<_, PipelineTemplate>(
@@ -54,7 +54,7 @@ pub async fn create_template(
     .bind(&body.description)
     .bind(&body.stages)
     .bind(body.is_default.unwrap_or(false))
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 

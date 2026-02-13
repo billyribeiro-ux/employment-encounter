@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -48,7 +48,7 @@ pub struct AddMember {
 
 pub async fn list_pools(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<TalentPool>>, AppError> {
     let pools = sqlx::query_as::<_, TalentPool>(
         "SELECT tp.id::text, tp.name, tp.description, tp.pool_type, tp.created_at,
@@ -59,7 +59,7 @@ pub async fn list_pools(
          GROUP BY tp.id ORDER BY tp.name"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -68,7 +68,7 @@ pub async fn list_pools(
 
 pub async fn create_pool(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreatePool>,
 ) -> Result<(StatusCode, Json<TalentPool>), AppError> {
     let tp = sqlx::query_as::<_, TalentPool>(
@@ -81,7 +81,7 @@ pub async fn create_pool(
     .bind(&body.description)
     .bind(body.pool_type.unwrap_or_else(|| "custom".to_string()))
     .bind(&claims.sub)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -90,7 +90,7 @@ pub async fn create_pool(
 
 pub async fn list_members(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(pool_id): Path<String>,
 ) -> Result<Json<Vec<PoolMember>>, AppError> {
     let members = sqlx::query_as::<_, PoolMember>(
@@ -104,7 +104,7 @@ pub async fn list_members(
     )
     .bind(&pool_id)
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -113,7 +113,7 @@ pub async fn list_members(
 
 pub async fn add_member(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(pool_id): Path<String>,
     Json(body): Json<AddMember>,
 ) -> Result<(StatusCode, Json<PoolMember>), AppError> {
@@ -130,7 +130,7 @@ pub async fn add_member(
     .bind(&body.source)
     .bind(&body.notes)
     .bind(&claims.tid)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 

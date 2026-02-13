@@ -1,3 +1,4 @@
+use axum::extract::FromRequestParts;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,21 @@ pub struct Claims {
     pub iat: i64,        // issued at
     #[serde(default)]
     pub jti: Option<Uuid>, // unique token ID for refresh token rotation
+}
+
+impl<S: Send + Sync> FromRequestParts<S> for Claims {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        parts
+            .extensions
+            .get::<Claims>()
+            .cloned()
+            .ok_or_else(|| AppError::Unauthorized("Missing authentication".to_string()))
+    }
 }
 
 /// Claims for a short-lived MFA verification token.

@@ -8,6 +8,7 @@ mod conversations;
 mod dashboard;
 mod documents;
 mod error;
+mod errors { pub use crate::error::*; }
 mod expenses;
 mod flags;
 mod interviews;

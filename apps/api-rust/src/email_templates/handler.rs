@@ -118,7 +118,7 @@ pub async fn get_template(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(template))
 }
@@ -152,7 +152,7 @@ pub async fn update_template(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(template))
 }

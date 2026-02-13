@@ -169,7 +169,7 @@ pub async fn update_question(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(question))
 }
@@ -252,7 +252,7 @@ pub async fn update_question_set(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(set))
 }

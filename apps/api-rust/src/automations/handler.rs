@@ -128,7 +128,7 @@ pub async fn update_rule(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(rule))
 }
@@ -163,7 +163,7 @@ pub async fn toggle_rule(
     .fetch_optional(&state.db)
     .await
     .map_err(AppError::Database)?
-    .ok_or(AppError::NotFound)?;
+    .ok_or(AppError::NotFound("Resource not found".into()))?;
 
     Ok(Json(rule))
 }

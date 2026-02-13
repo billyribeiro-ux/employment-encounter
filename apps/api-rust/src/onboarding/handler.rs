@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -48,14 +48,14 @@ pub struct CreateInstance {
 
 pub async fn list_templates(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<OnboardingTemplate>>, AppError> {
     let templates = sqlx::query_as::<_, OnboardingTemplate>(
         "SELECT id::text, name, role_type, phases, is_default, created_at
          FROM onboarding_templates WHERE tenant_id = $1 ORDER BY name"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -64,7 +64,7 @@ pub async fn list_templates(
 
 pub async fn list_instances(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<OnboardingInstance>>, AppError> {
     let instances = sqlx::query_as::<_, OnboardingInstance>(
         "SELECT id::text, new_hire_name, new_hire_email, job_title, department,
@@ -72,7 +72,7 @@ pub async fn list_instances(
          FROM onboarding_instances WHERE tenant_id = $1 ORDER BY start_date DESC"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -81,11 +81,11 @@ pub async fn list_instances(
 
 pub async fn create_instance(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreateInstance>,
 ) -> Result<(StatusCode, Json<OnboardingInstance>), AppError> {
     let start_date = chrono::NaiveDate::parse_from_str(&body.start_date, "%Y-%m-%d")
-        .map_err(|_| AppError::NotFound)?;
+        .map_err(|_| AppError::Validation("Invalid date format, expected YYYY-MM-DD".into()))?;
 
     let instance = sqlx::query_as::<_, OnboardingInstance>(
         "INSERT INTO onboarding_instances (tenant_id, template_id, new_hire_name, new_hire_email,
@@ -103,7 +103,7 @@ pub async fn create_instance(
     .bind(start_date)
     .bind(&body.manager_id)
     .bind(&body.buddy_id)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -112,7 +112,7 @@ pub async fn create_instance(
 
 pub async fn update_progress(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<Json<OnboardingInstance>, AppError> {
@@ -131,7 +131,7 @@ pub async fn update_progress(
     .bind(tasks)
     .bind(&id)
     .bind(&claims.tid)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 

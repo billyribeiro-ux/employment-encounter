@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -53,7 +53,7 @@ pub struct CreateAssessment {
 
 pub async fn list_assessments(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<Assessment>>, AppError> {
     let assessments = sqlx::query_as::<_, Assessment>(
         "SELECT id::text, title, description, category, difficulty, duration_minutes,
@@ -62,7 +62,7 @@ pub async fn list_assessments(
          FROM assessments WHERE tenant_id = $1 ORDER BY created_at DESC"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -71,7 +71,7 @@ pub async fn list_assessments(
 
 pub async fn create_assessment(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreateAssessment>,
 ) -> Result<(StatusCode, Json<Assessment>), AppError> {
     let assessment = sqlx::query_as::<_, Assessment>(
@@ -89,7 +89,7 @@ pub async fn create_assessment(
     .bind(body.duration_minutes.unwrap_or(30))
     .bind(&body.questions)
     .bind(body.passing_score.unwrap_or(70))
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -98,7 +98,7 @@ pub async fn create_assessment(
 
 pub async fn list_submissions(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(assessment_id): Path<String>,
 ) -> Result<Json<Vec<AssessmentSubmission>>, AppError> {
     let subs = sqlx::query_as::<_, AssessmentSubmission>(
@@ -112,7 +112,7 @@ pub async fn list_submissions(
     )
     .bind(&assessment_id)
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 

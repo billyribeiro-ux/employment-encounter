@@ -29,8 +29,8 @@ pub enum AppError {
     #[error("Internal error: {0}")]
     Internal(String),
 
-    #[error(transparent)]
-    Sqlx(#[from] sqlx::Error),
+    #[error("Database error: {0}")]
+    Database(#[from] sqlx::Error),
 
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
@@ -57,7 +57,7 @@ impl IntoResponse for AppError {
                     "An internal error occurred".to_string(),
                 )
             }
-            AppError::Sqlx(e) => {
+            AppError::Database(e) => {
                 tracing::error!("Database error: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,

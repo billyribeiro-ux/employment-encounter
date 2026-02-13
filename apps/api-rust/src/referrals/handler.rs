@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -31,7 +31,7 @@ pub struct CreateReferral {
 
 pub async fn list_referrals(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<Referral>>, AppError> {
     let referrals = sqlx::query_as::<_, Referral>(
         "SELECT id::text, referrer_id::text, candidate_name, candidate_email,
@@ -40,7 +40,7 @@ pub async fn list_referrals(
          FROM referrals WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100"
     )
     .bind(&claims.tid)
-    .fetch_all(&pool)
+    .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
 
@@ -49,7 +49,7 @@ pub async fn list_referrals(
 
 pub async fn create_referral(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<CreateReferral>,
 ) -> Result<(StatusCode, Json<Referral>), AppError> {
     let referral = sqlx::query_as::<_, Referral>(
@@ -66,7 +66,7 @@ pub async fn create_referral(
     .bind(&body.job_id)
     .bind(&body.relationship)
     .bind(&body.notes)
-    .fetch_one(&pool)
+    .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
 
