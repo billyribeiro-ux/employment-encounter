@@ -699,7 +699,7 @@ pub async fn register_candidate(
     .await?;
 
     let access_token = jwt::create_access_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
-    let refresh_token = jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
+    let (refresh_token, _jti) = jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
 
     Ok((
         StatusCode::CREATED,

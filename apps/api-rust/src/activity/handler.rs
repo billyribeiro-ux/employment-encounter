@@ -61,8 +61,8 @@ pub async fn list_activity(
     .bind(claims.tid)
     .bind(per_page)
     .bind(offset)
-    .bind(params.action_type)
-    .bind(params.actor_id)
+    .bind(&params.action_type)
+    .bind(&params.actor_id)
     .fetch_all(&state.db)
     .await
     .map_err(AppError::Database)?;
@@ -75,7 +75,7 @@ pub async fn list_activity(
     )
     .bind(claims.tid)
     .bind(&params.action_type)
-    .bind(params.actor_id)
+    .bind(&params.actor_id)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::Database)?;
