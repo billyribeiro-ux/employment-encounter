@@ -108,7 +108,7 @@ export default function TasksPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
           <p className="text-muted-foreground">
-            Manage tasks across your firm with Kanban board
+            Manage tasks across your team with Kanban board
           </p>
         </div>
         <CreateTaskDialog>

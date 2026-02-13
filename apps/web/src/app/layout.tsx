@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CPA Platform",
-  description: "Modern practice management for CPA firms",
+  title: "Talent OS — Next-Gen Hiring Platform",
+  description: "The most comprehensive applicant tracking and talent management platform. Hire smarter, faster, and fairer.",
 };
 
 export default function RootLayout({

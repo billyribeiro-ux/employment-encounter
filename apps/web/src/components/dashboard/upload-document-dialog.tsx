@@ -164,13 +164,13 @@ export function UploadDocumentDialog({
                         {...field}
                       >
                         <option value="">Auto-detect (AI)</option>
-                        <option value="tax_return">Tax Return</option>
-                        <option value="financial_statement">Financial Statement</option>
-                        <option value="w2">W-2</option>
-                        <option value="1099">1099</option>
-                        <option value="receipt">Receipt</option>
+                        <option value="resume">Resume / CV</option>
+                        <option value="cover_letter">Cover Letter</option>
+                        <option value="offer_letter">Offer Letter</option>
                         <option value="contract">Contract</option>
-                        <option value="correspondence">Correspondence</option>
+                        <option value="nda">NDA</option>
+                        <option value="id_verification">ID Verification</option>
+                        <option value="reference">Reference Letter</option>
                         <option value="other">Other</option>
                       </select>
                     </FormControl>
@@ -183,7 +183,7 @@ export function UploadDocumentDialog({
                 name="tax_year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax Year</FormLabel>
+                    <FormLabel>Year</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

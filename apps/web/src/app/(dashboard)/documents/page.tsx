@@ -92,9 +92,9 @@ export default function DocumentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="tax_return">Tax Return</SelectItem>
-            <SelectItem value="financial_statement">Financial Statement</SelectItem>
-            <SelectItem value="receipt">Receipt</SelectItem>
+            <SelectItem value="resume">Resume / CV</SelectItem>
+            <SelectItem value="offer_letter">Offer Letter</SelectItem>
+            <SelectItem value="contract">Contract</SelectItem>
             <SelectItem value="contract">Contract</SelectItem>
             <SelectItem value="correspondence">Correspondence</SelectItem>
             <SelectItem value="other">Other</SelectItem>

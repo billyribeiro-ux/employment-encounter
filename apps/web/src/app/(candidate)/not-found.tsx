@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { FileQuestion, ArrowLeft, LayoutDashboard } from "lucide-react";
+import { FileQuestion, ArrowLeft, User } from "lucide-react";
 
-export default function DashboardNotFound() {
+export default function CandidateNotFound() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="max-w-md w-full text-center">
@@ -17,24 +17,24 @@ export default function DashboardNotFound() {
 
         {/* Messages */}
         <h2 className="text-xl font-semibold text-foreground mb-2">
-          Page not found in dashboard
+          Page not found
         </h2>
         <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-          The dashboard page you&apos;re looking for doesn&apos;t exist or has been
-          moved. Try navigating from the sidebar or return to the dashboard home.
+          The page you&apos;re looking for doesn&apos;t exist or has been moved.
+          Navigate back to your portal to continue your job search.
         </p>
 
         {/* Action buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/dashboard"
+            href="/candidate"
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <LayoutDashboard className="h-4 w-4" />
-            Back to Dashboard
+            <User className="h-4 w-4" />
+            Back to Portal
           </Link>
           <Link
-            href="/dashboard"
+            href="/candidate"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />

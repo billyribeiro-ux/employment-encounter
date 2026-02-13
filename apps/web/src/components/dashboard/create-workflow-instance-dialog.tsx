@@ -119,7 +119,7 @@ export function CreateWorkflowInstanceDialog({
                   <FormLabel>Workflow Name</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g. Smith Corp 2024 Tax Return"
+                      placeholder="e.g. Q1 2026 Engineering Hiring Sprint"
                       {...field}
                     />
                   </FormControl>

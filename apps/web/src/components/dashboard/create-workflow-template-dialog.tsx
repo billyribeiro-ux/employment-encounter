@@ -107,7 +107,7 @@ export function CreateWorkflowTemplateDialog({
                   <FormItem>
                     <FormLabel>Template Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Tax Return Preparation" {...field} />
+                      <Input placeholder="e.g. New Hire Onboarding" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -125,11 +125,11 @@ export function CreateWorkflowTemplateDialog({
                         {...field}
                       >
                         <option value="">Select...</option>
-                        <option value="tax_return">Tax Return</option>
-                        <option value="bookkeeping">Bookkeeping</option>
-                        <option value="audit">Audit</option>
-                        <option value="advisory">Advisory</option>
-                        <option value="onboarding">Client Onboarding</option>
+                        <option value="hiring">Hiring Pipeline</option>
+                        <option value="onboarding">Employee Onboarding</option>
+                        <option value="offboarding">Offboarding</option>
+                        <option value="review">Performance Review</option>
+                        <option value="compliance">Compliance</option>
                         <option value="other">Other</option>
                       </select>
                     </FormControl>
