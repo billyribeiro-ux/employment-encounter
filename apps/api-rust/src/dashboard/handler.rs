@@ -1,4 +1,7 @@
-use axum::{extract::{Extension, State}, Json};
+use axum::{
+    extract::{Extension, State},
+    Json,
+};
 use serde::Serialize;
 
 use crate::auth::jwt::Claims;
@@ -109,24 +112,23 @@ pub async fn get_hiring_stats(
 ) -> AppResult<Json<HiringStats>> {
     // Total open jobs
     let (total_open_jobs,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM job_posts WHERE tenant_id = $1 AND status IN ('open', 'draft')"
+        "SELECT COUNT(*) FROM job_posts WHERE tenant_id = $1 AND status IN ('open', 'draft')",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
     .await?;
 
     // Total applications
-    let (total_applications,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM applications WHERE tenant_id = $1"
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (total_applications,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM applications WHERE tenant_id = $1")
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     // Applications this week
     let (applications_this_week,): (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM applications WHERE tenant_id = $1 \
-         AND created_at >= date_trunc('week', CURRENT_DATE)"
+         AND created_at >= date_trunc('week', CURRENT_DATE)",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
@@ -135,7 +137,7 @@ pub async fn get_hiring_stats(
     // Average time to hire (days from application created_at to hired_at)
     let (time_to_hire_avg_days,): (Option<f64>,) = sqlx::query_as(
         "SELECT AVG(EXTRACT(EPOCH FROM (hired_at - created_at)) / 86400.0) \
-         FROM applications WHERE tenant_id = $1 AND hired_at IS NOT NULL"
+         FROM applications WHERE tenant_id = $1 AND hired_at IS NOT NULL",
     )
     .bind(claims.tid)
     .fetch_one(&state.db)
@@ -154,14 +156,18 @@ pub async fn get_hiring_stats(
            WHEN 'onsite' THEN 5 \
            WHEN 'offer' THEN 6 \
            WHEN 'hired' THEN 7 \
-           ELSE 8 END"
+           ELSE 8 END",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)
     .await?;
 
     // Build conversion rates
-    let total_for_rate = if total_applications > 0 { total_applications } else { 1 };
+    let total_for_rate = if total_applications > 0 {
+        total_applications
+    } else {
+        1
+    };
     let conversion_rates: Vec<StageConversion> = stage_counts
         .iter()
         .map(|sc| StageConversion {
@@ -175,7 +181,7 @@ pub async fn get_hiring_stats(
     let top_sources: Vec<SourceCount> = sqlx::query_as(
         "SELECT COALESCE(source, 'unknown') as source, COUNT(*)::BIGINT as count \
          FROM applications WHERE tenant_id = $1 \
-         GROUP BY source ORDER BY count DESC LIMIT 10"
+         GROUP BY source ORDER BY count DESC LIMIT 10",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)
@@ -185,7 +191,7 @@ pub async fn get_hiring_stats(
     let pipeline_by_stage: Vec<StageCount> = sqlx::query_as(
         "SELECT stage, COUNT(*)::BIGINT as count FROM applications \
          WHERE tenant_id = $1 \
-         GROUP BY stage ORDER BY count DESC"
+         GROUP BY stage ORDER BY count DESC",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)

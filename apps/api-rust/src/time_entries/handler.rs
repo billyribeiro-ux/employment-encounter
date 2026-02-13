@@ -21,7 +21,10 @@ pub async fn list_time_entries(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
         Some("description") => "description",
@@ -46,12 +49,10 @@ pub async fn list_time_entries(
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
+        sqlx::query_as("SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1")
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?
     };
 
     let entries: Vec<TimeEntry> = if let Some(ref pattern) = search_pattern {
@@ -99,9 +100,13 @@ pub async fn create_time_entry(
 
     let id = Uuid::new_v4();
     let description = payload.description.unwrap_or_default();
-    let service_type = payload.service_type.unwrap_or_else(|| "general".to_string());
+    let service_type = payload
+        .service_type
+        .unwrap_or_else(|| "general".to_string());
     let is_billable = payload.is_billable.unwrap_or(true);
-    let date = payload.date.unwrap_or_else(|| chrono::Utc::now().date_naive());
+    let date = payload
+        .date
+        .unwrap_or_else(|| chrono::Utc::now().date_naive());
     let start_timer = payload.start_timer.unwrap_or(false);
 
     let (is_running, started_at, duration) = if start_timer {

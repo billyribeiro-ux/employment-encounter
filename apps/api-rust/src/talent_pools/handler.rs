@@ -1,10 +1,10 @@
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -56,7 +56,7 @@ pub async fn list_pools(
          FROM talent_pools tp
          LEFT JOIN talent_pool_members tpm ON tpm.pool_id = tp.id
          WHERE tp.tenant_id = $1
-         GROUP BY tp.id ORDER BY tp.name"
+         GROUP BY tp.id ORDER BY tp.name",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)
@@ -74,7 +74,7 @@ pub async fn create_pool(
     let tp = sqlx::query_as::<_, TalentPool>(
         "INSERT INTO talent_pools (tenant_id, name, description, pool_type, created_by)
          VALUES ($1, $2, $3, $4, $5::uuid)
-         RETURNING id::text, name, description, pool_type, created_at, 0::bigint as member_count"
+         RETURNING id::text, name, description, pool_type, created_at, 0::bigint as member_count",
     )
     .bind(&claims.tid)
     .bind(&body.name)
@@ -100,7 +100,7 @@ pub async fn list_members(
          FROM talent_pool_members tpm
          JOIN talent_pools tp ON tp.id = tpm.pool_id
          WHERE tpm.pool_id = $1::uuid AND tp.tenant_id = $2
-         ORDER BY tpm.added_at DESC"
+         ORDER BY tpm.added_at DESC",
     )
     .bind(&pool_id)
     .bind(&claims.tid)
@@ -122,7 +122,7 @@ pub async fn add_member(
          SELECT $1::uuid, $2, $3, $4, $5
          FROM talent_pools WHERE id = $1::uuid AND tenant_id = $6
          RETURNING id::text, candidate_name, candidate_email, source, engagement_score,
-                   last_contacted_at, notes, added_at"
+                   last_contacted_at, notes, added_at",
     )
     .bind(&pool_id)
     .bind(&body.candidate_name)

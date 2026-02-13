@@ -1,6 +1,8 @@
 use axum::extract::FromRequestParts;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use jsonwebtoken::{
+    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -8,11 +10,11 @@ use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: Uuid,       // user_id
-    pub tid: Uuid,       // tenant_id
-    pub role: String,    // user role
-    pub exp: i64,        // expiry
-    pub iat: i64,        // issued at
+    pub sub: Uuid,    // user_id
+    pub tid: Uuid,    // tenant_id
+    pub role: String, // user role
+    pub exp: i64,     // expiry
+    pub iat: i64,     // issued at
     #[serde(default)]
     pub jti: Option<Uuid>, // unique token ID for refresh token rotation
 }

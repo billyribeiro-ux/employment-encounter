@@ -21,7 +21,10 @@ pub async fn list_clients(
     let offset = (page - 1) * per_page;
 
     let status_filter = params.status.as_deref().unwrap_or("active");
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
         Some("name") => "name",
@@ -118,7 +121,9 @@ pub async fn create_client(
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
     let id = Uuid::new_v4();
-    let fiscal_year_end = payload.fiscal_year_end.unwrap_or_else(|| "Calendar".to_string());
+    let fiscal_year_end = payload
+        .fiscal_year_end
+        .unwrap_or_else(|| "Calendar".to_string());
 
     let client: Client = sqlx::query_as(
         "INSERT INTO clients (id, tenant_id, name, business_type, fiscal_year_end, assigned_cpa_id, status, metadata) VALUES ($1, $2, $3, $4, $5, $6, 'active', '{}') RETURNING id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at",
@@ -230,7 +235,9 @@ pub async fn list_client_documents(
     .fetch_one(&state.db)
     .await?;
 
-    Ok(Json(serde_json::json!({ "data": docs, "meta": { "page": page, "per_page": per_page, "total": total } })))
+    Ok(Json(
+        serde_json::json!({ "data": docs, "meta": { "page": page, "per_page": per_page, "total": total } }),
+    ))
 }
 
 pub async fn list_client_time_entries(
@@ -260,15 +267,16 @@ pub async fn list_client_time_entries(
     })
     .collect();
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1 AND client_id = $2"
-    )
-    .bind(claims.tid)
-    .bind(client_id)
-    .fetch_one(&state.db)
-    .await?;
+    let (total,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM time_entries WHERE tenant_id = $1 AND client_id = $2")
+            .bind(claims.tid)
+            .bind(client_id)
+            .fetch_one(&state.db)
+            .await?;
 
-    Ok(Json(serde_json::json!({ "data": entries, "meta": { "page": page, "per_page": per_page, "total": total } })))
+    Ok(Json(
+        serde_json::json!({ "data": entries, "meta": { "page": page, "per_page": per_page, "total": total } }),
+    ))
 }
 
 pub async fn list_client_invoices(
@@ -298,15 +306,16 @@ pub async fn list_client_invoices(
     })
     .collect();
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND client_id = $2"
-    )
-    .bind(claims.tid)
-    .bind(client_id)
-    .fetch_one(&state.db)
-    .await?;
+    let (total,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND client_id = $2")
+            .bind(claims.tid)
+            .bind(client_id)
+            .fetch_one(&state.db)
+            .await?;
 
-    Ok(Json(serde_json::json!({ "data": invoices, "meta": { "page": page, "per_page": per_page, "total": total } })))
+    Ok(Json(
+        serde_json::json!({ "data": invoices, "meta": { "page": page, "per_page": per_page, "total": total } }),
+    ))
 }
 
 pub async fn list_client_messages(
@@ -336,15 +345,16 @@ pub async fn list_client_messages(
     })
     .collect();
 
-    let (total,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM messages WHERE tenant_id = $1 AND client_id = $2"
-    )
-    .bind(claims.tid)
-    .bind(client_id)
-    .fetch_one(&state.db)
-    .await?;
+    let (total,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM messages WHERE tenant_id = $1 AND client_id = $2")
+            .bind(claims.tid)
+            .bind(client_id)
+            .fetch_one(&state.db)
+            .await?;
 
-    Ok(Json(serde_json::json!({ "data": messages, "meta": { "page": page, "per_page": per_page, "total": total } })))
+    Ok(Json(
+        serde_json::json!({ "data": messages, "meta": { "page": page, "per_page": per_page, "total": total } }),
+    ))
 }
 
 pub async fn list_client_deadlines(
@@ -427,10 +437,14 @@ pub async fn bulk_delete_clients(
     Json(payload): Json<BulkIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     let result = sqlx::query(
@@ -453,10 +467,14 @@ pub async fn bulk_archive_clients(
     Json(payload): Json<BulkIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     let result = sqlx::query(

@@ -55,13 +55,11 @@ pub async fn list_notifications(
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM notifications WHERE tenant_id = $1 AND user_id = $2"
-        )
-        .bind(claims.tid)
-        .bind(claims.sub)
-        .fetch_one(&state.db)
-        .await?
+        sqlx::query_as("SELECT COUNT(*) FROM notifications WHERE tenant_id = $1 AND user_id = $2")
+            .bind(claims.tid)
+            .bind(claims.sub)
+            .fetch_one(&state.db)
+            .await?
     };
 
     Ok(Json(serde_json::json!({
@@ -116,14 +114,16 @@ pub async fn mark_all_read(
 ) -> AppResult<Json<serde_json::Value>> {
     let result = sqlx::query(
         "UPDATE notifications SET is_read = TRUE, read_at = NOW() \
-         WHERE tenant_id = $1 AND user_id = $2 AND is_read = FALSE"
+         WHERE tenant_id = $1 AND user_id = $2 AND is_read = FALSE",
     )
     .bind(claims.tid)
     .bind(claims.sub)
     .execute(&state.db)
     .await?;
 
-    Ok(Json(serde_json::json!({ "updated": result.rows_affected() })))
+    Ok(Json(
+        serde_json::json!({ "updated": result.rows_affected() }),
+    ))
 }
 
 pub async fn create_notification(
@@ -154,14 +154,13 @@ pub async fn delete_notification(
     Extension(claims): Extension<Claims>,
     Path(notification_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    let result = sqlx::query(
-        "DELETE FROM notifications WHERE id = $1 AND tenant_id = $2 AND user_id = $3"
-    )
-    .bind(notification_id)
-    .bind(claims.tid)
-    .bind(claims.sub)
-    .execute(&state.db)
-    .await?;
+    let result =
+        sqlx::query("DELETE FROM notifications WHERE id = $1 AND tenant_id = $2 AND user_id = $3")
+            .bind(notification_id)
+            .bind(claims.tid)
+            .bind(claims.sub)
+            .execute(&state.db)
+            .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Notification not found".to_string()));

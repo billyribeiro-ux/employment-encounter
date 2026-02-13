@@ -1,10 +1,10 @@
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -59,7 +59,7 @@ pub async fn list_assessments(
         "SELECT id::text, title, description, category, difficulty, duration_minutes,
                 questions, passing_score, is_active, usage_count,
                 avg_score::float8 as avg_score, created_at
-         FROM assessments WHERE tenant_id = $1 ORDER BY created_at DESC"
+         FROM assessments WHERE tenant_id = $1 ORDER BY created_at DESC",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)
@@ -108,7 +108,7 @@ pub async fn list_submissions(
          FROM assessment_submissions s
          JOIN assessments a ON a.id = s.assessment_id
          WHERE s.assessment_id = $1::uuid AND a.tenant_id = $2
-         ORDER BY s.created_at DESC"
+         ORDER BY s.created_at DESC",
     )
     .bind(&assessment_id)
     .bind(&claims.tid)

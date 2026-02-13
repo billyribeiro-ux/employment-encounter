@@ -54,7 +54,7 @@ pub async fn get_profit_loss(
     // Expenses in period
     let (expense_cents,): (i64,) = sqlx::query_as(
         "SELECT COALESCE(SUM(amount_cents), 0)::BIGINT FROM expenses \
-         WHERE tenant_id = $1 AND date >= $2::DATE AND date <= $3::DATE"
+         WHERE tenant_id = $1 AND date >= $2::DATE AND date <= $3::DATE",
     )
     .bind(claims.tid)
     .bind(start)
@@ -65,7 +65,7 @@ pub async fn get_profit_loss(
     let expense_by_category: Vec<(String, i64)> = sqlx::query_as(
         "SELECT category, COALESCE(SUM(amount_cents), 0)::BIGINT \
          FROM expenses WHERE tenant_id = $1 AND date >= $2::DATE AND date <= $3::DATE \
-         GROUP BY category ORDER BY 2 DESC"
+         GROUP BY category ORDER BY 2 DESC",
     )
     .bind(claims.tid)
     .bind(start)
@@ -111,7 +111,7 @@ pub async fn get_cash_flow(
         "SELECT TO_CHAR(paid_date, 'YYYY-MM'), COALESCE(SUM(amount_paid_cents), 0)::BIGINT \
          FROM invoices WHERE tenant_id = $1 AND status = 'paid' \
          AND paid_date >= $2::DATE AND paid_date <= $3::DATE \
-         GROUP BY TO_CHAR(paid_date, 'YYYY-MM') ORDER BY 1"
+         GROUP BY TO_CHAR(paid_date, 'YYYY-MM') ORDER BY 1",
     )
     .bind(claims.tid)
     .bind(start)
@@ -123,7 +123,7 @@ pub async fn get_cash_flow(
     let outflows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT TO_CHAR(date, 'YYYY-MM'), COALESCE(SUM(amount_cents), 0)::BIGINT \
          FROM expenses WHERE tenant_id = $1 AND date >= $2::DATE AND date <= $3::DATE \
-         GROUP BY TO_CHAR(date, 'YYYY-MM') ORDER BY 1"
+         GROUP BY TO_CHAR(date, 'YYYY-MM') ORDER BY 1",
     )
     .bind(claims.tid)
     .bind(start)

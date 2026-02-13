@@ -48,7 +48,10 @@ impl WsBroadcast {
 
     pub fn join_room(&self, room_id: &str, tenant_id: uuid::Uuid, user_id: uuid::Uuid) {
         let mut rooms = self.rooms.write().unwrap();
-        rooms.entry(room_id.to_string()).or_default().insert((tenant_id, user_id));
+        rooms
+            .entry(room_id.to_string())
+            .or_default()
+            .insert((tenant_id, user_id));
     }
 
     pub fn leave_room(&self, room_id: &str, tenant_id: uuid::Uuid, user_id: uuid::Uuid) {
@@ -121,28 +124,15 @@ pub enum WsEventPayload {
 
     // WebRTC signaling
     #[serde(rename = "rtc_offer")]
-    RtcOffer {
-        room_id: String,
-        sdp: String,
-    },
+    RtcOffer { room_id: String, sdp: String },
     #[serde(rename = "rtc_answer")]
-    RtcAnswer {
-        room_id: String,
-        sdp: String,
-    },
+    RtcAnswer { room_id: String, sdp: String },
     #[serde(rename = "rtc_ice_candidate")]
-    RtcIceCandidate {
-        room_id: String,
-        candidate: String,
-    },
+    RtcIceCandidate { room_id: String, candidate: String },
     #[serde(rename = "room_join")]
-    RoomJoin {
-        room_id: String,
-    },
+    RoomJoin { room_id: String },
     #[serde(rename = "room_leave")]
-    RoomLeave {
-        room_id: String,
-    },
+    RoomLeave { room_id: String },
 
     // Messaging
     #[serde(rename = "typing")]
@@ -182,7 +172,9 @@ pub async fn ws_handler(
             let claims = token_data.claims;
             let rx = state.ws_broadcast.tx.subscribe();
             let broadcast = state.ws_broadcast.clone();
-            ws.on_upgrade(move |socket| handle_socket(socket, claims.tid, claims.sub, rx, broadcast))
+            ws.on_upgrade(move |socket| {
+                handle_socket(socket, claims.tid, claims.sub, rx, broadcast)
+            })
         }
         Err(_) => {
             // Return upgrade but immediately close with auth error
@@ -207,7 +199,9 @@ async fn handle_socket(
 ) {
     // Send initial connected message
     let connected = serde_json::json!({ "type": "connected", "user_id": user_id });
-    let _ = socket.send(Message::Text(connected.to_string().into())).await;
+    let _ = socket
+        .send(Message::Text(connected.to_string().into()))
+        .await;
 
     let mut heartbeat = interval(Duration::from_secs(30));
     let mut last_pong = tokio::time::Instant::now();

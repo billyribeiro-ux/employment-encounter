@@ -1,10 +1,10 @@
+use crate::AppState;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -51,7 +51,7 @@ pub async fn list_requests(
     let mut query = String::from(
         "SELECT id::text, request_type, title, description, requester_id::text,
                 current_step, status, metadata, created_at
-         FROM approval_requests WHERE tenant_id = $1"
+         FROM approval_requests WHERE tenant_id = $1",
     );
 
     if let Some(ref status) = params.status {
@@ -106,7 +106,7 @@ pub async fn decide_request(
     sqlx::query(
         "INSERT INTO approval_decisions (request_id, approver_id, step_number, decision, comment)
          SELECT $1::uuid, $2::uuid, current_step, $3, $4
-         FROM approval_requests WHERE id = $1::uuid AND tenant_id = $5"
+         FROM approval_requests WHERE id = $1::uuid AND tenant_id = $5",
     )
     .bind(&id)
     .bind(&claims.sub)
@@ -126,7 +126,7 @@ pub async fn decide_request(
 
     sqlx::query(
         "UPDATE approval_requests SET status = $1, updated_at = now()
-         WHERE id = $2::uuid AND tenant_id = $3"
+         WHERE id = $2::uuid AND tenant_id = $3",
     )
     .bind(new_status)
     .bind(&id)

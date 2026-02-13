@@ -6,9 +6,9 @@ use axum::{
 use uuid::Uuid;
 
 use crate::auth::jwt::Claims;
-use crate::error::{AppError, AppResult};
 #[allow(unused_imports)]
 use crate::candidates::model::*;
+use crate::error::{AppError, AppResult};
 use crate::AppState;
 
 pub async fn list_candidates(
@@ -41,7 +41,7 @@ pub async fn list_candidates(
              AND LOWER(cs.skill_name) = LOWER($7) \
          )) \
          ORDER BY cp.created_at DESC \
-         LIMIT $8 OFFSET $9"
+         LIMIT $8 OFFSET $9",
     )
     .bind(claims.tid)
     .bind(search)
@@ -66,7 +66,7 @@ pub async fn list_candidates(
              SELECT 1 FROM candidate_skills cs \
              WHERE cs.candidate_id = cp.id AND cs.tenant_id = cp.tenant_id \
              AND LOWER(cs.skill_name) = LOWER($7) \
-         ))"
+         ))",
     )
     .bind(claims.tid)
     .bind(search)
@@ -94,14 +94,13 @@ pub async fn get_candidate(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<CandidateProfile>> {
-    let candidate: CandidateProfile = sqlx::query_as(
-        "SELECT * FROM candidate_profiles WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
+    let candidate: CandidateProfile =
+        sqlx::query_as("SELECT * FROM candidate_profiles WHERE id = $1 AND tenant_id = $2")
+            .bind(id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
 
     Ok(Json(candidate))
 }
@@ -118,7 +117,7 @@ pub async fn create_candidate(
           desired_salary_min_cents, desired_salary_max_cents, \
           visa_status, work_authorization, linkedin_url, portfolio_url, github_url) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(claims.sub)
@@ -167,7 +166,7 @@ pub async fn update_candidate(
          github_url = COALESCE($17, github_url), \
          updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)
@@ -201,7 +200,7 @@ pub async fn list_candidate_skills(
     let skills: Vec<CandidateSkill> = sqlx::query_as(
         "SELECT * FROM candidate_skills \
          WHERE candidate_id = $1 AND tenant_id = $2 \
-         ORDER BY skill_name ASC"
+         ORDER BY skill_name ASC",
     )
     .bind(candidate_id)
     .bind(claims.tid)
@@ -218,21 +217,20 @@ pub async fn add_candidate_skill(
     Json(payload): Json<AddSkillRequest>,
 ) -> AppResult<(StatusCode, Json<CandidateSkill>)> {
     // Verify the candidate exists and belongs to this tenant
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM candidate_profiles WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(candidate_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
+    let _: (Uuid,) =
+        sqlx::query_as("SELECT id FROM candidate_profiles WHERE id = $1 AND tenant_id = $2")
+            .bind(candidate_id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
 
     let skill: CandidateSkill = sqlx::query_as(
         "INSERT INTO candidate_skills \
          (tenant_id, candidate_id, skill_name, category, proficiency_level, \
           years_experience, evidence_url) \
          VALUES ($1, $2, $3, $4, $5, $6, $7) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(candidate_id)
@@ -254,7 +252,7 @@ pub async fn delete_candidate_skill(
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
         "DELETE FROM candidate_skills \
-         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3"
+         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3",
     )
     .bind(skill_id)
     .bind(candidate_id)
@@ -276,14 +274,13 @@ pub async fn upload_candidate_document(
     Json(payload): Json<UploadDocumentRequest>,
 ) -> AppResult<(StatusCode, Json<CandidateDocument>)> {
     // Verify the candidate exists and belongs to this tenant
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM candidate_profiles WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(candidate_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
+    let _: (Uuid,) =
+        sqlx::query_as("SELECT id FROM candidate_profiles WHERE id = $1 AND tenant_id = $2")
+            .bind(candidate_id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Candidate not found".to_string()))?;
 
     let is_primary = payload.is_primary.unwrap_or(false);
 
@@ -291,7 +288,7 @@ pub async fn upload_candidate_document(
         "INSERT INTO candidate_documents \
          (tenant_id, candidate_id, document_type, filename, mime_type, size_bytes, is_primary) \
          VALUES ($1, $2, $3, $4, $5, $6, $7) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(candidate_id)
@@ -314,7 +311,7 @@ pub async fn list_candidate_documents(
     let documents: Vec<CandidateDocument> = sqlx::query_as(
         "SELECT * FROM candidate_documents \
          WHERE candidate_id = $1 AND tenant_id = $2 \
-         ORDER BY created_at DESC"
+         ORDER BY created_at DESC",
     )
     .bind(candidate_id)
     .bind(claims.tid)
@@ -334,7 +331,7 @@ pub async fn list_candidate_notes(
     let notes: Vec<CandidateNote> = sqlx::query_as(
         "SELECT * FROM candidate_notes \
          WHERE candidate_id = $1 AND tenant_id = $2 \
-         ORDER BY created_at DESC"
+         ORDER BY created_at DESC",
     )
     .bind(candidate_id)
     .bind(claims.tid)
@@ -351,7 +348,9 @@ pub async fn create_candidate_note(
     Json(payload): Json<CreateNoteRequest>,
 ) -> AppResult<(StatusCode, Json<CandidateNote>)> {
     if payload.content.is_empty() {
-        return Err(crate::error::AppError::Validation("content is required".to_string()));
+        return Err(crate::error::AppError::Validation(
+            "content is required".to_string(),
+        ));
     }
 
     let is_private = payload.is_private.unwrap_or(false);
@@ -361,7 +360,7 @@ pub async fn create_candidate_note(
         "INSERT INTO candidate_notes \
          (tenant_id, candidate_id, application_id, author_id, content, is_private, note_type) \
          VALUES ($1, $2, $3, $4, $5, $6, $7) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(candidate_id)
@@ -389,7 +388,7 @@ pub async fn update_candidate_note(
          note_type = COALESCE($6, note_type), \
          updated_at = NOW() \
          WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(note_id)
     .bind(candidate_id)
@@ -411,7 +410,7 @@ pub async fn delete_candidate_note(
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
         "DELETE FROM candidate_notes \
-         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3"
+         WHERE id = $1 AND candidate_id = $2 AND tenant_id = $3",
     )
     .bind(note_id)
     .bind(candidate_id)
@@ -420,7 +419,9 @@ pub async fn delete_candidate_note(
     .await?;
 
     if result.rows_affected() == 0 {
-        return Err(crate::error::AppError::NotFound("Note not found".to_string()));
+        return Err(crate::error::AppError::NotFound(
+            "Note not found".to_string(),
+        ));
     }
 
     Ok(StatusCode::NO_CONTENT)
@@ -439,7 +440,7 @@ pub async fn list_favorites(
         "SELECT * FROM candidate_favorites \
          WHERE tenant_id = $1 AND user_id = $2 \
          AND ($3 = '' OR job_id::text = $3) \
-         ORDER BY created_at DESC"
+         ORDER BY created_at DESC",
     )
     .bind(claims.tid)
     .bind(claims.sub)
@@ -463,7 +464,7 @@ pub async fn add_favorite(
          VALUES ($1, $2, $3, $4, $5, $6) \
          ON CONFLICT (tenant_id, candidate_id, user_id, job_id) DO UPDATE SET \
          tags = EXCLUDED.tags, notes = EXCLUDED.notes \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(payload.candidate_id)
@@ -484,7 +485,7 @@ pub async fn remove_favorite(
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
         "DELETE FROM candidate_favorites \
-         WHERE id = $1 AND tenant_id = $2 AND user_id = $3"
+         WHERE id = $1 AND tenant_id = $2 AND user_id = $3",
     )
     .bind(id)
     .bind(claims.tid)
@@ -493,7 +494,9 @@ pub async fn remove_favorite(
     .await?;
 
     if result.rows_affected() == 0 {
-        return Err(crate::error::AppError::NotFound("Favorite not found".to_string()));
+        return Err(crate::error::AppError::NotFound(
+            "Favorite not found".to_string(),
+        ));
     }
 
     Ok(StatusCode::NO_CONTENT)

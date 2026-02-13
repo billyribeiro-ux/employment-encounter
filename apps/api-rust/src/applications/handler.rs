@@ -5,9 +5,9 @@ use axum::{
 };
 use uuid::Uuid;
 
+use crate::applications::model::*;
 use crate::auth::jwt::Claims;
 use crate::error::{AppError, AppResult};
-use crate::applications::model::*;
 use crate::AppState;
 
 const APPLICATION_COLUMNS: &str = "a.id, a.tenant_id, a.job_id, a.candidate_id, a.stage, \
@@ -86,7 +86,11 @@ pub async fn list_applications(
     // Data query
     let data_sql = format!(
         "SELECT {} {} WHERE {} ORDER BY a.created_at DESC LIMIT ${} OFFSET ${}",
-        APPLICATION_WITH_DETAILS_COLUMNS, JOIN_CLAUSE, where_clause, param_index, param_index + 1
+        APPLICATION_WITH_DETAILS_COLUMNS,
+        JOIN_CLAUSE,
+        where_clause,
+        param_index,
+        param_index + 1
     );
 
     let mut data_query = sqlx::query_as::<_, ApplicationWithDetails>(&data_sql).bind(claims.tid);
@@ -201,12 +205,10 @@ pub async fn advance_stage(
     Json(payload): Json<AdvanceStageRequest>,
 ) -> AppResult<Json<Application>> {
     // Get current application
-    let current: Application = sqlx::query_as(
-        &format!(
-            "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2",
-            APPLICATION_COLUMNS
-        ),
-    )
+    let current: Application = sqlx::query_as(&format!(
+        "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2",
+        APPLICATION_COLUMNS
+    ))
     .bind(application_id)
     .bind(claims.tid)
     .fetch_optional(&state.db)
@@ -229,14 +231,12 @@ pub async fn advance_stage(
     .and_then(|row| row.0);
 
     // Update the application stage
-    let updated: Application = sqlx::query_as(
-        &format!(
-            "UPDATE applications SET stage = $3, updated_at = NOW() \
+    let updated: Application = sqlx::query_as(&format!(
+        "UPDATE applications SET stage = $3, updated_at = NOW() \
              WHERE id = $1 AND tenant_id = $2 \
              RETURNING {}",
-            APPLICATION_COLUMNS.replace("a.", "")
-        ),
-    )
+        APPLICATION_COLUMNS.replace("a.", "")
+    ))
     .bind(application_id)
     .bind(claims.tid)
     .bind(&payload.to_stage)
@@ -289,12 +289,10 @@ pub async fn reject_application(
     Json(payload): Json<AdvanceStageRequest>,
 ) -> AppResult<Json<Application>> {
     // Get current application
-    let current: Application = sqlx::query_as(
-        &format!(
-            "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2",
-            APPLICATION_COLUMNS
-        ),
-    )
+    let current: Application = sqlx::query_as(&format!(
+        "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2",
+        APPLICATION_COLUMNS
+    ))
     .bind(application_id)
     .bind(claims.tid)
     .fetch_optional(&state.db)
@@ -317,15 +315,13 @@ pub async fn reject_application(
     .and_then(|row| row.0);
 
     // Update the application
-    let updated: Application = sqlx::query_as(
-        &format!(
-            "UPDATE applications SET stage = 'rejected', status = 'rejected', \
+    let updated: Application = sqlx::query_as(&format!(
+        "UPDATE applications SET stage = 'rejected', status = 'rejected', \
              rejected_reason = $3, decision_notes = $4, updated_at = NOW() \
              WHERE id = $1 AND tenant_id = $2 \
              RETURNING {}",
-            APPLICATION_COLUMNS.replace("a.", "")
-        ),
-    )
+        APPLICATION_COLUMNS.replace("a.", "")
+    ))
     .bind(application_id)
     .bind(claims.tid)
     .bind(payload.notes.as_deref())
@@ -357,26 +353,23 @@ pub async fn withdraw_application(
     Path(application_id): Path<Uuid>,
 ) -> AppResult<Json<Application>> {
     // Verify application exists
-    let (existing,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM applications WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(application_id)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (existing,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM applications WHERE id = $1 AND tenant_id = $2")
+            .bind(application_id)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     if existing == 0 {
         return Err(AppError::NotFound("Application not found".to_string()));
     }
 
-    let updated: Application = sqlx::query_as(
-        &format!(
-            "UPDATE applications SET stage = 'withdrawn', status = 'withdrawn', updated_at = NOW() \
+    let updated: Application = sqlx::query_as(&format!(
+        "UPDATE applications SET stage = 'withdrawn', status = 'withdrawn', updated_at = NOW() \
              WHERE id = $1 AND tenant_id = $2 \
              RETURNING {}",
-            APPLICATION_COLUMNS.replace("a.", "")
-        ),
-    )
+        APPLICATION_COLUMNS.replace("a.", "")
+    ))
     .bind(application_id)
     .bind(claims.tid)
     .fetch_one(&state.db)

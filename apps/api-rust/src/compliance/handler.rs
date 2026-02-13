@@ -21,7 +21,10 @@ pub async fn list_deadlines(
     let per_page = params.per_page.unwrap_or(50).clamp(1, 200);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
@@ -32,12 +35,10 @@ pub async fn list_deadlines(
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM compliance_deadlines WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
+        sqlx::query_as("SELECT COUNT(*) FROM compliance_deadlines WHERE tenant_id = $1")
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?
     };
 
     let deadlines: Vec<ComplianceDeadline> = if let Some(ref pattern) = search_pattern {
@@ -172,9 +173,18 @@ pub async fn list_consent_records(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<serde_json::Value>> {
-    let rows = sqlx::query_as::<_, (String, String, String, Option<String>, Option<chrono::DateTime<chrono::Utc>>)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
         "SELECT id::text, consent_type, status, purpose, created_at
-         FROM consent_records WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100"
+         FROM consent_records WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)
@@ -182,15 +192,18 @@ pub async fn list_consent_records(
 
     match rows {
         Ok(records) => {
-            let data: Vec<serde_json::Value> = records.iter().map(|r| {
-                serde_json::json!({
-                    "id": r.0, "consent_type": r.1, "status": r.2,
-                    "purpose": r.3, "created_at": r.4
+            let data: Vec<serde_json::Value> = records
+                .iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.0, "consent_type": r.1, "status": r.2,
+                        "purpose": r.3, "created_at": r.4
+                    })
                 })
-            }).collect();
+                .collect();
             Ok(Json(serde_json::json!({ "data": data })))
         }
-        Err(_) => Ok(Json(serde_json::json!({ "data": [] })))
+        Err(_) => Ok(Json(serde_json::json!({ "data": [] }))),
     }
 }
 
@@ -198,9 +211,17 @@ pub async fn list_deletion_requests(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<serde_json::Value>> {
-    let rows = sqlx::query_as::<_, (String, String, String, Option<chrono::DateTime<chrono::Utc>>)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
         "SELECT id::text, requester_email, status, created_at
-         FROM deletion_requests WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100"
+         FROM deletion_requests WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)
@@ -208,14 +229,17 @@ pub async fn list_deletion_requests(
 
     match rows {
         Ok(records) => {
-            let data: Vec<serde_json::Value> = records.iter().map(|r| {
-                serde_json::json!({
-                    "id": r.0, "requester_email": r.1, "status": r.2, "created_at": r.3
+            let data: Vec<serde_json::Value> = records
+                .iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.0, "requester_email": r.1, "status": r.2, "created_at": r.3
+                    })
                 })
-            }).collect();
+                .collect();
             Ok(Json(serde_json::json!({ "data": data })))
         }
-        Err(_) => Ok(Json(serde_json::json!({ "data": [] })))
+        Err(_) => Ok(Json(serde_json::json!({ "data": [] }))),
     }
 }
 
@@ -224,12 +248,15 @@ pub async fn create_deletion_request(
     Extension(claims): Extension<Claims>,
     Json(body): Json<serde_json::Value>,
 ) -> AppResult<(StatusCode, Json<serde_json::Value>)> {
-    let email = body.get("requester_email").and_then(|v| v.as_str()).unwrap_or("");
+    let email = body
+        .get("requester_email")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let reason = body.get("reason").and_then(|v| v.as_str());
 
     let row = sqlx::query_as::<_, (String,)>(
         "INSERT INTO deletion_requests (tenant_id, requester_email, reason, requested_by)
-         VALUES ($1, $2, $3, $4) RETURNING id::text"
+         VALUES ($1, $2, $3, $4) RETURNING id::text",
     )
     .bind(claims.tid)
     .bind(email)
@@ -239,7 +266,10 @@ pub async fn create_deletion_request(
     .await;
 
     match row {
-        Ok((id,)) => Ok((StatusCode::CREATED, Json(serde_json::json!({ "id": id, "status": "pending" })))),
+        Ok((id,)) => Ok((
+            StatusCode::CREATED,
+            Json(serde_json::json!({ "id": id, "status": "pending" })),
+        )),
         Err(e) => Err(AppError::Database(e)),
     }
 }
@@ -248,9 +278,18 @@ pub async fn list_retention_policies(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<serde_json::Value>> {
-    let rows = sqlx::query_as::<_, (String, String, i32, Option<String>, Option<chrono::DateTime<chrono::Utc>>)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            i32,
+            Option<String>,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
         "SELECT id::text, data_type, retention_days, action, created_at
-         FROM retention_policies WHERE tenant_id = $1 ORDER BY data_type"
+         FROM retention_policies WHERE tenant_id = $1 ORDER BY data_type",
     )
     .bind(claims.tid)
     .fetch_all(&state.db)
@@ -258,14 +297,17 @@ pub async fn list_retention_policies(
 
     match rows {
         Ok(records) => {
-            let data: Vec<serde_json::Value> = records.iter().map(|r| {
-                serde_json::json!({
-                    "id": r.0, "data_type": r.1, "retention_days": r.2,
-                    "action": r.3, "created_at": r.4
+            let data: Vec<serde_json::Value> = records
+                .iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.0, "data_type": r.1, "retention_days": r.2,
+                        "action": r.3, "created_at": r.4
+                    })
                 })
-            }).collect();
+                .collect();
             Ok(Json(serde_json::json!({ "data": data })))
         }
-        Err(_) => Ok(Json(serde_json::json!({ "data": [] })))
+        Err(_) => Ok(Json(serde_json::json!({ "data": [] }))),
     }
 }

@@ -22,7 +22,10 @@ pub async fn list_invoices(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
         Some("invoice_number") => "invoice_number",
@@ -39,7 +42,10 @@ pub async fn list_invoices(
     let order_clause = format!("ORDER BY {} {}", sort_col, sort_dir);
 
     // Build dynamic WHERE clause with all supported filters
-    let mut conditions = vec!["tenant_id = $1".to_string(), "deleted_at IS NULL".to_string()];
+    let mut conditions = vec![
+        "tenant_id = $1".to_string(),
+        "deleted_at IS NULL".to_string(),
+    ];
     let mut bind_idx = 2u32;
 
     if search_pattern.is_some() {
@@ -63,7 +69,11 @@ pub async fn list_invoices(
     let count_sql = format!("SELECT COUNT(*) FROM invoices WHERE {}", where_clause);
     let data_sql = format!(
         "SELECT {} FROM invoices WHERE {} {} LIMIT ${} OFFSET ${}",
-        select_cols, where_clause, order_clause, bind_idx, bind_idx + 1
+        select_cols,
+        where_clause,
+        order_clause,
+        bind_idx,
+        bind_idx + 1
     );
 
     // Build count query
@@ -90,7 +100,11 @@ pub async fn list_invoices(
     if let Some(client_id) = params.client_id {
         data_q = data_q.bind(client_id);
     }
-    let invoices = data_q.bind(per_page).bind(offset).fetch_all(&state.db).await?;
+    let invoices = data_q
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 
@@ -194,14 +208,12 @@ pub async fn create_invoice(
 
         // Mark time entry as invoiced if linked
         if let Some(te_id) = li.time_entry_id {
-            sqlx::query(
-                "UPDATE time_entries SET invoice_id = $1 WHERE id = $2 AND tenant_id = $3",
-            )
-            .bind(id)
-            .bind(te_id)
-            .bind(claims.tid)
-            .execute(&state.db)
-            .await?;
+            sqlx::query("UPDATE time_entries SET invoice_id = $1 WHERE id = $2 AND tenant_id = $3")
+                .bind(id)
+                .bind(te_id)
+                .bind(claims.tid)
+                .execute(&state.db)
+                .await?;
         }
     }
 
@@ -215,14 +227,13 @@ pub async fn update_invoice_status(
     Json(payload): Json<UpdateInvoiceStatusRequest>,
 ) -> AppResult<Json<Invoice>> {
     // Fetch current status
-    let (current_status,): (String,) = sqlx::query_as(
-        "SELECT status FROM invoices WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(invoice_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Invoice not found".to_string()))?;
+    let (current_status,): (String,) =
+        sqlx::query_as("SELECT status FROM invoices WHERE id = $1 AND tenant_id = $2")
+            .bind(invoice_id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Invoice not found".to_string()))?;
 
     // Validate state transitions
     let valid_transitions: &[(&str, &[&str])] = &[
@@ -245,7 +256,8 @@ pub async fn update_invoice_status(
             "Cannot transition invoice from '{}' to '{}'. Allowed transitions: {}",
             current_status,
             payload.status,
-            valid_transitions.iter()
+            valid_transitions
+                .iter()
                 .find(|(from, _)| *from == current_status.as_str())
                 .map(|(_, to)| to.join(", "))
                 .unwrap_or_else(|| "none".to_string())
@@ -292,11 +304,13 @@ pub async fn delete_invoice(
         .await?;
 
     // Unlink time entries
-    sqlx::query("UPDATE time_entries SET invoice_id = NULL WHERE invoice_id = $1 AND tenant_id = $2")
-        .bind(invoice_id)
-        .bind(claims.tid)
-        .execute(&state.db)
-        .await?;
+    sqlx::query(
+        "UPDATE time_entries SET invoice_id = NULL WHERE invoice_id = $1 AND tenant_id = $2",
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .execute(&state.db)
+    .await?;
 
     let result = sqlx::query("DELETE FROM invoices WHERE id = $1 AND tenant_id = $2")
         .bind(invoice_id)
@@ -372,7 +386,11 @@ pub async fn record_payment(
 
     // Update invoice amount_paid and status
     let new_paid = invoice.amount_paid_cents + payload.amount_cents;
-    let new_status = if new_paid >= invoice.total_cents { "paid" } else { &invoice.status };
+    let new_status = if new_paid >= invoice.total_cents {
+        "paid"
+    } else {
+        &invoice.status
+    };
     let paid_date = if new_paid >= invoice.total_cents {
         Some(chrono::Utc::now().date_naive())
     } else {
@@ -391,14 +409,17 @@ pub async fn record_payment(
     .execute(&state.db)
     .await?;
 
-    Ok((StatusCode::CREATED, Json(serde_json::json!({
-        "payment_id": payment_id,
-        "invoice_id": invoice_id,
-        "amount_cents": payload.amount_cents,
-        "method": payload.method,
-        "new_total_paid_cents": new_paid,
-        "invoice_status": new_status,
-    }))))
+    Ok((
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "payment_id": payment_id,
+            "invoice_id": invoice_id,
+            "amount_cents": payload.amount_cents,
+            "method": payload.method,
+            "new_total_paid_cents": new_paid,
+            "invoice_status": new_status,
+        })),
+    ))
 }
 
 // ── Bulk Operations ──────────────────────────────────────────────────
@@ -409,10 +430,14 @@ pub async fn bulk_send_invoices(
     Json(payload): Json<BulkInvoiceIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     let result = sqlx::query(
@@ -436,10 +461,14 @@ pub async fn bulk_delete_invoices(
     Json(payload): Json<BulkInvoiceIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     // Soft-delete only draft invoices
@@ -638,7 +667,9 @@ pub async fn delete_recurring_invoice(
     .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("Recurring invoice not found".to_string()));
+        return Err(AppError::NotFound(
+            "Recurring invoice not found".to_string(),
+        ));
     }
 
     Ok(StatusCode::NO_CONTENT)
@@ -677,27 +708,22 @@ pub async fn generate_invoice_pdf(
     .await?;
 
     // Get client name
-    let client_name: String = sqlx::query_scalar(
-        "SELECT name FROM clients WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(invoice.client_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .unwrap_or_else(|| "Unknown Client".to_string());
+    let client_name: String =
+        sqlx::query_scalar("SELECT name FROM clients WHERE id = $1 AND tenant_id = $2")
+            .bind(invoice.client_id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .unwrap_or_else(|| "Unknown Client".to_string());
 
     // Get firm name
-    let firm_name: String = sqlx::query_scalar(
-        "SELECT name FROM tenants WHERE id = $1",
-    )
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .unwrap_or_else(|| "CPA Firm".to_string());
+    let firm_name: String = sqlx::query_scalar("SELECT name FROM tenants WHERE id = $1")
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .unwrap_or_else(|| "CPA Firm".to_string());
 
-    let fmt_cents = |c: i64| -> String {
-        format!("${:.2}", c as f64 / 100.0)
-    };
+    let fmt_cents = |c: i64| -> String { format!("${:.2}", c as f64 / 100.0) };
 
     let html_escape = |s: &str| -> String {
         s.replace('&', "&amp;")
@@ -800,7 +826,14 @@ th{{text-align:left;padding:10px 8px;border-bottom:2px solid #333;font-size:13px
         total = fmt_cents(invoice.total_cents),
         paid = fmt_cents(invoice.amount_paid_cents),
         balance = fmt_cents(invoice.total_cents - invoice.amount_paid_cents),
-        notes_section = invoice.notes.as_ref().map(|n| format!("<div class='notes'><strong>Notes:</strong> {}</div>", html_escape(n))).unwrap_or_default(),
+        notes_section = invoice
+            .notes
+            .as_ref()
+            .map(|n| format!(
+                "<div class='notes'><strong>Notes:</strong> {}</div>",
+                html_escape(n)
+            ))
+            .unwrap_or_default(),
     );
 
     Ok((

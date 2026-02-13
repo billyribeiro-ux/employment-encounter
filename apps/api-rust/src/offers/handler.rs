@@ -23,7 +23,7 @@ pub async fn list_offers(
          WHERE tenant_id = $1 \
          AND ($2 = '' OR job_id::text = $2) \
          AND ($3 = '' OR status = $3) \
-         ORDER BY created_at DESC"
+         ORDER BY created_at DESC",
     )
     .bind(claims.tid)
     .bind(&job_id_filter)
@@ -44,14 +44,12 @@ pub async fn create_offer(
     }
 
     // Verify application exists and belongs to tenant
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM applications WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(payload.application_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
+    let _: (Uuid,) = sqlx::query_as("SELECT id FROM applications WHERE id = $1 AND tenant_id = $2")
+        .bind(payload.application_id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
 
     let salary_currency = payload.salary_currency.as_deref().unwrap_or("USD");
 
@@ -61,7 +59,7 @@ pub async fn create_offer(
           base_salary_cents, salary_currency, equity_pct, signing_bonus_cents, \
           start_date, expiry_date, benefits_summary, custom_terms, created_by) \
          VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(payload.application_id)
@@ -88,14 +86,12 @@ pub async fn get_offer(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Offer>> {
-    let offer: Offer = sqlx::query_as(
-        "SELECT * FROM offers WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let offer: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     Ok(Json(offer))
 }
@@ -107,14 +103,12 @@ pub async fn update_offer(
     Json(payload): Json<UpdateOfferRequest>,
 ) -> AppResult<Json<Offer>> {
     // Only allow updates to draft offers
-    let existing: Offer = sqlx::query_as(
-        "SELECT * FROM offers WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "draft" {
         return Err(AppError::Validation(format!(
@@ -136,7 +130,7 @@ pub async fn update_offer(
          custom_terms = COALESCE($11, custom_terms), \
          updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)
@@ -160,14 +154,12 @@ pub async fn send_offer(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Offer>> {
-    let existing: Offer = sqlx::query_as(
-        "SELECT * FROM offers WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "draft" {
         return Err(AppError::Validation(format!(
@@ -179,7 +171,7 @@ pub async fn send_offer(
     let offer: Offer = sqlx::query_as(
         "UPDATE offers SET status = 'sent', sent_at = NOW(), updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)
@@ -194,14 +186,12 @@ pub async fn accept_offer(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Offer>> {
-    let existing: Offer = sqlx::query_as(
-        "SELECT * FROM offers WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "sent" {
         return Err(AppError::Validation(format!(
@@ -217,7 +207,7 @@ pub async fn accept_offer(
          accepted_at = NOW(), \
          updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)
@@ -233,14 +223,12 @@ pub async fn decline_offer(
     Path(id): Path<Uuid>,
     Json(payload): Json<DeclineOfferRequest>,
 ) -> AppResult<Json<Offer>> {
-    let existing: Offer = sqlx::query_as(
-        "SELECT * FROM offers WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "sent" {
         return Err(AppError::Validation(format!(
@@ -257,7 +245,7 @@ pub async fn decline_offer(
          decline_reason = $3, \
          updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)

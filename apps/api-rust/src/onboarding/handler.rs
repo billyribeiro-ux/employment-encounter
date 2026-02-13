@@ -1,10 +1,10 @@
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -52,7 +52,7 @@ pub async fn list_templates(
 ) -> Result<Json<Vec<OnboardingTemplate>>, AppError> {
     let templates = sqlx::query_as::<_, OnboardingTemplate>(
         "SELECT id::text, name, role_type, phases, is_default, created_at
-         FROM onboarding_templates WHERE tenant_id = $1 ORDER BY name"
+         FROM onboarding_templates WHERE tenant_id = $1 ORDER BY name",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)
@@ -69,7 +69,7 @@ pub async fn list_instances(
     let instances = sqlx::query_as::<_, OnboardingInstance>(
         "SELECT id::text, new_hire_name, new_hire_email, job_title, department,
                 start_date, status, progress_percent, tasks, documents, created_at
-         FROM onboarding_instances WHERE tenant_id = $1 ORDER BY start_date DESC"
+         FROM onboarding_instances WHERE tenant_id = $1 ORDER BY start_date DESC",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)
@@ -92,7 +92,7 @@ pub async fn create_instance(
                                             job_title, department, start_date, manager_id, buddy_id)
          VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, $8::uuid, $9::uuid)
          RETURNING id::text, new_hire_name, new_hire_email, job_title, department,
-                   start_date, status, progress_percent, tasks, documents, created_at"
+                   start_date, status, progress_percent, tasks, documents, created_at",
     )
     .bind(&claims.tid)
     .bind(&body.template_id)
@@ -116,7 +116,10 @@ pub async fn update_progress(
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<Json<OnboardingInstance>, AppError> {
-    let progress = body.get("progress_percent").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let progress = body
+        .get("progress_percent")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(0) as i32;
     let tasks = body.get("tasks").cloned().unwrap_or(serde_json::json!([]));
 
     let instance = sqlx::query_as::<_, OnboardingInstance>(
@@ -125,7 +128,7 @@ pub async fn update_progress(
                 updated_at = now()
          WHERE id = $3::uuid AND tenant_id = $4
          RETURNING id::text, new_hire_name, new_hire_email, job_title, department,
-                   start_date, status, progress_percent, tasks, documents, created_at"
+                   start_date, status, progress_percent, tasks, documents, created_at",
     )
     .bind(progress)
     .bind(tasks)

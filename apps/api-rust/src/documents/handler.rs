@@ -21,7 +21,10 @@ pub async fn list_documents(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
         Some("name") => "filename",
@@ -45,12 +48,10 @@ pub async fn list_documents(
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
+        sqlx::query_as("SELECT COUNT(*) FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL")
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?
     };
 
     let documents: Vec<Document> = if let Some(ref pattern) = search_pattern {
@@ -124,13 +125,20 @@ pub async fn create_document(
 
     // Validate MIME type
     let allowed_types = [
-        "application/pdf", "image/jpeg", "image/png", "image/tiff",
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/tiff",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel", "text/csv",
+        "application/vnd.ms-excel",
+        "text/csv",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/msword",
     ];
-    if !allowed_types.iter().any(|t| payload.mime_type.starts_with(t)) {
+    if !allowed_types
+        .iter()
+        .any(|t| payload.mime_type.starts_with(t))
+    {
         return Err(AppError::Validation(format!(
             "Unsupported file type: {}. Allowed: PDF, JPEG, PNG, TIFF, Excel, CSV, Word",
             payload.mime_type
@@ -173,8 +181,10 @@ pub async fn create_document(
         .key(&s3_key)
         .content_type(&payload.mime_type)
         .presigned(
-            aws_sdk_s3::presigning::PresigningConfig::expires_in(std::time::Duration::from_secs(3600))
-                .expect("valid presigning config"),
+            aws_sdk_s3::presigning::PresigningConfig::expires_in(std::time::Duration::from_secs(
+                3600,
+            ))
+            .expect("valid presigning config"),
         )
         .await
     {
@@ -254,10 +264,14 @@ pub async fn bulk_delete_documents(
     Json(payload): Json<BulkDocumentIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     let result = sqlx::query(

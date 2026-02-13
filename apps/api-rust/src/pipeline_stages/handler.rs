@@ -1,6 +1,6 @@
+use crate::AppState;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -29,7 +29,7 @@ pub async fn list_templates(
 ) -> Result<Json<Vec<PipelineTemplate>>, AppError> {
     let templates = sqlx::query_as::<_, PipelineTemplate>(
         "SELECT id::text, name, description, is_default, stages, created_at
-         FROM pipeline_templates WHERE tenant_id = $1 ORDER BY is_default DESC, name"
+         FROM pipeline_templates WHERE tenant_id = $1 ORDER BY is_default DESC, name",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)
@@ -47,7 +47,7 @@ pub async fn create_template(
     let template = sqlx::query_as::<_, PipelineTemplate>(
         "INSERT INTO pipeline_templates (tenant_id, name, description, stages, is_default)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id::text, name, description, is_default, stages, created_at"
+         RETURNING id::text, name, description, is_default, stages, created_at",
     )
     .bind(&claims.tid)
     .bind(&body.name)

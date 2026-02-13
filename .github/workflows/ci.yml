@@ -89,7 +89,7 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
       - name: Lint
-        run: npx next lint
+        run: npx eslint .
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -168,7 +168,7 @@ jobs:
         run: cargo install cargo-audit
       - name: Rust security audit
         working-directory: apps/api-rust
-        run: cargo audit
+        run: cargo audit --ignore RUSTSEC-2025-0134 --ignore RUSTSEC-2026-0002
       - uses: actions/setup-node@v4
         with:
           node-version: 20

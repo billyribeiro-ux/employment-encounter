@@ -42,9 +42,7 @@ pub fn require_role(claims: &Claims, min_role: &str) -> Result<(), AppError> {
     let min_level = role_to_level(min_role);
 
     if role_level < min_level {
-        return Err(AppError::Forbidden(
-            "Insufficient permissions".to_string(),
-        ));
+        return Err(AppError::Forbidden("Insufficient permissions".to_string()));
     }
 
     Ok(())

@@ -90,7 +90,10 @@ impl RateLimiter {
 
         // Try Redis first
         if let Some(ref redis) = self.redis {
-            if let Ok(allowed) = self.check_redis(redis, &key, max_requests, window_secs).await {
+            if let Ok(allowed) = self
+                .check_redis(redis, &key, max_requests, window_secs)
+                .await
+            {
                 return allowed;
             }
             // Redis failed -- fall through to in-memory

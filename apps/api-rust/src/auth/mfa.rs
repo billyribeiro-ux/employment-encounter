@@ -45,25 +45,23 @@ pub async fn setup_mfa(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<MfaSetupResponse>> {
-    let (mfa_enabled,): (bool,) = sqlx::query_as(
-        "SELECT mfa_enabled FROM users WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(claims.sub)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (mfa_enabled,): (bool,) =
+        sqlx::query_as("SELECT mfa_enabled FROM users WHERE id = $1 AND tenant_id = $2")
+            .bind(claims.sub)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     if mfa_enabled {
         return Err(AppError::Conflict("MFA is already enabled".to_string()));
     }
 
-    let (email,): (String,) = sqlx::query_as(
-        "SELECT email FROM users WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(claims.sub)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (email,): (String,) =
+        sqlx::query_as("SELECT email FROM users WHERE id = $1 AND tenant_id = $2")
+            .bind(claims.sub)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     let secret = Secret::generate_secret();
     let totp = build_totp(secret.to_bytes().unwrap(), &email)?;
@@ -91,7 +89,8 @@ pub async fn enable_mfa(
 
     let totp = build_totp(secret.clone(), "user")?;
 
-    let valid = totp.check_current(&payload.code)
+    let valid = totp
+        .check_current(&payload.code)
         .map_err(|e| AppError::Internal(format!("TOTP check failed: {}", e)))?;
 
     if !valid {
@@ -100,7 +99,7 @@ pub async fn enable_mfa(
 
     sqlx::query(
         "UPDATE users SET mfa_enabled = TRUE, mfa_secret_encrypted = $3, updated_at = NOW() \
-         WHERE id = $1 AND tenant_id = $2"
+         WHERE id = $1 AND tenant_id = $2",
     )
     .bind(claims.sub)
     .bind(claims.tid)
@@ -125,10 +124,12 @@ pub async fn verify_mfa(
     .await?
     .ok_or_else(|| AppError::NotFound("MFA not enabled".to_string()))?;
 
-    let secret = mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
+    let secret =
+        mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
     let totp = build_totp(secret, "user")?;
 
-    let valid = totp.check_current(&payload.code)
+    let valid = totp
+        .check_current(&payload.code)
         .map_err(|e| AppError::Internal(format!("TOTP check failed: {}", e)))?;
 
     if !valid {
@@ -152,19 +153,23 @@ pub async fn disable_mfa(
     .await?
     .ok_or_else(|| AppError::NotFound("MFA not enabled".to_string()))?;
 
-    let secret = mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
+    let secret =
+        mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
     let totp = build_totp(secret, "user")?;
 
-    let valid = totp.check_current(&payload.code)
+    let valid = totp
+        .check_current(&payload.code)
         .map_err(|e| AppError::Internal(format!("TOTP check failed: {}", e)))?;
 
     if !valid {
-        return Err(AppError::Unauthorized("Invalid MFA code — cannot disable".to_string()));
+        return Err(AppError::Unauthorized(
+            "Invalid MFA code — cannot disable".to_string(),
+        ));
     }
 
     sqlx::query(
         "UPDATE users SET mfa_enabled = FALSE, mfa_secret_encrypted = NULL, updated_at = NOW() \
-         WHERE id = $1 AND tenant_id = $2"
+         WHERE id = $1 AND tenant_id = $2",
     )
     .bind(claims.sub)
     .bind(claims.tid)

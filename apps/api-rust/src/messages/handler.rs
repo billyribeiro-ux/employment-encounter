@@ -31,7 +31,7 @@ pub async fn list_messages_for_client(
          LEFT JOIN users u ON u.id = m.sender_id \
          WHERE m.tenant_id = $1 AND m.client_id = $2 \
          AND ($5 = '' OR LOWER(m.content) LIKE $6) \
-         ORDER BY m.created_at DESC LIMIT $3 OFFSET $4"
+         ORDER BY m.created_at DESC LIMIT $3 OFFSET $4",
     )
     .bind(claims.tid)
     .bind(client_id)
@@ -44,7 +44,7 @@ pub async fn list_messages_for_client(
 
     let (total,): (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM messages WHERE tenant_id = $1 AND client_id = $2 \
-         AND ($3 = '' OR LOWER(content) LIKE $4)"
+         AND ($3 = '' OR LOWER(content) LIKE $4)",
     )
     .bind(claims.tid)
     .bind(client_id)
@@ -101,7 +101,7 @@ pub async fn create_message(
 
     // Look up sender name for response and WebSocket broadcast
     let sender_name: String = sqlx::query_scalar(
-        "SELECT COALESCE(first_name || ' ' || last_name, 'Unknown') FROM users WHERE id = $1"
+        "SELECT COALESCE(first_name || ' ' || last_name, 'Unknown') FROM users WHERE id = $1",
     )
     .bind(claims.sub)
     .fetch_optional(&state.db)
@@ -178,7 +178,7 @@ pub async fn mark_conversation_read(
 ) -> AppResult<StatusCode> {
     sqlx::query(
         "UPDATE messages SET is_read = TRUE, read_at = NOW(), updated_at = NOW() \
-         WHERE tenant_id = $1 AND client_id = $2 AND sender_id != $3 AND is_read = FALSE"
+         WHERE tenant_id = $1 AND client_id = $2 AND sender_id != $3 AND is_read = FALSE",
     )
     .bind(claims.tid)
     .bind(client_id)
@@ -197,7 +197,7 @@ pub async fn get_unread_counts(
         "SELECT client_id, COUNT(*) \
          FROM messages \
          WHERE tenant_id = $1 AND sender_id != $2 AND is_read = FALSE \
-         GROUP BY client_id"
+         GROUP BY client_id",
     )
     .bind(claims.tid)
     .bind(claims.sub)
@@ -217,17 +217,18 @@ pub async fn delete_message(
     Extension(claims): Extension<Claims>,
     Path(message_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    let result = sqlx::query(
-        "DELETE FROM messages WHERE id = $1 AND tenant_id = $2 AND sender_id = $3"
-    )
-    .bind(message_id)
-    .bind(claims.tid)
-    .bind(claims.sub)
-    .execute(&state.db)
-    .await?;
+    let result =
+        sqlx::query("DELETE FROM messages WHERE id = $1 AND tenant_id = $2 AND sender_id = $3")
+            .bind(message_id)
+            .bind(claims.tid)
+            .bind(claims.sub)
+            .execute(&state.db)
+            .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("Message not found or not owned by you".to_string()));
+        return Err(AppError::NotFound(
+            "Message not found or not owned by you".to_string(),
+        ));
     }
 
     Ok(StatusCode::NO_CONTENT)

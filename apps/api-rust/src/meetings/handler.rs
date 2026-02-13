@@ -17,8 +17,8 @@ pub async fn create_meeting(
 ) -> AppResult<(StatusCode, Json<MeetingRequest>)> {
     let meeting_type = payload.meeting_type.as_deref().unwrap_or("video");
     let duration_minutes = payload.duration_minutes.unwrap_or(60);
-    let proposed_times_json = serde_json::to_value(&payload.proposed_times)
-        .unwrap_or_else(|_| serde_json::json!([]));
+    let proposed_times_json =
+        serde_json::to_value(&payload.proposed_times).unwrap_or_else(|_| serde_json::json!([]));
 
     let meeting: MeetingRequest = sqlx::query_as(
         "INSERT INTO meeting_requests \
@@ -242,8 +242,8 @@ pub async fn reschedule_meeting(
     Path(id): Path<Uuid>,
     Json(payload): Json<RescheduleMeetingRequest>,
 ) -> AppResult<Json<MeetingRequest>> {
-    let new_proposed_times = serde_json::to_value(&payload.proposed_times)
-        .unwrap_or_else(|_| serde_json::json!([]));
+    let new_proposed_times =
+        serde_json::to_value(&payload.proposed_times).unwrap_or_else(|_| serde_json::json!([]));
 
     // Insert reschedule event
     sqlx::query(

@@ -21,7 +21,10 @@ pub async fn list_expenses(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let sort_col = match params.sort.as_deref() {
         Some("description") => "description",
@@ -40,7 +43,10 @@ pub async fn list_expenses(
     let mut param_idx = 2;
 
     if search_pattern.is_some() {
-        where_clause.push_str(&format!(" AND (LOWER(COALESCE(description, '')) LIKE ${p} OR LOWER(category) LIKE ${p})", p = param_idx));
+        where_clause.push_str(&format!(
+            " AND (LOWER(COALESCE(description, '')) LIKE ${p} OR LOWER(category) LIKE ${p})",
+            p = param_idx
+        ));
         param_idx += 1;
     }
     if params.status.is_some() {
@@ -168,13 +174,11 @@ pub async fn delete_expense(
     Extension(claims): Extension<Claims>,
     Path(expense_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    let result = sqlx::query(
-        "DELETE FROM expenses WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(expense_id)
-    .bind(claims.tid)
-    .execute(&state.db)
-    .await?;
+    let result = sqlx::query("DELETE FROM expenses WHERE id = $1 AND tenant_id = $2")
+        .bind(expense_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Expense not found".to_string()));

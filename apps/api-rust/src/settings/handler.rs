@@ -17,7 +17,7 @@ pub async fn get_firm_settings(
 ) -> AppResult<Json<FirmSettings>> {
     let firm: FirmSettings = sqlx::query_as(
         "SELECT id, name, slug, tier, status, settings, created_at, updated_at \
-         FROM tenants WHERE id = $1"
+         FROM tenants WHERE id = $1",
     )
     .bind(claims.tid)
     .fetch_optional(&state.db)
@@ -40,7 +40,7 @@ pub async fn update_firm_settings(
          settings = COALESCE($3, settings), \
          updated_at = NOW() \
          WHERE id = $1 \
-         RETURNING id, name, slug, tier, status, settings, created_at, updated_at"
+         RETURNING id, name, slug, tier, status, settings, created_at, updated_at",
     )
     .bind(claims.tid)
     .bind(&payload.name)
@@ -118,25 +118,35 @@ pub async fn invite_user(
     require_role(&claims, "admin")?;
 
     // Check valid role
-    let valid_roles = ["staff_accountant", "senior_accountant", "manager", "partner", "admin"];
+    let valid_roles = [
+        "staff_accountant",
+        "senior_accountant",
+        "manager",
+        "partner",
+        "admin",
+    ];
     if !valid_roles.contains(&payload.role.as_str()) {
-        return Err(AppError::Validation(format!("Invalid role: {}", payload.role)));
+        return Err(AppError::Validation(format!(
+            "Invalid role: {}",
+            payload.role
+        )));
     }
 
     // Normalize email for case-insensitive comparison
     let normalized_email = payload.email.trim().to_lowercase();
 
     // Check duplicate email (case-insensitive)
-    let existing: Option<(Uuid,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE tenant_id = $1 AND LOWER(email) = $2"
-    )
-    .bind(claims.tid)
-    .bind(&normalized_email)
-    .fetch_optional(&state.db)
-    .await?;
+    let existing: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM users WHERE tenant_id = $1 AND LOWER(email) = $2")
+            .bind(claims.tid)
+            .bind(&normalized_email)
+            .fetch_optional(&state.db)
+            .await?;
 
     if existing.is_some() {
-        return Err(AppError::Conflict("User with this email already exists".to_string()));
+        return Err(AppError::Conflict(
+            "User with this email already exists".to_string(),
+        ));
     }
 
     // Create invited user with real hashed temp password and invite token
@@ -171,9 +181,18 @@ pub async fn update_user_role(
 ) -> AppResult<Json<UserProfile>> {
     require_role(&claims, "admin")?;
 
-    let valid_roles = ["staff_accountant", "senior_accountant", "manager", "partner", "admin"];
+    let valid_roles = [
+        "staff_accountant",
+        "senior_accountant",
+        "manager",
+        "partner",
+        "admin",
+    ];
     if !valid_roles.contains(&payload.role.as_str()) {
-        return Err(AppError::Validation(format!("Invalid role: {}", payload.role)));
+        return Err(AppError::Validation(format!(
+            "Invalid role: {}",
+            payload.role
+        )));
     }
 
     let user: UserProfile = sqlx::query_as(

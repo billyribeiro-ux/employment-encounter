@@ -103,9 +103,8 @@ pub async fn create_subscription(
         "1 month"
     };
 
-    let subscription: Subscription = sqlx::query_as(
-        &format!(
-            "INSERT INTO subscriptions \
+    let subscription: Subscription = sqlx::query_as(&format!(
+        "INSERT INTO subscriptions \
              (id, tenant_id, plan_id, status, billing_cycle, \
               current_period_start, current_period_end, trial_ends_at, \
               seats_used, seats_limit, metadata) \
@@ -116,9 +115,8 @@ pub async fn create_subscription(
               current_period_start, current_period_end, trial_ends_at, \
               cancelled_at, stripe_subscription_id, stripe_customer_id, \
               seats_used, seats_limit, metadata, created_at, updated_at",
-            period_interval
-        ),
-    )
+        period_interval
+    ))
     .bind(id)
     .bind(claims.tid)
     .bind(payload.plan_id)

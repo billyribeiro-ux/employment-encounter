@@ -107,13 +107,12 @@ pub async fn record_session_event(
     Json(payload): Json<SessionEventRequest>,
 ) -> AppResult<(StatusCode, Json<SessionEvent>)> {
     // Verify session exists
-    let (exists,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM video_sessions WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(session_id)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (exists,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM video_sessions WHERE id = $1 AND tenant_id = $2")
+            .bind(session_id)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     if exists == 0 {
         return Err(AppError::NotFound("Session not found".to_string()));
@@ -146,13 +145,12 @@ pub async fn submit_feedback(
     Json(payload): Json<SubmitFeedbackRequest>,
 ) -> AppResult<(StatusCode, Json<serde_json::Value>)> {
     // Verify session exists
-    let (exists,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM video_sessions WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(session_id)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (exists,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM video_sessions WHERE id = $1 AND tenant_id = $2")
+            .bind(session_id)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     if exists == 0 {
         return Err(AppError::NotFound("Session not found".to_string()));
@@ -180,11 +178,14 @@ pub async fn submit_feedback(
     .fetch_one(&state.db)
     .await?;
 
-    Ok((StatusCode::CREATED, Json(serde_json::json!({
-        "id": event.id,
-        "session_id": session_id,
-        "submitted_by": claims.sub,
-        "feedback": feedback_data,
-        "created_at": event.created_at,
-    }))))
+    Ok((
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "id": event.id,
+            "session_id": session_id,
+            "submitted_by": claims.sub,
+            "feedback": feedback_data,
+            "created_at": event.created_at,
+        })),
+    ))
 }

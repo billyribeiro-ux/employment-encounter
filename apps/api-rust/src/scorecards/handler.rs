@@ -15,7 +15,10 @@ pub async fn list_scorecards(
     Extension(claims): Extension<Claims>,
     Query(params): Query<ListScorecardsQuery>,
 ) -> AppResult<Json<Vec<Scorecard>>> {
-    let application_id_filter = params.application_id.map(|id| id.to_string()).unwrap_or_default();
+    let application_id_filter = params
+        .application_id
+        .map(|id| id.to_string())
+        .unwrap_or_default();
     let job_id_filter = params.job_id.map(|id| id.to_string()).unwrap_or_default();
 
     let scorecards: Vec<Scorecard> = sqlx::query_as(
@@ -24,7 +27,7 @@ pub async fn list_scorecards(
          WHERE s.tenant_id = $1 \
          AND ($2 = '' OR s.application_id::text = $2) \
          AND ($3 = '' OR a.job_id::text = $3) \
-         ORDER BY s.created_at DESC"
+         ORDER BY s.created_at DESC",
     )
     .bind(claims.tid)
     .bind(&application_id_filter)
@@ -43,13 +46,21 @@ pub async fn create_scorecard(
     // Validate score range if provided
     if let Some(score) = payload.overall_score {
         if !(1..=5).contains(&score) {
-            return Err(AppError::Validation("overall_score must be between 1 and 5".to_string()));
+            return Err(AppError::Validation(
+                "overall_score must be between 1 and 5".to_string(),
+            ));
         }
     }
 
     // Validate recommendation if provided
     if let Some(ref rec) = payload.recommendation {
-        let valid = ["strong_hire", "hire", "neutral", "no_hire", "strong_no_hire"];
+        let valid = [
+            "strong_hire",
+            "hire",
+            "neutral",
+            "no_hire",
+            "strong_no_hire",
+        ];
         if !valid.contains(&rec.as_str()) {
             return Err(AppError::Validation(format!(
                 "recommendation must be one of: {}",
@@ -59,14 +70,12 @@ pub async fn create_scorecard(
     }
 
     // Verify application exists and belongs to tenant
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM applications WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(payload.application_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
+    let _: (Uuid,) = sqlx::query_as("SELECT id FROM applications WHERE id = $1 AND tenant_id = $2")
+        .bind(payload.application_id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
 
     let criteria_scores = payload.criteria_scores.unwrap_or(serde_json::json!([]));
 
@@ -75,7 +84,7 @@ pub async fn create_scorecard(
          (tenant_id, application_id, interviewer_id, interview_stage, overall_score, \
           recommendation, strengths, concerns, notes, criteria_scores, submitted_at) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(payload.application_id)
@@ -98,14 +107,13 @@ pub async fn get_scorecard(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Scorecard>> {
-    let scorecard: Scorecard = sqlx::query_as(
-        "SELECT * FROM scorecards WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Scorecard not found".to_string()))?;
+    let scorecard: Scorecard =
+        sqlx::query_as("SELECT * FROM scorecards WHERE id = $1 AND tenant_id = $2")
+            .bind(id)
+            .bind(claims.tid)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Scorecard not found".to_string()))?;
 
     Ok(Json(scorecard))
 }
@@ -119,13 +127,21 @@ pub async fn update_scorecard(
     // Validate score range if provided
     if let Some(score) = payload.overall_score {
         if !(1..=5).contains(&score) {
-            return Err(AppError::Validation("overall_score must be between 1 and 5".to_string()));
+            return Err(AppError::Validation(
+                "overall_score must be between 1 and 5".to_string(),
+            ));
         }
     }
 
     // Validate recommendation if provided
     if let Some(ref rec) = payload.recommendation {
-        let valid = ["strong_hire", "hire", "neutral", "no_hire", "strong_no_hire"];
+        let valid = [
+            "strong_hire",
+            "hire",
+            "neutral",
+            "no_hire",
+            "strong_no_hire",
+        ];
         if !valid.contains(&rec.as_str()) {
             return Err(AppError::Validation(format!(
                 "recommendation must be one of: {}",
@@ -145,7 +161,7 @@ pub async fn update_scorecard(
          criteria_scores = COALESCE($9, criteria_scores), \
          updated_at = NOW() \
          WHERE id = $1 AND tenant_id = $2 \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(claims.tid)
@@ -168,13 +184,11 @@ pub async fn delete_scorecard(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    let result = sqlx::query(
-        "DELETE FROM scorecards WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(id)
-    .bind(claims.tid)
-    .execute(&state.db)
-    .await?;
+    let result = sqlx::query("DELETE FROM scorecards WHERE id = $1 AND tenant_id = $2")
+        .bind(id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Scorecard not found".to_string()));
@@ -189,17 +203,15 @@ pub async fn get_scorecard_summary(
     Path(application_id): Path<Uuid>,
 ) -> AppResult<Json<ScorecardSummary>> {
     // Verify application exists
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM applications WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(application_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
+    let _: (Uuid,) = sqlx::query_as("SELECT id FROM applications WHERE id = $1 AND tenant_id = $2")
+        .bind(application_id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
 
     let (total_scorecards,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM scorecards WHERE application_id = $1 AND tenant_id = $2"
+        "SELECT COUNT(*) FROM scorecards WHERE application_id = $1 AND tenant_id = $2",
     )
     .bind(application_id)
     .bind(claims.tid)
@@ -208,7 +220,7 @@ pub async fn get_scorecard_summary(
 
     let (average_score,): (Option<f64>,) = sqlx::query_as(
         "SELECT AVG(overall_score::float) FROM scorecards \
-         WHERE application_id = $1 AND tenant_id = $2 AND overall_score IS NOT NULL"
+         WHERE application_id = $1 AND tenant_id = $2 AND overall_score IS NOT NULL",
     )
     .bind(application_id)
     .bind(claims.tid)
@@ -285,14 +297,12 @@ pub async fn create_decision_record(
     }
 
     // Verify application exists and belongs to tenant
-    let _: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM applications WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(payload.application_id)
-    .bind(claims.tid)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
+    let _: (Uuid,) = sqlx::query_as("SELECT id FROM applications WHERE id = $1 AND tenant_id = $2")
+        .bind(payload.application_id)
+        .bind(claims.tid)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
 
     let evidence_refs = payload.evidence_refs.unwrap_or(serde_json::json!([]));
 
@@ -300,7 +310,7 @@ pub async fn create_decision_record(
         "INSERT INTO decision_records \
          (tenant_id, application_id, decision, decided_by, rationale, evidence_refs) \
          VALUES ($1, $2, $3, $4, $5, $6) \
-         RETURNING *"
+         RETURNING *",
     )
     .bind(claims.tid)
     .bind(payload.application_id)
@@ -319,13 +329,16 @@ pub async fn list_decision_records(
     Extension(claims): Extension<Claims>,
     Query(params): Query<ListDecisionRecordsQuery>,
 ) -> AppResult<Json<Vec<DecisionRecord>>> {
-    let application_id_filter = params.application_id.map(|id| id.to_string()).unwrap_or_default();
+    let application_id_filter = params
+        .application_id
+        .map(|id| id.to_string())
+        .unwrap_or_default();
 
     let records: Vec<DecisionRecord> = sqlx::query_as(
         "SELECT * FROM decision_records \
          WHERE tenant_id = $1 \
          AND ($2 = '' OR application_id::text = $2) \
-         ORDER BY created_at DESC"
+         ORDER BY created_at DESC",
     )
     .bind(claims.tid)
     .bind(&application_id_filter)

@@ -25,7 +25,10 @@ pub async fn idempotency_check(
     }
 
     // Check for idempotency key header
-    let key = match headers.get(IDEMPOTENCY_HEADER).and_then(|v| v.to_str().ok()) {
+    let key = match headers
+        .get(IDEMPOTENCY_HEADER)
+        .and_then(|v| v.to_str().ok())
+    {
         Some(k) => k.to_string(),
         None => return next.run(request).await, // No key, proceed normally
     };
@@ -36,7 +39,7 @@ pub async fn idempotency_check(
     let existing: Option<(String, Option<i32>, Option<String>)> = sqlx::query_as(
         "SELECT fingerprint, response_status, response_body \
          FROM idempotency_keys \
-         WHERE key = $1 AND expires_at > NOW()"
+         WHERE key = $1 AND expires_at > NOW()",
     )
     .bind(&key)
     .fetch_optional(&state.db)
@@ -48,14 +51,14 @@ pub async fn idempotency_check(
         if stored_fingerprint != fingerprint {
             return (
                 StatusCode::CONFLICT,
-                "Idempotency key already used with a different request"
-            ).into_response();
+                "Idempotency key already used with a different request",
+            )
+                .into_response();
         }
 
         // Return cached response if available
         if let (Some(status_code), Some(response_body)) = (status, body) {
-            let status = StatusCode::from_u16(status_code as u16)
-                .unwrap_or(StatusCode::OK);
+            let status = StatusCode::from_u16(status_code as u16).unwrap_or(StatusCode::OK);
             return (status, response_body).into_response();
         }
 
@@ -67,7 +70,7 @@ pub async fn idempotency_check(
     let _ = sqlx::query(
         "INSERT INTO idempotency_keys (key, fingerprint, expires_at) \
          VALUES ($1, $2, NOW() + INTERVAL '24 hours') \
-         ON CONFLICT (key) DO NOTHING"
+         ON CONFLICT (key) DO NOTHING",
     )
     .bind(&key)
     .bind(&fingerprint)
@@ -81,7 +84,7 @@ pub async fn idempotency_check(
     let status_code = response.status().as_u16() as i32;
     let _ = sqlx::query(
         "UPDATE idempotency_keys SET response_status = $2, locked_at = NOW() \
-         WHERE key = $1"
+         WHERE key = $1",
     )
     .bind(&key)
     .bind(status_code)

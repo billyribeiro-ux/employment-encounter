@@ -20,7 +20,10 @@ pub async fn list_jobs(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     // Build dynamic WHERE clause
     let mut conditions = vec!["tenant_id = $1".to_string()];
@@ -231,13 +234,12 @@ pub async fn update_job(
     Json(payload): Json<UpdateJobRequest>,
 ) -> AppResult<Json<JobPost>> {
     // Verify job exists
-    let (existing,): (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM job_posts WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(job_id)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (existing,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM job_posts WHERE id = $1 AND tenant_id = $2")
+            .bind(job_id)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     if existing == 0 {
         return Err(AppError::NotFound("Job not found".to_string()));
@@ -311,13 +313,11 @@ pub async fn delete_job(
     Extension(claims): Extension<Claims>,
     Path(job_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    let result = sqlx::query(
-        "DELETE FROM job_posts WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(job_id)
-    .bind(claims.tid)
-    .execute(&state.db)
-    .await?;
+    let result = sqlx::query("DELETE FROM job_posts WHERE id = $1 AND tenant_id = $2")
+        .bind(job_id)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Job not found".to_string()));
@@ -382,7 +382,10 @@ pub async fn list_public_jobs(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
     let work_mode_filter = params.work_mode.as_deref().unwrap_or("");
     let employment_type_filter = params.employment_type.as_deref().unwrap_or("");
     let location_country_filter = params.location_country.as_deref().unwrap_or("");
@@ -402,7 +405,7 @@ pub async fn list_public_jobs(
          AND ($4 = '' OR employment_type = $4) \
          AND ($5 = '' OR location_country = $5) \
          ORDER BY posted_at DESC NULLS LAST, created_at DESC \
-         LIMIT $6 OFFSET $7"
+         LIMIT $6 OFFSET $7",
     )
     .bind(search_str)
     .bind(search_pat)
@@ -421,7 +424,7 @@ pub async fn list_public_jobs(
          AND ($1 = '' OR LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) \
          AND ($3 = '' OR work_mode = $3) \
          AND ($4 = '' OR employment_type = $4) \
-         AND ($5 = '' OR location_country = $5)"
+         AND ($5 = '' OR location_country = $5)",
     )
     .bind(search_str)
     .bind(search_pat)
@@ -452,7 +455,7 @@ pub async fn get_public_job(
          seniority_level, salary_min_cents, salary_max_cents, salary_currency, equity_offered, \
          skills_required, skills_preferred, posted_at, closes_at, created_at \
          FROM job_posts \
-         WHERE id = $1 AND status IN ('open') AND visibility = 'public'"
+         WHERE id = $1 AND status IN ('open') AND visibility = 'public'",
     )
     .bind(job_id)
     .fetch_optional(&state.db)

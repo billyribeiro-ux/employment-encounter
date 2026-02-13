@@ -51,10 +51,7 @@ fn should_skip_csrf(req: &Request) -> bool {
 ///
 /// Requests using Bearer token authentication are exempt (browser-based CSRF
 /// attacks cannot set custom Authorization headers).
-pub async fn csrf_protection(
-    req: Request,
-    next: Next,
-) -> Result<Response, AppError> {
+pub async fn csrf_protection(req: Request, next: Next) -> Result<Response, AppError> {
     let method = req.method().clone();
 
     // Skip CSRF for exempt routes
@@ -103,10 +100,9 @@ pub async fn csrf_protection(
                 CSRF_COOKIE_NAME, token
             );
             if let Ok(header_value) = cookie_value.parse() {
-                response.headers_mut().insert(
-                    header::SET_COOKIE,
-                    header_value,
-                );
+                response
+                    .headers_mut()
+                    .insert(header::SET_COOKIE, header_value);
             }
         }
 

@@ -9,19 +9,12 @@ use crate::auth::jwt::Claims;
 use crate::AppState;
 
 /// Audit log middleware that records mutating API calls (POST, PUT, PATCH, DELETE).
-pub async fn audit_log(
-    State(state): State<AppState>,
-    req: Request,
-    next: Next,
-) -> Response {
+pub async fn audit_log(State(state): State<AppState>, req: Request, next: Next) -> Response {
     let method = req.method().clone();
     let uri = req.uri().path().to_string();
 
     // Only log mutating operations
-    let should_log = matches!(
-        method.as_str(),
-        "POST" | "PUT" | "PATCH" | "DELETE"
-    );
+    let should_log = matches!(method.as_str(), "POST" | "PUT" | "PATCH" | "DELETE");
 
     // Extract claims if present (injected by require_auth)
     let claims = req.extensions().get::<Claims>().cloned();

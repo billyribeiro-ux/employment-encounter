@@ -1,6 +1,6 @@
+use crate::AppState;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
-use crate::AppState;
 
 use crate::auth::Claims;
 use crate::errors::AppError;
@@ -37,7 +37,7 @@ pub async fn list_referrals(
         "SELECT id::text, referrer_id::text, candidate_name, candidate_email,
                 job_id::text, relationship, notes, status,
                 reward_amount::float8 as reward_amount, reward_status, created_at
-         FROM referrals WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100"
+         FROM referrals WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100",
     )
     .bind(&claims.tid)
     .fetch_all(&state.db)

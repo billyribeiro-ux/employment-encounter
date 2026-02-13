@@ -45,8 +45,12 @@ impl SecurityEventType {
         match self {
             Self::LoginSuccess | Self::LogoutSuccess | Self::MfaVerified => "info",
             Self::LoginFailed | Self::MfaFailed | Self::RateLimited => "warning",
-            Self::LoginLocked | Self::RoleChanged | Self::UserDeleted | Self::TokenRevoked => "critical",
-            Self::MfaEnabled | Self::MfaDisabled | Self::PasswordChanged | Self::UserInvited => "info",
+            Self::LoginLocked | Self::RoleChanged | Self::UserDeleted | Self::TokenRevoked => {
+                "critical"
+            }
+            Self::MfaEnabled | Self::MfaDisabled | Self::PasswordChanged | Self::UserInvited => {
+                "info"
+            }
         }
     }
 }

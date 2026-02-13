@@ -63,7 +63,10 @@ pub async fn list_instances(
     let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
@@ -74,12 +77,10 @@ pub async fn list_instances(
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as(
-            "SELECT COUNT(*) FROM workflow_instances WHERE tenant_id = $1",
-        )
-        .bind(claims.tid)
-        .fetch_one(&state.db)
-        .await?
+        sqlx::query_as("SELECT COUNT(*) FROM workflow_instances WHERE tenant_id = $1")
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?
     };
 
     let instances: Vec<WorkflowInstance> = if let Some(ref pattern) = search_pattern {
@@ -216,13 +217,12 @@ pub async fn advance_step(
     }
 
     // Get template steps to determine total count and step name
-    let (steps_json,): (serde_json::Value,) = sqlx::query_as(
-        "SELECT steps FROM workflow_templates WHERE id = $1 AND tenant_id = $2",
-    )
-    .bind(instance.template_id)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (steps_json,): (serde_json::Value,) =
+        sqlx::query_as("SELECT steps FROM workflow_templates WHERE id = $1 AND tenant_id = $2")
+            .bind(instance.template_id)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     let empty_vec = vec![];
     let steps_array = steps_json.as_array().unwrap_or(&empty_vec);

@@ -67,7 +67,9 @@ pub async fn list_audit_logs(
         "SELECT id, tenant_id, user_id, action, resource_type, resource_id, details, \
          ip_address::TEXT as ip_address, user_agent, created_at \
          FROM audit_logs WHERE {} ORDER BY created_at DESC LIMIT ${} OFFSET ${}",
-        where_clause, bind_idx, bind_idx + 1
+        where_clause,
+        bind_idx,
+        bind_idx + 1
     );
 
     // Build count query
@@ -94,7 +96,11 @@ pub async fn list_audit_logs(
     if let Some(ref action) = params.action {
         data_q = data_q.bind(format!("%{}%", action));
     }
-    let logs = data_q.bind(per_page).bind(offset).fetch_all(&state.db).await?;
+    let logs = data_q
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "data": logs,

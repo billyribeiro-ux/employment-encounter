@@ -135,8 +135,10 @@ pub async fn register(
     .execute(&state.db)
     .await?;
 
-    let access_token = jwt::create_access_token(user_id, tenant_id, "admin", &state.config.jwt_secret)?;
-    let (refresh_token, refresh_jti) = jwt::create_refresh_token(user_id, tenant_id, "admin", &state.config.jwt_secret)?;
+    let access_token =
+        jwt::create_access_token(user_id, tenant_id, "admin", &state.config.jwt_secret)?;
+    let (refresh_token, refresh_jti) =
+        jwt::create_refresh_token(user_id, tenant_id, "admin", &state.config.jwt_secret)?;
 
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user_id, refresh_jti).await;
@@ -184,10 +186,14 @@ pub async fn login(
     if let Some(locked_until) = user.locked_until {
         if locked_until > chrono::Utc::now() {
             security::log_security_event(
-                state.db.clone(), Some(user.tenant_id), Some(user.id),
+                state.db.clone(),
+                Some(user.tenant_id),
+                Some(user.id),
                 SecurityEventType::LoginLocked,
                 format!("Login attempt on locked account: {}", payload.email),
-                ip.clone(), ua.clone(), None,
+                ip.clone(),
+                ua.clone(),
+                None,
             );
             return Err(AppError::Unauthorized(
                 "Account is temporarily locked. Try again later.".to_string(),
@@ -219,12 +225,18 @@ pub async fn login(
             .await?;
 
         security::log_security_event(
-            state.db.clone(), Some(user.tenant_id), Some(user.id),
+            state.db.clone(),
+            Some(user.tenant_id),
+            Some(user.id),
             SecurityEventType::LoginFailed,
             format!("Failed login attempt #{} for: {}", new_count, payload.email),
-            ip.clone(), ua.clone(), None,
+            ip.clone(),
+            ua.clone(),
+            None,
         );
-        return Err(AppError::Unauthorized("Invalid email or password".to_string()));
+        return Err(AppError::Unauthorized(
+            "Invalid email or password".to_string(),
+        ));
     }
 
     // Reset failed login count on successful password verification
@@ -236,43 +248,70 @@ pub async fn login(
     // If MFA is enabled, return a partial auth response requiring MFA verification
     if user.mfa_enabled {
         let mfa_token = jwt::create_mfa_token(
-            user.id, user.tenant_id, &user.role, &state.config.jwt_secret,
+            user.id,
+            user.tenant_id,
+            &user.role,
+            &state.config.jwt_secret,
         )?;
 
         // Store MFA attempt counter (limit to 5 attempts per token)
         if let Some(ref redis) = state.redis {
             use fred::interfaces::KeysInterface;
             let mfa_attempts_key = format!("mfa_attempts:{}", user.id);
-            let _: () = redis.set(
-                &mfa_attempts_key, "0",
-                Some(fred::types::Expiration::EX(300)), // 5 minute TTL matching token
-                None, false,
-            ).await.unwrap_or(());
+            let _: () = redis
+                .set(
+                    &mfa_attempts_key,
+                    "0",
+                    Some(fred::types::Expiration::EX(300)), // 5 minute TTL matching token
+                    None,
+                    false,
+                )
+                .await
+                .unwrap_or(());
         }
 
         security::log_security_event(
-            state.db.clone(), Some(user.tenant_id), Some(user.id),
+            state.db.clone(),
+            Some(user.tenant_id),
+            Some(user.id),
             SecurityEventType::LoginSuccess,
             format!("Password verified, MFA required: {}", user.email),
-            ip, ua, None,
+            ip,
+            ua,
+            None,
         );
 
         return Ok(Json(LoginResponse::MfaChallenge(MfaRequiredResponse {
             mfa_required: true,
             mfa_token,
-            message: "MFA verification required. Submit TOTP code to /api/v1/auth/mfa/verify-login".to_string(),
+            message: "MFA verification required. Submit TOTP code to /api/v1/auth/mfa/verify-login"
+                .to_string(),
         })));
     }
 
     security::log_security_event(
-        state.db.clone(), Some(user.tenant_id), Some(user.id),
+        state.db.clone(),
+        Some(user.tenant_id),
+        Some(user.id),
         SecurityEventType::LoginSuccess,
         format!("Successful login: {}", user.email),
-        ip, ua, None,
+        ip,
+        ua,
+        None,
     );
 
-    let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
-    let (refresh_token, refresh_jti) = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+    let access_token = jwt::create_access_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
+    let (refresh_token, refresh_jti) = jwt::create_refresh_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
 
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
@@ -325,10 +364,14 @@ pub async fn verify_mfa_login(
         let attempts: i64 = redis.incr(&mfa_attempts_key).await.unwrap_or(1);
         if attempts > 5 {
             security::log_security_event(
-                state.db.clone(), Some(tenant_id), Some(user_id),
+                state.db.clone(),
+                Some(tenant_id),
+                Some(user_id),
                 SecurityEventType::MfaFailed,
                 "MFA verification rate limit exceeded".to_string(),
-                ip.clone(), ua.clone(), None,
+                ip.clone(),
+                ua.clone(),
+                None,
             );
             return Err(AppError::RateLimited);
         }
@@ -344,27 +387,35 @@ pub async fn verify_mfa_login(
     .await?
     .ok_or_else(|| AppError::NotFound("MFA not enabled".to_string()))?;
 
-    let secret = mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
+    let secret =
+        mfa_secret.ok_or_else(|| AppError::Internal("MFA secret not found".to_string()))?;
 
     // Verify TOTP code
     let totp = totp_rs::TOTP::new(
         totp_rs::Algorithm::SHA1,
-        6, 1, 30,
+        6,
+        1,
+        30,
         secret,
         Some("CPA Platform".to_string()),
         "user".to_string(),
     )
     .map_err(|e| AppError::Internal(format!("TOTP creation failed: {}", e)))?;
 
-    let valid = totp.check_current(&payload.code)
+    let valid = totp
+        .check_current(&payload.code)
         .map_err(|e| AppError::Internal(format!("TOTP check failed: {}", e)))?;
 
     if !valid {
         security::log_security_event(
-            state.db.clone(), Some(tenant_id), Some(user_id),
+            state.db.clone(),
+            Some(tenant_id),
+            Some(user_id),
             SecurityEventType::MfaFailed,
             "Invalid MFA code during login".to_string(),
-            ip, ua, None,
+            ip,
+            ua,
+            None,
         );
         return Err(AppError::Unauthorized("Invalid MFA code".to_string()));
     }
@@ -377,10 +428,14 @@ pub async fn verify_mfa_login(
     }
 
     security::log_security_event(
-        state.db.clone(), Some(tenant_id), Some(user_id),
+        state.db.clone(),
+        Some(tenant_id),
+        Some(user_id),
         SecurityEventType::MfaVerified,
         "MFA verified during login".to_string(),
-        ip, ua, None,
+        ip,
+        ua,
+        None,
     );
 
     // Fetch full user data for response
@@ -394,8 +449,10 @@ pub async fn verify_mfa_login(
     .await?;
 
     // Issue full auth tokens
-    let access_token = jwt::create_access_token(user.id, user.tenant_id, &role, &state.config.jwt_secret)?;
-    let (refresh_token, refresh_jti) = jwt::create_refresh_token(user.id, user.tenant_id, &role, &state.config.jwt_secret)?;
+    let access_token =
+        jwt::create_access_token(user.id, user.tenant_id, &role, &state.config.jwt_secret)?;
+    let (refresh_token, refresh_jti) =
+        jwt::create_refresh_token(user.id, user.tenant_id, &role, &state.config.jwt_secret)?;
 
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
@@ -447,11 +504,16 @@ pub async fn refresh_token(
                 );
                 // Revoke ALL tokens for this user as a security measure (token theft detected)
                 let revoke_all_key = format!("revoked_token:{}", claims.sub);
-                let _: () = redis.set(
-                    &revoke_all_key, "revoked",
-                    Some(fred::types::Expiration::EX(7 * 24 * 3600)),
-                    None, false,
-                ).await.unwrap_or(());
+                let _: () = redis
+                    .set(
+                        &revoke_all_key,
+                        "revoked",
+                        Some(fred::types::Expiration::EX(7 * 24 * 3600)),
+                        None,
+                        false,
+                    )
+                    .await
+                    .unwrap_or(());
                 return Err(AppError::Unauthorized("Token has been revoked".to_string()));
             }
         }
@@ -488,17 +550,32 @@ pub async fn refresh_token(
             use fred::interfaces::KeysInterface;
             let revoke_key = format!("revoked_refresh_jti:{}", jti);
             // Revoke old refresh token with TTL matching its remaining lifetime
-            let _: () = redis.set(
-                &revoke_key, "rotated",
-                Some(fred::types::Expiration::EX(7 * 24 * 3600)),
-                None, false,
-            ).await.unwrap_or(());
+            let _: () = redis
+                .set(
+                    &revoke_key,
+                    "rotated",
+                    Some(fred::types::Expiration::EX(7 * 24 * 3600)),
+                    None,
+                    false,
+                )
+                .await
+                .unwrap_or(());
         }
     }
 
     // Issue new token pair (with new jti for the refresh token)
-    let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
-    let (refresh_token, refresh_jti) = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+    let access_token = jwt::create_access_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
+    let (refresh_token, refresh_jti) = jwt::create_refresh_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
 
     // Store new refresh token jti
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
@@ -559,32 +636,37 @@ pub async fn change_password(
         .map_err(|e| AppError::Validation(e.to_string()))?;
 
     // Fetch current hash
-    let (current_hash,): (String,) = sqlx::query_as(
-        "SELECT password_hash FROM users WHERE id = $1 AND tenant_id = $2"
-    )
-    .bind(claims.sub)
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
+    let (current_hash,): (String,) =
+        sqlx::query_as("SELECT password_hash FROM users WHERE id = $1 AND tenant_id = $2")
+            .bind(claims.sub)
+            .bind(claims.tid)
+            .fetch_one(&state.db)
+            .await?;
 
     // Verify current password
     if !password::verify_password(&payload.current_password, &current_hash)? {
-        return Err(AppError::Unauthorized("Current password is incorrect".to_string()));
+        return Err(AppError::Unauthorized(
+            "Current password is incorrect".to_string(),
+        ));
     }
 
     // Ensure new password is different
     if payload.current_password == payload.new_password {
-        return Err(AppError::Validation("New password must be different from current password".to_string()));
+        return Err(AppError::Validation(
+            "New password must be different from current password".to_string(),
+        ));
     }
 
     // Hash and update
     let new_hash = password::hash_password(&payload.new_password)?;
-    sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3")
-        .bind(&new_hash)
-        .bind(claims.sub)
-        .bind(claims.tid)
-        .execute(&state.db)
-        .await?;
+    sqlx::query(
+        "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3",
+    )
+    .bind(&new_hash)
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .execute(&state.db)
+    .await?;
 
     Ok(StatusCode::OK)
 }
@@ -594,10 +676,14 @@ pub async fn logout(
     Extension(claims): Extension<jwt::Claims>,
 ) -> AppResult<StatusCode> {
     security::log_security_event(
-        state.db.clone(), Some(claims.tid), Some(claims.sub),
+        state.db.clone(),
+        Some(claims.tid),
+        Some(claims.sub),
         SecurityEventType::LogoutSuccess,
         "User logged out, tokens revoked".to_string(),
-        None, None, None,
+        None,
+        None,
+        None,
     );
 
     // Revoke all tokens for this user via Redis
@@ -605,13 +691,21 @@ pub async fn logout(
         use fred::interfaces::KeysInterface;
         let revoke_key = format!("revoked_token:{}", claims.sub);
         // Set revocation flag with TTL matching refresh token lifetime (7 days)
-        let _: () = redis.set(&revoke_key, "revoked", Some(fred::types::Expiration::EX(7 * 24 * 3600)), None, false).await
+        let _: () = redis
+            .set(
+                &revoke_key,
+                "revoked",
+                Some(fred::types::Expiration::EX(7 * 24 * 3600)),
+                None,
+                false,
+            )
+            .await
             .map_err(|e| AppError::Internal(format!("Failed to revoke token: {}", e)))?;
     }
 
     // Also revoke in database for persistence
     sqlx::query(
-        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL"
+        "UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
     )
     .bind(claims.sub)
     .execute(&state.db)
@@ -663,7 +757,7 @@ pub async fn register_candidate(
 
     sqlx::query(
         "INSERT INTO tenants (id, name, slug, tier, status, kms_key_id) \
-         VALUES ($1, $2, $3, 'solo', 'active', 'dev-key')"
+         VALUES ($1, $2, $3, 'solo', 'active', 'dev-key')",
     )
     .bind(tenant_id)
     .bind(&tenant_name)
@@ -690,7 +784,7 @@ pub async fn register_candidate(
     // Create candidate_profiles row
     sqlx::query(
         "INSERT INTO candidate_profiles (tenant_id, user_id, headline) \
-         VALUES ($1, $2, $3)"
+         VALUES ($1, $2, $3)",
     )
     .bind(tenant_id)
     .bind(user_id)
@@ -698,8 +792,10 @@ pub async fn register_candidate(
     .execute(&state.db)
     .await?;
 
-    let access_token = jwt::create_access_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
-    let (refresh_token, _jti) = jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
+    let access_token =
+        jwt::create_access_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
+    let (refresh_token, _jti) =
+        jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
 
     Ok((
         StatusCode::CREATED,
@@ -737,11 +833,13 @@ pub async fn forgot_password(
     State(state): State<AppState>,
     Json(payload): Json<ForgotPasswordRequest>,
 ) -> AppResult<StatusCode> {
-    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
 
     // Always return OK to prevent email enumeration
     let user: Option<(Uuid, Uuid, String)> = sqlx::query_as(
-        "SELECT id, tenant_id, email FROM users WHERE LOWER(email) = $1 AND status = 'active'"
+        "SELECT id, tenant_id, email FROM users WHERE LOWER(email) = $1 AND status = 'active'",
     )
     .bind(&payload.email.trim().to_lowercase())
     .fetch_optional(&state.db)
@@ -763,7 +861,11 @@ pub async fn forgot_password(
         .await?;
 
         // In production: send email via Resend with reset link containing token
-        tracing::info!("Password reset requested for user {}, token: {}", user_id, reset_token);
+        tracing::info!(
+            "Password reset requested for user {}, token: {}",
+            user_id,
+            reset_token
+        );
     }
 
     Ok(StatusCode::OK)
@@ -773,7 +875,9 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> AppResult<StatusCode> {
-    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
 
     let record: Option<(Uuid, Uuid)> = sqlx::query_as(
         "SELECT user_id, tenant_id FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL"
@@ -782,7 +886,8 @@ pub async fn reset_password(
     .fetch_optional(&state.db)
     .await?;
 
-    let (user_id, _tenant_id) = record.ok_or_else(|| AppError::Validation("Invalid or expired reset token".to_string()))?;
+    let (user_id, _tenant_id) =
+        record.ok_or_else(|| AppError::Validation("Invalid or expired reset token".to_string()))?;
 
     let password_hash = password::hash_password(&payload.new_password)?;
 
@@ -821,7 +926,11 @@ pub async fn request_email_verification(
     .await?;
 
     // In production: send verification email
-    tracing::info!("Email verification requested for user {}, token: {}", claims.sub, verification_token);
+    tracing::info!(
+        "Email verification requested for user {}, token: {}",
+        claims.sub,
+        verification_token
+    );
 
     Ok(StatusCode::OK)
 }
@@ -844,7 +953,9 @@ pub async fn verify_email(
     .await?;
 
     if result.rows_affected() == 0 {
-        return Err(AppError::Validation("Invalid or expired verification token".to_string()));
+        return Err(AppError::Validation(
+            "Invalid or expired verification token".to_string(),
+        ));
     }
 
     Ok(StatusCode::OK)
@@ -865,7 +976,9 @@ pub async fn accept_invite(
     State(state): State<AppState>,
     Json(payload): Json<AcceptInviteRequest>,
 ) -> AppResult<Json<AuthResponse>> {
-    payload.validate().map_err(|e| AppError::Validation(e.to_string()))?;
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
 
     // Find invited user by invite token
     let user: Option<UserRow> = sqlx::query_as(
@@ -892,8 +1005,18 @@ pub async fn accept_invite(
     .execute(&state.db)
     .await?;
 
-    let access_token = jwt::create_access_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
-    let (refresh_token, refresh_jti) = jwt::create_refresh_token(user.id, user.tenant_id, &user.role, &state.config.jwt_secret)?;
+    let access_token = jwt::create_access_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
+    let (refresh_token, refresh_jti) = jwt::create_refresh_token(
+        user.id,
+        user.tenant_id,
+        &user.role,
+        &state.config.jwt_secret,
+    )?;
 
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
@@ -918,10 +1041,15 @@ async fn store_refresh_token_jti(state: &AppState, user_id: Uuid, jti: Uuid) {
     if let Some(ref redis) = state.redis {
         use fred::interfaces::KeysInterface;
         let key = format!("refresh_jti:{}:{}", user_id, jti);
-        let _: () = redis.set(
-            &key, "active",
-            Some(fred::types::Expiration::EX(7 * 24 * 3600)), // 7 days matching refresh token
-            None, false,
-        ).await.unwrap_or(());
+        let _: () = redis
+            .set(
+                &key,
+                "active",
+                Some(fred::types::Expiration::EX(7 * 24 * 3600)), // 7 days matching refresh token
+                None,
+                false,
+            )
+            .await
+            .unwrap_or(());
     }
 }

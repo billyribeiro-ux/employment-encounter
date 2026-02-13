@@ -21,10 +21,16 @@ pub async fn list_tasks(
     let per_page = params.per_page.unwrap_or(50).clamp(1, 200);
     let offset = (page - 1) * per_page;
 
-    let search_pattern = params.search.as_ref().map(|s| format!("%{}%", s.to_lowercase()));
+    let search_pattern = params
+        .search
+        .as_ref()
+        .map(|s| format!("%{}%", s.to_lowercase()));
 
     // Build dynamic WHERE clause from filters
-    let mut conditions = vec!["tenant_id = $1".to_string(), "deleted_at IS NULL".to_string()];
+    let mut conditions = vec![
+        "tenant_id = $1".to_string(),
+        "deleted_at IS NULL".to_string(),
+    ];
     let mut bind_idx = 2u32;
 
     if let Some(ref _search) = search_pattern {
@@ -94,7 +100,11 @@ pub async fn list_tasks(
     if let Some(client_id) = params.client_id {
         data_q = data_q.bind(client_id);
     }
-    let tasks = data_q.bind(per_page).bind(offset).fetch_all(&state.db).await?;
+    let tasks = data_q
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&state.db)
+        .await?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as i64;
 
@@ -140,7 +150,9 @@ pub async fn create_task(
     let valid_priorities = ["low", "medium", "high", "urgent"];
     if !valid_priorities.contains(&priority) {
         return Err(AppError::Validation(format!(
-            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+            "Invalid priority: '{}'. Must be one of: {}",
+            priority,
+            valid_priorities.join(", ")
         )));
     }
 
@@ -186,14 +198,18 @@ pub async fn update_task(
     let valid_priorities = ["low", "medium", "high", "urgent"];
     if !valid_priorities.contains(&priority) {
         return Err(AppError::Validation(format!(
-            "Invalid priority: '{}'. Must be one of: {}", priority, valid_priorities.join(", ")
+            "Invalid priority: '{}'. Must be one of: {}",
+            priority,
+            valid_priorities.join(", ")
         )));
     }
 
     let valid_statuses = ["todo", "in_progress", "review", "done"];
     if !valid_statuses.contains(&status) {
         return Err(AppError::Validation(format!(
-            "Invalid status: '{}'. Must be one of: {}", status, valid_statuses.join(", ")
+            "Invalid status: '{}'. Must be one of: {}",
+            status,
+            valid_statuses.join(", ")
         )));
     }
 
@@ -260,10 +276,14 @@ pub async fn bulk_update_tasks(
     Json(payload): Json<BulkTaskUpdateRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     // Validate status if provided
@@ -322,10 +342,14 @@ pub async fn bulk_delete_tasks(
     Json(payload): Json<BulkTaskIdsRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
     if payload.ids.is_empty() {
-        return Err(AppError::Validation("At least one ID is required".to_string()));
+        return Err(AppError::Validation(
+            "At least one ID is required".to_string(),
+        ));
     }
     if payload.ids.len() > 100 {
-        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+        return Err(AppError::Validation(
+            "Maximum 100 IDs per bulk operation".to_string(),
+        ));
     }
 
     let result = sqlx::query(

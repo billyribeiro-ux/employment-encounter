@@ -42,7 +42,11 @@ pub async fn create_payment_intent(
     }
 
     // Create Stripe PaymentIntent
-    let stripe_secret = state.config.stripe_secret_key.as_deref().unwrap_or("sk_test_placeholder");
+    let stripe_secret = state
+        .config
+        .stripe_secret_key
+        .as_deref()
+        .unwrap_or("sk_test_placeholder");
     let client = stripe::Client::new(stripe_secret);
 
     let mut create_params = stripe::CreatePaymentIntent::new(total_cents, stripe::Currency::USD);
@@ -95,8 +99,8 @@ pub async fn stripe_webhook(
         .map_err(|_| AppError::Validation("Invalid webhook payload".to_string()))?;
 
     // Verify webhook signature
-    let event = stripe::Webhook::construct_event(payload, signature, webhook_secret)
-        .map_err(|e| {
+    let event =
+        stripe::Webhook::construct_event(payload, signature, webhook_secret).map_err(|e| {
             tracing::warn!("Stripe webhook signature verification failed: {}", e);
             AppError::Unauthorized("Invalid webhook signature".to_string())
         })?;
@@ -111,7 +115,7 @@ pub async fn stripe_webhook(
                 let result = sqlx::query(
                     "UPDATE invoices SET status = 'paid', paid_date = CURRENT_DATE, \
                      amount_paid_cents = total_cents, updated_at = NOW() \
-                     WHERE stripe_payment_intent_id = $1"
+                     WHERE stripe_payment_intent_id = $1",
                 )
                 .bind(&pi_id)
                 .execute(&state.db)
@@ -119,13 +123,14 @@ pub async fn stripe_webhook(
 
                 if result.rows_affected() > 0 {
                     // Get invoice details for notification
-                    let invoice_info: Option<(uuid::Uuid, uuid::Uuid, String, i64)> = sqlx::query_as(
-                        "SELECT tenant_id, created_by, invoice_number, total_cents \
-                         FROM invoices WHERE stripe_payment_intent_id = $1"
-                    )
-                    .bind(&pi_id)
-                    .fetch_optional(&state.db)
-                    .await?;
+                    let invoice_info: Option<(uuid::Uuid, uuid::Uuid, String, i64)> =
+                        sqlx::query_as(
+                            "SELECT tenant_id, created_by, invoice_number, total_cents \
+                         FROM invoices WHERE stripe_payment_intent_id = $1",
+                        )
+                        .bind(&pi_id)
+                        .fetch_optional(&state.db)
+                        .await?;
 
                     if let Some((tenant_id, created_by, invoice_number, amount)) = invoice_info {
                         // Send real-time notification via WebSocket
@@ -148,7 +153,7 @@ pub async fn stripe_webhook(
 
                         sqlx::query(
                             "INSERT INTO notifications (tenant_id, user_id, type, title, body) \
-                             VALUES ($1, $2, 'invoice_paid', $3, $4)"
+                             VALUES ($1, $2, 'invoice_paid', $3, $4)",
                         )
                         .bind(tenant_id)
                         .bind(created_by)

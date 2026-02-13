@@ -162,12 +162,14 @@ pub async fn delete_template(
     claims: Claims,
     Path(id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    sqlx::query("DELETE FROM email_templates WHERE id = $1 AND tenant_id = $2 AND is_default = false")
-        .bind(id)
-        .bind(claims.tid)
-        .execute(&state.db)
-        .await
-        .map_err(AppError::Database)?;
+    sqlx::query(
+        "DELETE FROM email_templates WHERE id = $1 AND tenant_id = $2 AND is_default = false",
+    )
+    .bind(id)
+    .bind(claims.tid)
+    .execute(&state.db)
+    .await
+    .map_err(AppError::Database)?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -188,5 +190,7 @@ pub async fn send_template(
     .await
     .map_err(AppError::Database)?;
 
-    Ok(Json(serde_json::json!({ "status": "queued", "message": "Email queued for delivery" })))
+    Ok(Json(
+        serde_json::json!({ "status": "queued", "message": "Email queued for delivery" }),
+    ))
 }
