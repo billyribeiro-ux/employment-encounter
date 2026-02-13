@@ -13,6 +13,7 @@ const PING_INTERVAL = 30000;
 export type WsEventType =
   | "notification"
   | "message"
+  | "message_read"
   | "document_processed"
   | "workflow_update"
   | "invoice_paid"
@@ -20,6 +21,7 @@ export type WsEventType =
   | "client_update"
   | "expense_update"
   | "time_entry_update"
+  | "application_update"
   | "ping"
   | "pong"
   | "connected"

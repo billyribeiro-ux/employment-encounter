@@ -31,6 +31,7 @@ import {
   Award,
   CircleDot,
   Loader2,
+  Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -472,10 +473,10 @@ function ApprovalChain({
           approver.status === "approved"
             ? "ring-emerald-500"
             : approver.status === "rejected"
-            ? "ring-red-500"
-            : approver.status === "pending"
-            ? "ring-amber-500 animate-pulse"
-            : "ring-muted-foreground/20";
+              ? "ring-red-500"
+              : approver.status === "pending"
+                ? "ring-amber-500 animate-pulse"
+                : "ring-muted-foreground/20";
 
         return (
           <div key={approver.id} className="flex items-center">
@@ -906,10 +907,10 @@ function ApprovalCard({
   const progressPercent =
     item.approvalChain.length > 0
       ? Math.round(
-          (item.approvalChain.filter((a) => a.status === "approved").length /
-            item.approvalChain.length) *
-            100
-        )
+        (item.approvalChain.filter((a) => a.status === "approved").length /
+          item.approvalChain.length) *
+        100
+      )
       : 0;
 
   return (
@@ -1484,9 +1485,8 @@ export default function ApprovalsPage() {
                             <div key={i} className="flex items-center">
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] h-4 ${
-                                  step.required ? "" : "opacity-60"
-                                }`}
+                                className={`text-[10px] h-4 ${step.required ? "" : "opacity-60"
+                                  }`}
                               >
                                 {step.role}
                               </Badge>

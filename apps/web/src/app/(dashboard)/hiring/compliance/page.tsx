@@ -590,9 +590,9 @@ const cardVariants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" },
+    transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" as const },
   }),
-};
+} as const;
 
 const rowVariants = {
   hidden: { opacity: 0, x: -10 },
@@ -844,13 +844,12 @@ export default function CompliancePage() {
                     <div className="flex-1">
                       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                         <motion.div
-                          className={`h-full rounded-full ${
-                            area.score >= 95
+                          className={`h-full rounded-full ${area.score >= 95
                               ? "bg-green-500"
                               : area.score >= 85
                                 ? "bg-blue-500"
                                 : "bg-amber-500"
-                          }`}
+                            }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${area.score}%` }}
                           transition={{ duration: 0.7, delay: 0.3 + i * 0.1 }}
@@ -858,13 +857,12 @@ export default function CompliancePage() {
                       </div>
                     </div>
                     <span
-                      className={`w-10 text-right text-xs font-semibold ${
-                        area.score >= 95
+                      className={`w-10 text-right text-xs font-semibold ${area.score >= 95
                           ? "text-green-600"
                           : area.score >= 85
                             ? "text-blue-600"
                             : "text-amber-600"
-                      }`}
+                        }`}
                     >
                       {area.score}%
                     </span>
@@ -1156,15 +1154,14 @@ export default function CompliancePage() {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex items-start gap-3 flex-1">
                               <div
-                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                  req.status === "completed"
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${req.status === "completed"
                                     ? "bg-green-100"
                                     : req.status === "rejected"
                                       ? "bg-red-100"
                                       : req.status === "processing"
                                         ? "bg-blue-100"
                                         : "bg-amber-100"
-                                }`}
+                                  }`}
                               >
                                 {req.status === "completed" ? (
                                   <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -1219,21 +1216,20 @@ export default function CompliancePage() {
                               {/* Countdown Timer */}
                               {(req.status === "pending" ||
                                 req.status === "processing") && (
-                                <div
-                                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
-                                    isExpired
-                                      ? "bg-red-100 text-red-700"
-                                      : isUrgent
-                                        ? "bg-amber-100 text-amber-700"
-                                        : "bg-blue-50 text-blue-700"
-                                  }`}
-                                >
-                                  <Clock className="h-3 w-3" />
-                                  {isExpired
-                                    ? "OVERDUE"
-                                    : `${hoursLeft}h remaining`}
-                                </div>
-                              )}
+                                  <div
+                                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${isExpired
+                                        ? "bg-red-100 text-red-700"
+                                        : isUrgent
+                                          ? "bg-amber-100 text-amber-700"
+                                          : "bg-blue-50 text-blue-700"
+                                      }`}
+                                  >
+                                    <Clock className="h-3 w-3" />
+                                    {isExpired
+                                      ? "OVERDUE"
+                                      : `${hoursLeft}h remaining`}
+                                  </div>
+                                )}
 
                               {req.status === "completed" &&
                                 req.completedAt && (
@@ -1536,8 +1532,7 @@ export default function CompliancePage() {
                         {/* Timeline dot */}
                         <div className="flex flex-col items-center pt-1">
                           <div
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                              entry.actionType === "breach_reported"
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${entry.actionType === "breach_reported"
                                 ? "bg-red-100"
                                 : entry.actionType === "consent_granted"
                                   ? "bg-green-100"
@@ -1546,7 +1541,7 @@ export default function CompliancePage() {
                                     : entry.actionType === "consent_revoked"
                                       ? "bg-red-100"
                                       : "bg-blue-100"
-                            }`}
+                              }`}
                           >
                             {entry.actionType === "breach_reported" ? (
                               <AlertTriangle className="h-3.5 w-3.5 text-red-600" />

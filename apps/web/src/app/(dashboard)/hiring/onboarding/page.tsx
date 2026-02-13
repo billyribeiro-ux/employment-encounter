@@ -266,55 +266,55 @@ function makeTasks(
     dayOffset: number;
     responsible: string;
   }[] = [
-    {
-      title: "Equipment Setup",
-      description:
-        "Provision laptop, monitors, peripherals, and configure workstation",
-      category: "equipment",
-      dayOffset: 1,
-      responsible: "IT Support",
-    },
-    {
-      title: "HR Paperwork & Benefits",
-      description:
-        "Complete I-9 verification, tax forms, benefits enrollment, and company policies review",
-      category: "hr",
-      dayOffset: 2,
-      responsible: "HR Coordinator",
-    },
-    {
-      title: "Team Introductions",
-      description:
-        "Meet direct team members, cross-functional partners, and leadership stakeholders",
-      category: "team",
-      dayOffset: 5,
-      responsible: "Hiring Manager",
-    },
-    {
-      title: "System Access & Tools",
-      description:
-        "Set up email, Slack, GitHub, Jira, VPN, and all required development tools",
-      category: "access",
-      dayOffset: 3,
-      responsible: "IT Support",
-    },
-    {
-      title: "Training Modules",
-      description:
-        "Complete security awareness, compliance, product overview, and role-specific training",
-      category: "training",
-      dayOffset: 14,
-      responsible: "L&D Team",
-    },
-    {
-      title: "First Project Assignment",
-      description:
-        "Review project brief, set up local environment, complete starter task, and first PR",
-      category: "project",
-      dayOffset: 21,
-      responsible: "Engineering Lead",
-    },
-  ];
+      {
+        title: "Equipment Setup",
+        description:
+          "Provision laptop, monitors, peripherals, and configure workstation",
+        category: "equipment",
+        dayOffset: 1,
+        responsible: "IT Support",
+      },
+      {
+        title: "HR Paperwork & Benefits",
+        description:
+          "Complete I-9 verification, tax forms, benefits enrollment, and company policies review",
+        category: "hr",
+        dayOffset: 2,
+        responsible: "HR Coordinator",
+      },
+      {
+        title: "Team Introductions",
+        description:
+          "Meet direct team members, cross-functional partners, and leadership stakeholders",
+        category: "team",
+        dayOffset: 5,
+        responsible: "Hiring Manager",
+      },
+      {
+        title: "System Access & Tools",
+        description:
+          "Set up email, Slack, GitHub, Jira, VPN, and all required development tools",
+        category: "access",
+        dayOffset: 3,
+        responsible: "IT Support",
+      },
+      {
+        title: "Training Modules",
+        description:
+          "Complete security awareness, compliance, product overview, and role-specific training",
+        category: "training",
+        dayOffset: 14,
+        responsible: "L&D Team",
+      },
+      {
+        title: "First Project Assignment",
+        description:
+          "Review project brief, set up local environment, complete starter task, and first PR",
+        category: "project",
+        dayOffset: 21,
+        responsible: "Engineering Lead",
+      },
+    ];
 
   return taskDefs.map((def, i) => {
     const dueDate = new Date(start);
@@ -322,10 +322,10 @@ function makeTasks(
     const completed = completedStates[i] ?? false;
     const completedDate = completed
       ? new Date(
-          dueDate.getTime() - Math.random() * 2 * 24 * 60 * 60 * 1000
-        )
-          .toISOString()
-          .split("T")[0]
+        dueDate.getTime() - Math.random() * 2 * 24 * 60 * 60 * 1000
+      )
+        .toISOString()
+        .split("T")[0]
       : undefined;
 
     return {
@@ -652,10 +652,10 @@ const cardVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 300, damping: 30 },
+    transition: { type: "spring" as const, stiffness: 300, damping: 30 },
   },
   exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
-};
+} as const;
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -701,23 +701,23 @@ export default function OnboardingPage() {
     const avgCompletionDays =
       completedOnboardings.length > 0
         ? Math.round(
-            completedOnboardings.reduce((acc, o) => {
-              const lastTask = o.tasks
-                .filter((t) => t.completedDate)
-                .sort(
-                  (a, b) =>
-                    new Date(b.completedDate!).getTime() -
-                    new Date(a.completedDate!).getTime()
-                )[0];
-              if (!lastTask?.completedDate) return acc + 24;
-              return (
-                acc +
-                Math.abs(
-                  daysBetween(lastTask.completedDate, new Date(o.startDate))
-                )
-              );
-            }, 0) / completedOnboardings.length
-          )
+          completedOnboardings.reduce((acc, o) => {
+            const lastTask = o.tasks
+              .filter((t) => t.completedDate)
+              .sort(
+                (a, b) =>
+                  new Date(b.completedDate!).getTime() -
+                  new Date(a.completedDate!).getTime()
+              )[0];
+            if (!lastTask?.completedDate) return acc + 24;
+            return (
+              acc +
+              Math.abs(
+                daysBetween(lastTask.completedDate, new Date(o.startDate))
+              )
+            );
+          }, 0) / completedOnboardings.length
+        )
         : 0;
     return {
       active,
@@ -778,8 +778,8 @@ export default function OnboardingPage() {
         )[0];
       const totalDays = lastCompleted?.completedDate
         ? Math.abs(
-            daysBetween(lastCompleted.completedDate, new Date(ob.startDate))
-          )
+          daysBetween(lastCompleted.completedDate, new Date(ob.startDate))
+        )
         : 0;
       return { label: "Days to Complete", value: totalDays, isOverdue: false };
     }
@@ -1045,22 +1045,20 @@ export default function OnboardingPage() {
             return (
               <motion.div key={cat} variants={fadeIn}>
                 <Card
-                  className={`transition-all ${
-                    task.completed
+                  className={`transition-all ${task.completed
                       ? "bg-muted/30 border-emerald-200/50"
                       : "hover:shadow-md"
-                  }`}
+                    }`}
                 >
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-start gap-3">
                       {/* Checkbox */}
                       <button
                         onClick={() => toggleTask(ob.id, task.id)}
-                        className={`mt-0.5 h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                          task.completed
+                        className={`mt-0.5 h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.completed
                             ? "bg-emerald-500 border-emerald-500 text-white"
                             : "border-muted-foreground/30 hover:border-primary"
-                        }`}
+                          }`}
                       >
                         {task.completed && (
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -1070,11 +1068,10 @@ export default function OnboardingPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <CatIcon className="h-4 w-4 text-muted-foreground" />
                           <h4
-                            className={`text-sm font-semibold ${
-                              task.completed
+                            className={`text-sm font-semibold ${task.completed
                                 ? "line-through text-muted-foreground"
                                 : ""
-                            }`}
+                              }`}
                           >
                             {task.title}
                           </h4>
@@ -1574,18 +1571,16 @@ export default function OnboardingPage() {
                                       onClick={() =>
                                         toggleTask(ob.id, task.id)
                                       }
-                                      className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors text-left ${
-                                        task.completed
+                                      className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors text-left ${task.completed
                                           ? "bg-emerald-50 text-emerald-700"
                                           : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                                      }`}
+                                        }`}
                                     >
                                       <div
-                                        className={`h-3.5 w-3.5 rounded flex items-center justify-center shrink-0 ${
-                                          task.completed
+                                        className={`h-3.5 w-3.5 rounded flex items-center justify-center shrink-0 ${task.completed
                                             ? "bg-emerald-500 text-white"
                                             : "border border-muted-foreground/30"
-                                        }`}
+                                          }`}
                                       >
                                         {task.completed && (
                                           <CheckCircle2 className="h-2.5 w-2.5" />
@@ -1605,11 +1600,10 @@ export default function OnboardingPage() {
                             <div className="text-right shrink-0 flex flex-col items-end gap-2">
                               <div>
                                 <p
-                                  className={`text-lg font-bold ${
-                                    daysInfo.isOverdue
+                                  className={`text-lg font-bold ${daysInfo.isOverdue
                                       ? "text-red-600"
                                       : "text-foreground"
-                                  }`}
+                                    }`}
                                 >
                                   {daysInfo.value}
                                 </p>

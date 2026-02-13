@@ -25,6 +25,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useDeleteNotification,
+  type Notification as AppNotification,
 } from "@/lib/hooks/use-notifications";
 import { toast } from "sonner";
 
@@ -171,19 +172,11 @@ export default function NotificationsPage() {
             <Card>
               <CardContent className="p-0">
                 <ScrollArea className="max-h-[70vh]">
-                  {displayItems.map((notification: {
-                    id: string;
-                    title: string;
-                    body: string | null;
-                    notification_type: string;
-                    read_at: string | null;
-                    created_at: string;
-                  }) => (
+                  {displayItems.map((notification: AppNotification) => (
                     <div
                       key={notification.id}
-                      className={`flex items-start gap-4 p-4 border-b last:border-0 transition-colors ${
-                        !notification.read_at ? "bg-primary/5" : ""
-                      }`}
+                      className={`flex items-start gap-4 p-4 border-b last:border-0 transition-colors ${!notification.read_at ? "bg-primary/5" : ""
+                        }`}
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted shrink-0">
                         {notificationIcon(notification.notification_type)}

@@ -6,6 +6,7 @@ export interface Notification {
   tenant_id: string;
   user_id: string;
   type: string;
+  notification_type: string;
   title: string;
   body: string | null;
   resource_type: string | null;
