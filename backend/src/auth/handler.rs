@@ -323,6 +323,54 @@ pub async fn get_me(
     }))
 }
 
+#[derive(Debug, Deserialize, Validate)]
+pub struct ChangePasswordRequest {
+    #[validate(length(min = 1))]
+    pub current_password: String,
+    #[validate(length(min = 12, max = 128))]
+    pub new_password: String,
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    Extension(claims): Extension<jwt::Claims>,
+    Json(payload): Json<ChangePasswordRequest>,
+) -> AppResult<StatusCode> {
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
+    // Fetch current hash
+    let (current_hash,): (String,) = sqlx::query_as(
+        "SELECT password_hash FROM users WHERE id = $1 AND tenant_id = $2"
+    )
+    .bind(claims.sub)
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    // Verify current password
+    if !password::verify_password(&payload.current_password, &current_hash)? {
+        return Err(AppError::Unauthorized("Current password is incorrect".to_string()));
+    }
+
+    // Ensure new password is different
+    if payload.current_password == payload.new_password {
+        return Err(AppError::Validation("New password must be different from current password".to_string()));
+    }
+
+    // Hash and update
+    let new_hash = password::hash_password(&payload.new_password)?;
+    sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3")
+        .bind(&new_hash)
+        .bind(claims.sub)
+        .bind(claims.tid)
+        .execute(&state.db)
+        .await?;
+
+    Ok(StatusCode::OK)
+}
+
 pub async fn logout(
     State(state): State<AppState>,
     Extension(claims): Extension<jwt::Claims>,

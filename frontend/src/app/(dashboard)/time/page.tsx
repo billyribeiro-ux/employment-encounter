@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Plus, Clock, Square, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
+import { Play, Plus, Clock, Square, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useTimeEntries, useStopTimer, useDeleteTimeEntry } from "@/lib/hooks/use-time-entries";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { exportToCSV } from "@/lib/utils";
 import { CreateTimeEntryDialog } from "@/components/dashboard/create-time-entry-dialog";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";

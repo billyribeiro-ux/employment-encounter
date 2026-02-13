@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
+import { Plus, Receipt, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks/use-invoices";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { exportToCSV } from "@/lib/utils";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
@@ -84,12 +85,27 @@ export default function InvoicesPage() {
             Create, send, and track client invoices
           </p>
         </div>
-        <CreateInvoiceDialog>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Invoice
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportToCSV(
+            invoices.map((inv) => ({
+              invoice_number: inv.invoice_number,
+              status: inv.status,
+              total: formatCents(inv.total_cents),
+              due_date: inv.due_date,
+              created_at: inv.created_at,
+            })),
+            "invoices"
+          )}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
-        </CreateInvoiceDialog>
+          <CreateInvoiceDialog>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Invoice
+            </Button>
+          </CreateInvoiceDialog>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">

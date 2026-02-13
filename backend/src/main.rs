@@ -209,6 +209,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/expenses", get(expenses::handler::list_expenses))
         .route("/expenses", post(expenses::handler::create_expense))
         .route("/expenses/{id}", delete(expenses::handler::delete_expense))
+        .route("/expenses/{id}", put(expenses::handler::update_expense))
         // Notifications
         .route("/notifications", get(notifications::handler::list_notifications))
         .route("/notifications", post(notifications::handler::create_notification))
@@ -246,6 +247,7 @@ async fn main() -> anyhow::Result<()> {
         // Auth (protected)
         .route("/auth/me", get(auth::handler::get_me))
         .route("/auth/logout", post(auth::handler::logout))
+        .route("/auth/change-password", post(auth::handler::change_password))
         // Audit log middleware (runs after auth, before handlers)
         .layer(axum_mw::from_fn_with_state(
             state.clone(),

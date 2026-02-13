@@ -126,3 +126,44 @@ export function useDeleteUser() {
     },
   });
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (payload: { current_password: string; new_password: string }) => {
+      await api.post("/auth/change-password", payload);
+    },
+  });
+}
+
+export function useSetupMFA() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ secret: string; qr_code: string; provisioning_uri: string }>("/auth/mfa/setup");
+      return data;
+    },
+  });
+}
+
+export function useEnableMFA() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { code: string }) => {
+      await api.post("/auth/mfa/enable", payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings", "profile"] });
+    },
+  });
+}
+
+export function useDisableMFA() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { code: string }) => {
+      await api.post("/auth/mfa/disable", payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings", "profile"] });
+    },
+  });
+}

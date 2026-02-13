@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Wallet, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
+import { Plus, Wallet, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { exportToCSV } from "@/lib/utils";
 import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateExpenseDialog } from "@/components/dashboard/create-expense-dialog";

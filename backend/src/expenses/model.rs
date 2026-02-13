@@ -33,6 +33,16 @@ pub struct CreateExpenseRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateExpenseRequest {
+    pub category: Option<String>,
+    pub description: Option<String>,
+    pub amount_cents: Option<i64>,
+    pub date: Option<chrono::NaiveDate>,
+    pub is_reimbursable: Option<bool>,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 pub struct ListExpensesQuery {
     pub page: Option<i64>,

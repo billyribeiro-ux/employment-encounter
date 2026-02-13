@@ -17,6 +17,7 @@ import {
   Wallet,
   MessageSquare,
   PieChart,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: PieChart },
   { name: "Messages", href: "/messages", icon: MessageSquare },
+  { name: "Conference", href: "/conference", icon: Video },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

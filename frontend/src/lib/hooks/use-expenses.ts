@@ -60,6 +60,30 @@ export function useCreateExpense() {
   });
 }
 
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      category?: string;
+      description?: string;
+      amount_cents?: number;
+      date?: string;
+      is_reimbursable?: boolean;
+      status?: string;
+    }) => {
+      const { data } = await api.put<Expense>(`/expenses/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    },
+  });
+}
+
 export function useDeleteExpense() {
   const queryClient = useQueryClient();
   return useMutation({

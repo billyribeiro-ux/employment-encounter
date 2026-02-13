@@ -106,7 +106,44 @@ export function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
+            onBlur={() => setTimeout(() => setSearchQuery(""), 200)}
           />
+          {searchQuery.trim().length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-md border bg-popover shadow-lg z-50 overflow-hidden">
+              {SEARCH_PAGES.filter((p) =>
+                p.keywords.some(
+                  (k) =>
+                    k.includes(searchQuery.toLowerCase().trim()) ||
+                    searchQuery.toLowerCase().trim().includes(k)
+                )
+              ).length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">No results found</div>
+              ) : (
+                SEARCH_PAGES.filter((p) =>
+                  p.keywords.some(
+                    (k) =>
+                      k.includes(searchQuery.toLowerCase().trim()) ||
+                      searchQuery.toLowerCase().trim().includes(k)
+                  )
+                ).map((p) => (
+                  <button
+                    key={p.href}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 transition-colors"
+                    onMouseDown={() => {
+                      router.push(p.href);
+                      setSearchQuery("");
+                    }}
+                  >
+                    <Search className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="capitalize">{p.href.replace("/", "")}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {p.keywords.slice(0, 3).join(", ")}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 

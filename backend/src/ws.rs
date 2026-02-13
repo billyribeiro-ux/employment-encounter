@@ -6,7 +6,8 @@ use axum::{
     response::Response,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 
 use crate::auth::jwt::validate_token;
@@ -16,12 +17,16 @@ use crate::AppState;
 #[derive(Clone)]
 pub struct WsBroadcast {
     pub tx: Arc<broadcast::Sender<WsEvent>>,
+    rooms: Arc<RwLock<HashMap<String, HashSet<(uuid::Uuid, uuid::Uuid)>>>>,
 }
 
 impl WsBroadcast {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(1024);
-        Self { tx: Arc::new(tx) }
+        Self {
+            tx: Arc::new(tx),
+            rooms: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     pub fn send_to_user(&self, tenant_id: uuid::Uuid, user_id: uuid::Uuid, event: WsEventPayload) {
@@ -38,6 +43,32 @@ impl WsBroadcast {
             user_id: uuid::Uuid::nil(), // nil = broadcast to all tenant users
             payload: event,
         });
+    }
+
+    pub fn join_room(&self, room_id: &str, tenant_id: uuid::Uuid, user_id: uuid::Uuid) {
+        let mut rooms = self.rooms.write().unwrap();
+        rooms.entry(room_id.to_string()).or_default().insert((tenant_id, user_id));
+    }
+
+    pub fn leave_room(&self, room_id: &str, tenant_id: uuid::Uuid, user_id: uuid::Uuid) {
+        let mut rooms = self.rooms.write().unwrap();
+        if let Some(members) = rooms.get_mut(room_id) {
+            members.remove(&(tenant_id, user_id));
+            if members.is_empty() {
+                rooms.remove(room_id);
+            }
+        }
+    }
+
+    pub fn send_to_room(&self, room_id: &str, exclude_user: uuid::Uuid, payload: WsEventPayload) {
+        let rooms = self.rooms.read().unwrap();
+        if let Some(members) = rooms.get(room_id) {
+            for &(tenant_id, user_id) in members {
+                if user_id != exclude_user {
+                    self.send_to_user(tenant_id, user_id, payload.clone());
+                }
+            }
+        }
     }
 }
 
@@ -86,6 +117,31 @@ pub enum WsEventPayload {
     },
     #[serde(rename = "ping")]
     Ping,
+
+    // WebRTC signaling
+    #[serde(rename = "rtc_offer")]
+    RtcOffer {
+        room_id: String,
+        sdp: String,
+    },
+    #[serde(rename = "rtc_answer")]
+    RtcAnswer {
+        room_id: String,
+        sdp: String,
+    },
+    #[serde(rename = "rtc_ice_candidate")]
+    RtcIceCandidate {
+        room_id: String,
+        candidate: String,
+    },
+    #[serde(rename = "room_join")]
+    RoomJoin {
+        room_id: String,
+    },
+    #[serde(rename = "room_leave")]
+    RoomLeave {
+        room_id: String,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -105,7 +161,8 @@ pub async fn ws_handler(
         Ok(token_data) => {
             let claims = token_data.claims;
             let rx = state.ws_broadcast.tx.subscribe();
-            ws.on_upgrade(move |socket| handle_socket(socket, claims.tid, claims.sub, rx))
+            let broadcast = state.ws_broadcast.clone();
+            ws.on_upgrade(move |socket| handle_socket(socket, claims.tid, claims.sub, rx, broadcast))
         }
         Err(_) => {
             // Return upgrade but immediately close with auth error
@@ -126,6 +183,7 @@ async fn handle_socket(
     tenant_id: uuid::Uuid,
     user_id: uuid::Uuid,
     mut rx: broadcast::Receiver<WsEvent>,
+    broadcast: WsBroadcast,
 ) {
     // Send initial connected message
     let connected = serde_json::json!({ "type": "connected", "user_id": user_id });
@@ -163,6 +221,23 @@ async fn handle_socket(
                         if text.as_str() == "ping" {
                             let pong = serde_json::json!({ "type": "pong" });
                             let _ = socket.send(Message::Text(pong.to_string().into())).await;
+                        } else if let Ok(payload) = serde_json::from_str::<WsEventPayload>(text.as_str()) {
+                            match &payload {
+                                WsEventPayload::RoomJoin { room_id } => {
+                                    broadcast.join_room(room_id, tenant_id, user_id);
+                                    broadcast.send_to_room(room_id, user_id, payload);
+                                }
+                                WsEventPayload::RoomLeave { room_id } => {
+                                    broadcast.send_to_room(room_id, user_id, payload);
+                                    broadcast.leave_room(room_id, tenant_id, user_id);
+                                }
+                                WsEventPayload::RtcOffer { room_id, .. }
+                                | WsEventPayload::RtcAnswer { room_id, .. }
+                                | WsEventPayload::RtcIceCandidate { room_id, .. } => {
+                                    broadcast.send_to_room(room_id, user_id, payload);
+                                }
+                                _ => {}
+                            }
                         }
                     }
                     Some(Ok(Message::Ping(data))) => {

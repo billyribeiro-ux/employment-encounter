@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from "lucide-react";
+import { Plus, Search, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/dashboard/search-input";
@@ -18,6 +18,7 @@ import {
 import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
+import { exportToCSV } from "@/lib/utils";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
@@ -67,12 +68,28 @@ export default function ClientsPage() {
             Manage your firm&apos;s client relationships
           </p>
         </div>
-        <CreateClientDialog>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Client
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportToCSV(
+            clients.map((c) => ({
+              name: c.name,
+              email: c.email,
+              phone: c.phone,
+              business_type: c.business_type,
+              status: c.status,
+              created_at: c.created_at,
+            })),
+            "clients"
+          )}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
-        </CreateClientDialog>
+          <CreateClientDialog>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Client
+            </Button>
+          </CreateClientDialog>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">

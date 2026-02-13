@@ -12,7 +12,9 @@ import {
   Activity,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";
+import { useProfitLoss, useCashFlow } from "@/lib/hooks/use-reports";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const RevenueChart = dynamic(
@@ -39,6 +41,16 @@ function formatCents(cents: number): string {
 
 export default function AnalyticsPage() {
   const { data: stats, isLoading } = useDashboardStats();
+
+  const currentYear = new Date().getFullYear();
+  const { data: pl, isLoading: plLoading } = useProfitLoss({
+    start_date: `${currentYear}-01-01`,
+    end_date: `${currentYear}-12-31`,
+  });
+  const { data: cashFlow, isLoading: cfLoading } = useCashFlow({
+    start_date: `${currentYear}-01-01`,
+    end_date: `${currentYear}-12-31`,
+  });
 
   return (
     <div className="space-y-6">
@@ -180,19 +192,70 @@ export default function AnalyticsPage() {
                 <CardTitle>Client Profitability</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  Scatter plot — quadrant analysis (revenue vs hours)
-                </div>
+                {plLoading ? (
+                  <Skeleton className="h-48" />
+                ) : pl && pl.revenue.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {pl.revenue.items.slice(0, 8).map((item, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="w-32 text-sm truncate">{item.label}</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${Math.min((item.amount_cents / pl.revenue.total_cents) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-24 text-right">
+                          {formatCents(item.amount_cents)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">No revenue data available</p>
+                )}
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Cash Flow Forecast</CardTitle>
+                <CardTitle>Cash Flow Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm">
-                  Area chart — 30/60/90-day projections
-                </div>
+                {cfLoading ? (
+                  <Skeleton className="h-48" />
+                ) : cashFlow && (cashFlow.inflows.length > 0 || cashFlow.outflows.length > 0) ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Net Cash Flow</span>
+                      <span className={`text-lg font-bold ${cashFlow.net_cash_flow_cents >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {formatCents(cashFlow.net_cash_flow_cents)}
+                      </span>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Inflows</p>
+                        {cashFlow.inflows.slice(0, 6).map((entry, i) => (
+                          <div key={i} className="flex justify-between text-sm py-1">
+                            <span>{entry.month}</span>
+                            <span className="text-green-600 font-medium">{formatCents(entry.amount_cents)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Outflows</p>
+                        {cashFlow.outflows.slice(0, 6).map((entry, i) => (
+                          <div key={i} className="flex justify-between text-sm py-1">
+                            <span>{entry.month}</span>
+                            <span className="text-red-600 font-medium">{formatCents(entry.amount_cents)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">No cash flow data available</p>
+                )}
               </CardContent>
             </Card>
           </div>
