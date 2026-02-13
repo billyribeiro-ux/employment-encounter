@@ -126,3 +126,102 @@ export function useDeleteUser() {
     },
   });
 }
+
+// ── Password Change ──────────────────────────────────────────────────
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (payload: {
+      current_password: string;
+      new_password: string;
+    }) => {
+      const { data } = await api.put("/settings/profile/password", payload);
+      return data;
+    },
+  });
+}
+
+// ── Notification Preferences ─────────────────────────────────────────
+
+export interface NotificationPreferences {
+  email_notifications: boolean;
+  invoice_reminders: boolean;
+  deadline_alerts: boolean;
+  document_processed: boolean;
+  new_messages: boolean;
+  team_updates: boolean;
+}
+
+export function useNotificationPreferences() {
+  return useQuery({
+    queryKey: ["settings", "notifications"],
+    queryFn: async () => {
+      const { data } = await api.get<NotificationPreferences>("/settings/notifications");
+      return data;
+    },
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<NotificationPreferences>) => {
+      const { data } = await api.put<NotificationPreferences>(
+        "/settings/notifications",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings", "notifications"] });
+    },
+  });
+}
+
+// ── Data Export ───────────────────────────────────────────────────────
+
+export function useExportData() {
+  return useMutation({
+    mutationFn: async (params: {
+      format: "csv" | "json";
+      entity: "clients" | "invoices" | "time_entries" | "expenses" | "all";
+    }) => {
+      const { data } = await api.get(`/settings/export`, {
+        params,
+        responseType: "blob",
+      });
+      return data;
+    },
+  });
+}
+
+// ── Audit Log ────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  user_id: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  ip_address: string;
+  user_agent: string;
+  created_at: string;
+}
+
+export function useAuditLog(params?: {
+  page?: number;
+  per_page?: number;
+  action?: string;
+  user_id?: string;
+}) {
+  return useQuery({
+    queryKey: ["settings", "audit-log", params],
+    queryFn: async () => {
+      const { data } = await api.get<{
+        data: AuditLogEntry[];
+        meta: { page: number; per_page: number; total: number; total_pages: number };
+      }>("/audit-logs", { params });
+      return data;
+    },
+  });
+}

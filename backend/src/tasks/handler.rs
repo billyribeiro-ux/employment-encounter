@@ -25,7 +25,7 @@ pub async fn list_tasks(
 
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2)",
+            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2)",
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -33,7 +33,7 @@ pub async fn list_tasks(
         .await?
     } else {
         sqlx::query_as(
-            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1",
+            "SELECT COUNT(*) FROM tasks WHERE tenant_id = $1 AND deleted_at IS NULL",
         )
         .bind(claims.tid)
         .fetch_one(&state.db)
@@ -42,7 +42,7 @@ pub async fn list_tasks(
 
     let tasks: Vec<Task> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) ORDER BY sort_order, created_at DESC LIMIT $3 OFFSET $4",
+            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(title) LIKE $2 OR LOWER(COALESCE(description, '')) LIKE $2) ORDER BY sort_order, created_at DESC LIMIT $3 OFFSET $4",
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -52,7 +52,7 @@ pub async fn list_tasks(
         .await?
     } else {
         sqlx::query_as(
-            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 ORDER BY sort_order, created_at DESC LIMIT $2 OFFSET $3",
+            "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY sort_order, created_at DESC LIMIT $2 OFFSET $3",
         )
         .bind(claims.tid)
         .bind(per_page)
@@ -80,7 +80,7 @@ pub async fn get_task(
     Path(task_id): Path<Uuid>,
 ) -> AppResult<Json<Task>> {
     let task: Task = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, tenant_id, client_id, workflow_instance_id, workflow_step_index, title, description, status, priority, assigned_to, created_by, due_date, completed_at, is_recurring, recurrence_rule, sort_order, created_at, updated_at FROM tasks WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(task_id)
     .bind(claims.tid)
@@ -203,7 +203,7 @@ pub async fn delete_task(
     Path(task_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
     let result = sqlx::query(
-        "DELETE FROM tasks WHERE id = $1 AND tenant_id = $2",
+        "UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(task_id)
     .bind(claims.tid)
@@ -215,4 +215,94 @@ pub async fn delete_task(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+pub async fn bulk_update_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkTaskUpdateRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    // Validate status if provided
+    if let Some(ref status) = payload.status {
+        let valid_statuses = ["todo", "in_progress", "review", "done"];
+        if !valid_statuses.contains(&status.as_str()) {
+            return Err(AppError::Validation(format!(
+                "Invalid status: '{}'. Must be one of: {}",
+                status,
+                valid_statuses.join(", ")
+            )));
+        }
+    }
+
+    // Validate priority if provided
+    if let Some(ref priority) = payload.priority {
+        let valid_priorities = ["low", "medium", "high", "urgent"];
+        if !valid_priorities.contains(&priority.as_str()) {
+            return Err(AppError::Validation(format!(
+                "Invalid priority: '{}'. Must be one of: {}",
+                priority,
+                valid_priorities.join(", ")
+            )));
+        }
+    }
+
+    // Build dynamic update
+    let result = sqlx::query(
+        "UPDATE tasks SET \
+         status = COALESCE($3, status), \
+         assigned_to = COALESCE($4, assigned_to), \
+         priority = COALESCE($5, priority), \
+         completed_at = CASE WHEN COALESCE($3, status) = 'done' AND status != 'done' THEN NOW() \
+                             WHEN COALESCE($3, status) != 'done' THEN NULL \
+                             ELSE completed_at END, \
+         updated_at = NOW() \
+         WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .bind(payload.status.as_deref())
+    .bind(payload.assigned_to)
+    .bind(payload.priority.as_deref())
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "updated": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+pub async fn bulk_delete_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkTaskIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE tasks SET deleted_at = NOW() WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "deleted": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
 }

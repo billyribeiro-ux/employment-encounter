@@ -9,7 +9,7 @@ rust-version = "1.75"
 axum = { version = "0.8", features = ["ws", "multipart", "macros"] }
 axum-extra = { version = "0.10", features = ["cookie", "typed-header"] }
 tower = { version = "0.5", features = ["full"] }
-tower-http = { version = "0.6", features = ["cors", "compression-gzip", "trace", "timeout", "request-id", "set-header"] }
+tower-http = { version = "0.6", features = ["cors", "compression-gzip", "trace", "timeout", "request-id", "set-header", "limit", "propagate-header"] }
 hyper = { version = "1.0", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 
@@ -58,6 +58,9 @@ aws-config = "1"
 
 # HTTP client (for external APIs)
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
+# Hex encoding
+hex = "0.4"
 
 # Slug generation
 slug = "0.1"

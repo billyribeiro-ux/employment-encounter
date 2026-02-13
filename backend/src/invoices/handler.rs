@@ -40,7 +40,7 @@ pub async fn list_invoices(
 
     let (total,): (i64,) = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2)",
+            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2)",
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -48,7 +48,7 @@ pub async fn list_invoices(
         .await?
     } else {
         sqlx::query_as(
-            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1",
+            "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND deleted_at IS NULL",
         )
         .bind(claims.tid)
         .fetch_one(&state.db)
@@ -57,7 +57,7 @@ pub async fn list_invoices(
 
     let invoices: Vec<Invoice> = if let Some(ref pattern) = search_pattern {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2) {} LIMIT $3 OFFSET $4", order_clause),
+            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 AND deleted_at IS NULL AND (LOWER(COALESCE(invoice_number, '')) LIKE $2 OR LOWER(COALESCE(notes, '')) LIKE $2) {} LIMIT $3 OFFSET $4", order_clause),
         )
         .bind(claims.tid)
         .bind(pattern)
@@ -67,7 +67,7 @@ pub async fn list_invoices(
         .await?
     } else {
         sqlx::query_as(
-            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 {} LIMIT $2 OFFSET $3", order_clause),
+            &format!("SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 AND deleted_at IS NULL {} LIMIT $2 OFFSET $3", order_clause),
         )
         .bind(claims.tid)
         .bind(per_page)
@@ -95,7 +95,7 @@ pub async fn get_invoice(
     Path(invoice_id): Path<Uuid>,
 ) -> AppResult<Json<Invoice>> {
     let invoice: Invoice = sqlx::query_as(
-        "SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at FROM invoices WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
     )
     .bind(invoice_id)
     .bind(claims.tid)
@@ -382,6 +382,249 @@ pub async fn record_payment(
         "new_total_paid_cents": new_paid,
         "invoice_status": new_status,
     }))))
+}
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+pub async fn bulk_send_invoices(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkInvoiceIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE invoices SET status = 'sent', sent_at = NOW(), issued_date = COALESCE(issued_date, CURRENT_DATE), updated_at = NOW() \
+         WHERE tenant_id = $1 AND status = 'draft' AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "sent": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+pub async fn bulk_delete_invoices(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkInvoiceIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    // Soft-delete only draft invoices
+    let result = sqlx::query(
+        "UPDATE invoices SET deleted_at = NOW(), updated_at = NOW() \
+         WHERE tenant_id = $1 AND status = 'draft' AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "deleted": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+// ── Soft Delete: Restore & Trash ─────────────────────────────────────
+
+pub async fn restore_invoice(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(invoice_id): Path<Uuid>,
+) -> AppResult<Json<Invoice>> {
+    let invoice: Invoice = sqlx::query_as(
+        "UPDATE invoices SET deleted_at = NULL, updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NOT NULL \
+         RETURNING id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, \
+         amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, \
+         stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at",
+    )
+    .bind(invoice_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Invoice not found in trash".to_string()))?;
+
+    Ok(Json(invoice))
+}
+
+pub async fn list_invoices_trash(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ListInvoicesQuery>,
+) -> AppResult<Json<PaginatedResponse<Invoice>>> {
+    let page = params.page.unwrap_or(1).max(1);
+    let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM invoices WHERE tenant_id = $1 AND deleted_at IS NOT NULL",
+    )
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    let invoices: Vec<Invoice> = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, \
+         amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, \
+         stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at \
+         FROM invoices WHERE tenant_id = $1 AND deleted_at IS NOT NULL \
+         ORDER BY deleted_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(claims.tid)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+
+    let total_pages = (total as f64 / per_page as f64).ceil() as i64;
+
+    Ok(Json(PaginatedResponse {
+        data: invoices,
+        meta: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
+    }))
+}
+
+// ── Recurring Invoices ───────────────────────────────────────────────
+
+pub async fn create_recurring_invoice(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<CreateRecurringInvoiceRequest>,
+) -> AppResult<(StatusCode, Json<RecurringInvoice>)> {
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
+    let valid_schedules = ["weekly", "monthly", "quarterly", "annually"];
+    if !valid_schedules.contains(&payload.schedule.as_str()) {
+        return Err(AppError::Validation(format!(
+            "Invalid schedule '{}'. Must be one of: {}",
+            payload.schedule,
+            valid_schedules.join(", ")
+        )));
+    }
+
+    if payload.line_items.is_empty() {
+        return Err(AppError::Validation(
+            "At least one line item is required".to_string(),
+        ));
+    }
+
+    let subtotal_cents: i64 = payload
+        .line_items
+        .iter()
+        .map(|li| (li.quantity * li.unit_price_cents as f64) as i64)
+        .sum();
+    let tax_cents: i64 = 0;
+    let total_cents = subtotal_cents + tax_cents;
+
+    let line_items_json = serde_json::to_value(&payload.line_items)
+        .map_err(|e| AppError::Internal(format!("Failed to serialize line items: {}", e)))?;
+
+    let id = Uuid::new_v4();
+    let recurring: RecurringInvoice = sqlx::query_as(
+        "INSERT INTO recurring_invoices (id, tenant_id, client_id, schedule, next_issue_date, notes, line_items, subtotal_cents, tax_cents, total_cents, created_by) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
+         RETURNING id, tenant_id, client_id, schedule, next_issue_date, notes, line_items, subtotal_cents, tax_cents, total_cents, currency, is_active, last_issued_at, invoices_generated, created_by, created_at, updated_at",
+    )
+    .bind(id)
+    .bind(claims.tid)
+    .bind(payload.client_id)
+    .bind(&payload.schedule)
+    .bind(payload.next_issue_date)
+    .bind(payload.notes.as_deref())
+    .bind(&line_items_json)
+    .bind(subtotal_cents)
+    .bind(tax_cents)
+    .bind(total_cents)
+    .bind(claims.sub)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(recurring)))
+}
+
+pub async fn list_recurring_invoices(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ListRecurringInvoicesQuery>,
+) -> AppResult<Json<PaginatedResponse<RecurringInvoice>>> {
+    let page = params.page.unwrap_or(1).max(1);
+    let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM recurring_invoices WHERE tenant_id = $1 AND deleted_at IS NULL",
+    )
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    let recurring: Vec<RecurringInvoice> = sqlx::query_as(
+        "SELECT id, tenant_id, client_id, schedule, next_issue_date, notes, line_items, subtotal_cents, tax_cents, total_cents, currency, is_active, last_issued_at, invoices_generated, created_by, created_at, updated_at \
+         FROM recurring_invoices WHERE tenant_id = $1 AND deleted_at IS NULL \
+         ORDER BY next_issue_date ASC LIMIT $2 OFFSET $3",
+    )
+    .bind(claims.tid)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+
+    let total_pages = (total as f64 / per_page as f64).ceil() as i64;
+
+    Ok(Json(PaginatedResponse {
+        data: recurring,
+        meta: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
+    }))
+}
+
+pub async fn delete_recurring_invoice(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(recurring_id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    let result = sqlx::query(
+        "UPDATE recurring_invoices SET deleted_at = NOW(), is_active = FALSE, updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL",
+    )
+    .bind(recurring_id)
+    .bind(claims.tid)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Recurring invoice not found".to_string()));
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[derive(Debug, sqlx::FromRow)]

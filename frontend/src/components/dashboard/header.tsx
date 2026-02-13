@@ -91,14 +91,18 @@ export function Header() {
   );
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-6">
+    <header
+      className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-6"
+      role="banner"
+      aria-label="Dashboard header"
+    >
       {/* Mobile menu */}
       <MobileSidebar />
 
       {/* Search */}
-      <div className="hidden flex-1 max-w-md lg:block">
+      <div className="hidden flex-1 max-w-md lg:block" role="search" aria-label="Page navigation search">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             ref={searchRef}
             placeholder="Search pages... (⌘K)"
@@ -106,12 +110,13 @@ export function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
+            aria-label="Search pages. Press Command K to focus."
           />
         </div>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-2">
+      {/* Right side actions */}
+      <div className="flex items-center gap-2" role="toolbar" aria-label="Header actions">
         {/* Notifications */}
         <NotificationBell />
 
@@ -120,16 +125,22 @@ export function Header() {
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" aria-hidden="true" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" aria-hidden="true" />
           <span className="sr-only">Toggle theme</span>
         </Button>
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2 px-2">
+            <Button
+              variant="ghost"
+              className="gap-2 px-2"
+              aria-label={`User menu for ${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "User menu"}
+              aria-haspopup="menu"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
@@ -138,7 +149,7 @@ export function Header() {
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56" aria-label="User menu options">
             <DropdownMenuLabel>
               <div className="flex flex-col">
                 <span>{user?.first_name} {user?.last_name}</span>
@@ -149,16 +160,16 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/settings")}>
-              <User className="mr-2 h-4 w-4" />
+              <User className="mr-2 h-4 w-4" aria-hidden="true" />
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings")}>
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

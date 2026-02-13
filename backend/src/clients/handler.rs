@@ -418,3 +418,118 @@ pub async fn delete_client(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+pub async fn bulk_delete_clients(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE clients SET deleted_at = NOW(), status = 'archived' WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "deleted": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+pub async fn bulk_archive_clients(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(payload): Json<BulkIdsRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    if payload.ids.is_empty() {
+        return Err(AppError::Validation("At least one ID is required".to_string()));
+    }
+    if payload.ids.len() > 100 {
+        return Err(AppError::Validation("Maximum 100 IDs per bulk operation".to_string()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE clients SET status = 'archived', updated_at = NOW() WHERE tenant_id = $1 AND deleted_at IS NULL AND id = ANY($2)",
+    )
+    .bind(claims.tid)
+    .bind(&payload.ids)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "archived": result.rows_affected(),
+        "requested": payload.ids.len(),
+    })))
+}
+
+// ── Soft Delete: Restore & Trash ─────────────────────────────────────
+
+pub async fn restore_client(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(client_id): Path<Uuid>,
+) -> AppResult<Json<Client>> {
+    let client: Client = sqlx::query_as(
+        "UPDATE clients SET deleted_at = NULL, status = 'active', updated_at = NOW() \
+         WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NOT NULL \
+         RETURNING id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at",
+    )
+    .bind(client_id)
+    .bind(claims.tid)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Client not found in trash".to_string()))?;
+
+    Ok(Json(client))
+}
+
+pub async fn list_clients_trash(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ListClientsQuery>,
+) -> AppResult<Json<PaginatedResponse<Client>>> {
+    let page = params.page.unwrap_or(1).max(1);
+    let per_page = params.per_page.unwrap_or(25).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+
+    let (total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM clients WHERE tenant_id = $1 AND deleted_at IS NOT NULL",
+    )
+    .bind(claims.tid)
+    .fetch_one(&state.db)
+    .await?;
+
+    let clients: Vec<Client> = sqlx::query_as(
+        "SELECT id, tenant_id, name, business_type, fiscal_year_end, tax_id_last4, status, assigned_cpa_id, risk_score, engagement_score, metadata, created_at, updated_at \
+         FROM clients WHERE tenant_id = $1 AND deleted_at IS NOT NULL \
+         ORDER BY deleted_at DESC LIMIT $2 OFFSET $3",
+    )
+    .bind(claims.tid)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(&state.db)
+    .await?;
+
+    let total_pages = (total as f64 / per_page as f64).ceil() as i64;
+
+    Ok(Json(PaginatedResponse {
+        data: clients,
+        meta: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
+    }))
+}

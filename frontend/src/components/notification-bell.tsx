@@ -32,19 +32,30 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={
+            unreadCount && unreadCount > 0
+              ? `Notifications - ${unreadCount} unread`
+              : "Notifications"
+          }
+          aria-haspopup="menu"
+        >
+          <Bell className="h-4 w-4" aria-hidden="true" />
           {unreadCount && unreadCount > 0 ? (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]"
+              aria-hidden="true"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </Badge>
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-80" aria-label="Notifications list">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
           {unreadCount && unreadCount > 0 ? (
@@ -53,6 +64,7 @@ export function NotificationBell() {
               size="sm"
               className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => markAllRead.mutate()}
+              aria-label="Mark all notifications as read"
             >
               Mark all read
             </Button>

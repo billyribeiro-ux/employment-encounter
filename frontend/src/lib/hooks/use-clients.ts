@@ -184,3 +184,56 @@ export function useDeleteClient() {
     },
   });
 }
+
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+export function useBulkDeleteClients() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.post<{ deleted: number }>("/clients/bulk-delete", { ids });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+}
+
+export function useBulkArchiveClients() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.post<{ archived: number }>("/clients/bulk-archive", { ids });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+}
+
+// ── Restore (Soft Delete) ────────────────────────────────────────────
+
+export function useRestoreClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<Client>(`/clients/${id}/restore`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    },
+  });
+}
+
+export function useClientTrash(params?: { page?: number; per_page?: number }) {
+  return useQuery({
+    queryKey: ["clients", "trash", params],
+    queryFn: async () => {
+      const { data } = await api.get<PaginatedResponse<Client>>("/clients/trash", { params });
+      return data;
+    },
+  });
+}
