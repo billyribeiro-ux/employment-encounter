@@ -11,6 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -43,10 +45,34 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
-import { Users, Shield, Mail, Loader2, Trash2 } from "lucide-react";
+import {
+  Users,
+  Shield,
+  Mail,
+  Loader2,
+  Trash2,
+  Plus,
+  Copy,
+  Eye,
+  EyeOff,
+  Link2,
+  Webhook,
+  Key,
+  Bell,
+  Briefcase,
+  Globe,
+  Palette,
+  Settings2,
+  ArrowRight,
+  GripVertical,
+  Upload,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import {
   useProfile,
@@ -59,6 +85,7 @@ import {
   useDeleteUser,
   type UserProfile,
 } from "@/lib/hooks/use-settings";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ---------------------------------------------------------------------------
 // Zod Schemas
@@ -73,17 +100,16 @@ const profileSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-const firmSchema = z.object({
-  name: z.string().min(1, "Firm name is required").max(255),
+const companySchema = z.object({
+  name: z.string().min(1, "Company name is required").max(255),
   phone: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   website: z.string().optional(),
   address: z.string().optional(),
   timezone: z.string(),
-  default_hourly_rate: z.number().min(0),
-  fiscal_year_end: z.string(),
+  target_cost_per_hire: z.number().min(0),
 });
-type FirmFormValues = z.infer<typeof firmSchema>;
+type CompanyFormValues = z.infer<typeof companySchema>;
 
 const inviteSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -253,7 +279,7 @@ function ProfileTab() {
                 <FormItem>
                   <FormLabel>Job Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Senior CPA, Partner" {...field} />
+                    <Input placeholder="e.g. Recruiter, Hiring Manager" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -273,15 +299,15 @@ function ProfileTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Firm Tab
+// Company Tab
 // ---------------------------------------------------------------------------
 
-function FirmTab() {
+function CompanyTab() {
   const { data: firm, isLoading } = useFirmSettings();
   const updateFirm = useUpdateFirmSettings();
 
-  const form = useForm<FirmFormValues>({
-    resolver: zodResolver(firmSchema),
+  const form = useForm<CompanyFormValues>({
+    resolver: zodResolver(companySchema),
     defaultValues: {
       name: "",
       phone: "",
@@ -289,8 +315,7 @@ function FirmTab() {
       website: "",
       address: "",
       timezone: "America/New_York",
-      default_hourly_rate: 15000,
-      fiscal_year_end: "Calendar",
+      target_cost_per_hire: 5000,
     },
   });
 
@@ -304,13 +329,12 @@ function FirmTab() {
         website: (s.website as string) || "",
         address: (s.address as string) || "",
         timezone: (s.timezone as string) || "America/New_York",
-        default_hourly_rate: (s.default_hourly_rate as number) || 15000,
-        fiscal_year_end: (s.fiscal_year_end as string) || "Calendar",
+        target_cost_per_hire: (s.target_cost_per_hire as number) || 5000,
       });
     }
   }, [firm, form]);
 
-  async function onSubmit(values: FirmFormValues) {
+  async function onSubmit(values: CompanyFormValues) {
     try {
       await updateFirm.mutateAsync({
         name: values.name,
@@ -320,13 +344,12 @@ function FirmTab() {
           website: values.website,
           address: values.address,
           timezone: values.timezone,
-          default_hourly_rate: values.default_hourly_rate,
-          fiscal_year_end: values.fiscal_year_end,
+          target_cost_per_hire: values.target_cost_per_hire,
         },
       });
-      toast.success("Firm settings updated successfully");
+      toast.success("Company settings updated successfully");
     } catch {
-      toast.error("Failed to update firm settings");
+      toast.error("Failed to update company settings");
     }
   }
 
@@ -335,8 +358,8 @@ function FirmTab() {
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Firm Settings</CardTitle>
-            <CardDescription>Manage your firm profile and preferences</CardDescription>
+            <CardTitle>Company Settings</CardTitle>
+            <CardDescription>Manage your company profile and preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -355,8 +378,8 @@ function FirmTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Firm Settings</CardTitle>
-          <CardDescription>Manage your firm profile and preferences</CardDescription>
+          <CardTitle>Company Settings</CardTitle>
+          <CardDescription>Manage your company profile and preferences</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -367,9 +390,9 @@ function FirmTab() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Firm Name</FormLabel>
+                      <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your Firm Name" {...field} />
+                        <Input placeholder="Your Company Name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -395,9 +418,9 @@ function FirmTab() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Firm Email</FormLabel>
+                      <FormLabel>Company Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="info@yourfirm.com" {...field} />
+                        <Input type="email" placeholder="hiring@yourcompany.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -410,7 +433,7 @@ function FirmTab() {
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://yourfirm.com" {...field} />
+                        <Input placeholder="https://yourcompany.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -460,14 +483,14 @@ function FirmTab() {
                 />
                 <FormField
                   control={form.control}
-                  name="default_hourly_rate"
+                  name="target_cost_per_hire"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Default Hourly Rate (cents)</FormLabel>
+                      <FormLabel>Target Cost-per-Hire ($)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="15000"
+                          placeholder="5000"
                           value={field.value}
                           onChange={(e) => field.onChange(Number(e.target.value) || 0)}
                           onBlur={field.onBlur}
@@ -480,32 +503,6 @@ function FirmTab() {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="fiscal_year_end"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Fiscal Year End</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select fiscal year end" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Calendar">Calendar Year (Dec 31)</SelectItem>
-                        <SelectItem value="March">March 31</SelectItem>
-                        <SelectItem value="June">June 30</SelectItem>
-                        <SelectItem value="September">September 30</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <Button type="submit" disabled={updateFirm.isPending}>
                 {updateFirm.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -521,7 +518,503 @@ function FirmTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Team Tab  (list + invite dialog + role change + delete)
+// Pipeline Configuration Tab
+// ---------------------------------------------------------------------------
+
+function PipelineTab() {
+  const [stages, setStages] = useState([
+    { id: "1", name: "Applied", color: "bg-blue-500" },
+    { id: "2", name: "Screening", color: "bg-sky-500" },
+    { id: "3", name: "Phone Screen", color: "bg-indigo-500" },
+    { id: "4", name: "Technical Interview", color: "bg-purple-500" },
+    { id: "5", name: "Onsite Interview", color: "bg-orange-500" },
+    { id: "6", name: "Offer", color: "bg-amber-500" },
+    { id: "7", name: "Hired", color: "bg-green-500" },
+  ]);
+  const [newStageName, setNewStageName] = useState("");
+
+  function addStage() {
+    if (!newStageName.trim()) return;
+    const id = String(Date.now());
+    setStages((prev) => [
+      ...prev.slice(0, -1),
+      { id, name: newStageName.trim(), color: "bg-violet-500" },
+      prev[prev.length - 1],
+    ]);
+    setNewStageName("");
+    toast.success("Stage added");
+  }
+
+  function removeStage(id: string) {
+    setStages((prev) => prev.filter((s) => s.id !== id));
+    toast.success("Stage removed");
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Pipeline Stages
+          </CardTitle>
+          <CardDescription>
+            Configure the stages candidates move through in your hiring pipeline
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 mb-4">
+            {stages.map((stage, i) => (
+              <motion.div
+                key={stage.id}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 rounded-md border p-3"
+              >
+                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                <div className={`h-3 w-3 rounded-full ${stage.color}`} />
+                <span className="text-sm font-medium flex-1">{stage.name}</span>
+                <Badge variant="outline" className="text-xs">
+                  Stage {i + 1}
+                </Badge>
+                {i > 0 && i < stages.length - 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeStage(stage.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </motion.div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="New stage name..."
+              value={newStageName}
+              onChange={(e) => setNewStageName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addStage()}
+              className="max-w-xs"
+            />
+            <Button variant="outline" size="sm" onClick={addStage}>
+              <Plus className="mr-1 h-3 w-3" />
+              Add Stage
+            </Button>
+          </div>
+          <Separator className="my-4" />
+          <Button onClick={() => toast.success("Pipeline configuration saved")}>
+            Save Pipeline
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Default Pipeline</CardTitle>
+          <CardDescription>
+            Choose which pipeline is used when creating new jobs
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select defaultValue="standard">
+            <SelectTrigger className="w-[280px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Standard Pipeline (7 stages)</SelectItem>
+              <SelectItem value="fast-track">Fast Track (4 stages)</SelectItem>
+              <SelectItem value="executive">Executive (9 stages)</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Notifications Tab
+// ---------------------------------------------------------------------------
+
+function NotificationsTab() {
+  const [settings, setSettings] = useState({
+    new_application: true,
+    stage_change: true,
+    interview_scheduled: true,
+    interview_reminder: true,
+    scorecard_submitted: true,
+    offer_sent: true,
+    offer_accepted: true,
+    offer_declined: true,
+    candidate_withdrawn: true,
+    team_mention: true,
+    weekly_digest: true,
+    daily_summary: false,
+  });
+
+  function toggle(key: keyof typeof settings) {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const notifications = [
+    { key: "new_application" as const, label: "New Application Received", description: "When a candidate applies to a job" },
+    { key: "stage_change" as const, label: "Stage Change", description: "When a candidate moves between pipeline stages" },
+    { key: "interview_scheduled" as const, label: "Interview Scheduled", description: "When an interview is booked" },
+    { key: "interview_reminder" as const, label: "Interview Reminder", description: "30 minutes before an interview starts" },
+    { key: "scorecard_submitted" as const, label: "Scorecard Submitted", description: "When a team member submits an evaluation" },
+    { key: "offer_sent" as const, label: "Offer Sent", description: "When an offer letter is sent to a candidate" },
+    { key: "offer_accepted" as const, label: "Offer Accepted", description: "When a candidate accepts an offer" },
+    { key: "offer_declined" as const, label: "Offer Declined", description: "When a candidate declines an offer" },
+    { key: "candidate_withdrawn" as const, label: "Candidate Withdrawn", description: "When a candidate withdraws their application" },
+    { key: "team_mention" as const, label: "Team Mentions", description: "When someone mentions you in a note or comment" },
+    { key: "weekly_digest" as const, label: "Weekly Digest", description: "Summary of hiring activity sent every Monday" },
+    { key: "daily_summary" as const, label: "Daily Summary", description: "End-of-day summary of all activity" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-4 w-4" />
+          Email Notifications
+        </CardTitle>
+        <CardDescription>
+          Choose which events trigger email notifications
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {notifications.map((n) => (
+            <div
+              key={n.key}
+              className="flex items-center justify-between rounded-md border p-3"
+            >
+              <div>
+                <p className="text-sm font-medium">{n.label}</p>
+                <p className="text-xs text-muted-foreground">{n.description}</p>
+              </div>
+              <Switch
+                checked={settings[n.key]}
+                onCheckedChange={() => toggle(n.key)}
+              />
+            </div>
+          ))}
+        </div>
+        <Separator className="my-4" />
+        <Button onClick={() => toast.success("Notification preferences saved")}>
+          Save Preferences
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Career Page Tab
+// ---------------------------------------------------------------------------
+
+function CareerPageTab() {
+  const [companyDescription, setCompanyDescription] = useState(
+    "We are a growing company looking for talented individuals to join our team."
+  );
+  const [customCss, setCustomCss] = useState("");
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Career Page Settings
+          </CardTitle>
+          <CardDescription>
+            Customize your public-facing career page
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Description</label>
+            <Textarea
+              value={companyDescription}
+              onChange={(e) => setCompanyDescription(e.target.value)}
+              rows={4}
+              placeholder="Tell candidates about your company culture, mission, and values..."
+            />
+            <p className="text-xs text-muted-foreground">
+              This appears at the top of your careers page
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Logo</label>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                <Upload className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <Button variant="outline" size="sm">
+                  <Upload className="mr-2 h-3 w-3" />
+                  Upload Logo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PNG, JPG up to 2MB. Recommended 400x400px
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Cover Image</label>
+            <div className="h-24 w-full rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+              <div className="text-center">
+                <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">
+                  Drop an image or click to upload
+                </p>
+              </div>
+            </div>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Custom CSS</label>
+            <Textarea
+              value={customCss}
+              onChange={(e) => setCustomCss(e.target.value)}
+              rows={3}
+              placeholder=".career-page { /* your custom styles */ }"
+              className="font-mono text-xs"
+            />
+          </div>
+          <Button onClick={() => toast.success("Career page settings saved")}>
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Theme
+          </CardTitle>
+          <CardDescription>
+            Customize colors to match your brand
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Primary Color</label>
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-md bg-primary border" />
+                <Input defaultValue="#6366f1" className="max-w-32 font-mono text-xs" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Accent Color</label>
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-md bg-blue-500 border" />
+                <Input defaultValue="#3b82f6" className="max-w-32 font-mono text-xs" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// API Keys Tab
+// ---------------------------------------------------------------------------
+
+function ApiKeysTab() {
+  const [keys, setKeys] = useState([
+    {
+      id: "1",
+      name: "Production API Key",
+      prefix: "sk_live_...x4f2",
+      created: "2026-01-15",
+      lastUsed: "2026-02-12",
+      status: "active",
+    },
+    {
+      id: "2",
+      name: "Development API Key",
+      prefix: "sk_test_...m9k1",
+      created: "2026-01-20",
+      lastUsed: "2026-02-10",
+      status: "active",
+    },
+  ]);
+  const [showKey, setShowKey] = useState<string | null>(null);
+
+  function revokeKey(id: string) {
+    setKeys((prev) => prev.filter((k) => k.id !== id));
+    toast.success("API key revoked");
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                API Keys
+              </CardTitle>
+              <CardDescription>
+                Manage API keys for programmatic access to your hiring data
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                const newKey = {
+                  id: String(Date.now()),
+                  name: "New API Key",
+                  prefix: `sk_live_...${Math.random().toString(36).slice(-4)}`,
+                  created: new Date().toISOString().slice(0, 10),
+                  lastUsed: "Never",
+                  status: "active",
+                };
+                setKeys((prev) => [...prev, newKey]);
+                toast.success("New API key generated");
+              }}
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Generate Key
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {keys.length === 0 ? (
+            <div className="text-center py-8">
+              <Key className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No API keys yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {keys.map((key) => (
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between rounded-md border p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Key className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">{key.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          {key.prefix}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() =>
+                            setShowKey(showKey === key.id ? null : key.id)
+                          }
+                        >
+                          {showKey === key.id ? (
+                            <EyeOff className="h-3 w-3" />
+                          ) : (
+                            <Eye className="h-3 w-3" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => {
+                            navigator.clipboard.writeText(key.prefix);
+                            toast.success("Copied to clipboard");
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Created {key.created} · Last used {key.lastUsed}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => revokeKey(key.id)}
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Webhook className="h-4 w-4" />
+            Webhooks
+          </CardTitle>
+          <CardDescription>
+            Receive real-time notifications when events happen in your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Application Events</p>
+                <code className="text-xs text-muted-foreground">
+                  https://api.yoursite.com/webhooks/applications
+                </code>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="text-xs">
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Active
+                </Badge>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Settings2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Interview Events</p>
+                <code className="text-xs text-muted-foreground">
+                  https://api.yoursite.com/webhooks/interviews
+                </code>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  <XCircle className="mr-1 h-3 w-3" />
+                  Inactive
+                </Badge>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Settings2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <Separator className="my-4" />
+          <Button variant="outline" size="sm">
+            <Plus className="mr-1 h-3 w-3" />
+            Add Webhook Endpoint
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Team Tab
 // ---------------------------------------------------------------------------
 
 function InviteMemberDialog({
@@ -560,7 +1053,7 @@ function InviteMemberDialog({
         <DialogHeader>
           <DialogTitle>Invite Team Member</DialogTitle>
           <DialogDescription>
-            Send an invitation to join your firm.
+            Send an invitation to join your company.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -620,8 +1113,9 @@ function InviteMemberDialog({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="partner">Partner</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="hiring_manager">Hiring Manager</SelectItem>
+                      <SelectItem value="recruiter">Recruiter</SelectItem>
+                      <SelectItem value="interviewer">Interviewer</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
                     </SelectContent>
                   </Select>
@@ -714,13 +1208,14 @@ function TeamMemberRow({ member, currentUserId }: { member: UserProfile; current
               onValueChange={handleRoleChange}
               disabled={updateRole.isPending}
             >
-              <SelectTrigger className="h-7 w-[110px] text-xs">
+              <SelectTrigger className="h-7 w-[130px] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="partner">Partner</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="hiring_manager">Hiring Manager</SelectItem>
+                <SelectItem value="recruiter">Recruiter</SelectItem>
+                <SelectItem value="interviewer">Interviewer</SelectItem>
                 <SelectItem value="staff">Staff</SelectItem>
               </SelectContent>
             </Select>
@@ -749,7 +1244,7 @@ function TeamMemberRow({ member, currentUserId }: { member: UserProfile; current
             <AlertDialogTitle>Remove team member?</AlertDialogTitle>
             <AlertDialogDescription>
               This will remove {member.first_name} {member.last_name} (
-              {member.email}) from your firm. This action cannot be undone.
+              {member.email}) from your company. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -805,7 +1300,7 @@ function TeamTab() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Skeleton className="h-5 w-16" />
-                      <Skeleton className="h-7 w-[110px]" />
+                      <Skeleton className="h-7 w-[130px]" />
                     </div>
                   </div>
                 ))}
@@ -826,7 +1321,7 @@ function TeamTab() {
               <div className="flex flex-col items-center justify-center py-6 text-center border rounded-lg border-dashed">
                 <Users className="h-6 w-6 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  No team members yet. Invite CPAs, staff, and admins to your firm.
+                  No team members yet. Invite recruiters, hiring managers, and admins to your company.
                 </p>
               </div>
             )}
@@ -840,7 +1335,113 @@ function TeamTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Security Tab  (change password + MFA)
+// Integrations Tab
+// ---------------------------------------------------------------------------
+
+function IntegrationsTab() {
+  const integrations = [
+    {
+      name: "Google Calendar",
+      description: "Sync interview schedules with Google Calendar",
+      connected: true,
+      icon: "bg-red-100 text-red-700",
+    },
+    {
+      name: "Outlook Calendar",
+      description: "Sync interview schedules with Microsoft Outlook",
+      connected: false,
+      icon: "bg-blue-100 text-blue-700",
+    },
+    {
+      name: "Slack",
+      description: "Get hiring notifications in Slack channels",
+      connected: true,
+      icon: "bg-purple-100 text-purple-700",
+    },
+    {
+      name: "LinkedIn",
+      description: "Post jobs and import candidate profiles",
+      connected: false,
+      icon: "bg-sky-100 text-sky-700",
+    },
+    {
+      name: "Indeed",
+      description: "Syndicate job postings to Indeed",
+      connected: false,
+      icon: "bg-indigo-100 text-indigo-700",
+    },
+    {
+      name: "BambooHR",
+      description: "Sync hired candidates to your HRIS",
+      connected: false,
+      icon: "bg-green-100 text-green-700",
+    },
+    {
+      name: "DocuSign",
+      description: "Send offer letters with e-signatures",
+      connected: true,
+      icon: "bg-amber-100 text-amber-700",
+    },
+    {
+      name: "Zoom",
+      description: "Auto-generate video interview links",
+      connected: false,
+      icon: "bg-blue-100 text-blue-700",
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Connected Services
+          </CardTitle>
+          <CardDescription>
+            Manage third-party integrations for your hiring workflow
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2">
+            {integrations.map((int) => (
+              <div
+                key={int.name}
+                className="flex items-center justify-between rounded-md border p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`h-9 w-9 rounded-md flex items-center justify-center text-xs font-bold ${int.icon}`}
+                  >
+                    {int.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{int.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {int.description}
+                    </p>
+                  </div>
+                </div>
+                {int.connected ? (
+                  <Badge variant="default" className="text-xs">
+                    Connected
+                  </Badge>
+                ) : (
+                  <Button variant="outline" size="sm">
+                    Connect
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Security Tab
 // ---------------------------------------------------------------------------
 
 function SecurityTab() {
@@ -960,45 +1561,7 @@ function SecurityTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Integrations Tab  (unchanged — no API defined for these)
-// ---------------------------------------------------------------------------
-
-function IntegrationsTab() {
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>QuickBooks Online</CardTitle>
-          <CardDescription>Sync clients, invoices, and payments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline">Connect QuickBooks</Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Google Drive</CardTitle>
-          <CardDescription>Sync documents with Google Drive</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline">Connect Google Drive</Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Stripe</CardTitle>
-          <CardDescription>Accept online payments from clients</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline">Connect Stripe</Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Billing Tab  (unchanged — no API defined for this)
+// Billing Tab
 // ---------------------------------------------------------------------------
 
 function BillingTab() {
@@ -1013,7 +1576,7 @@ function BillingTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Current Plan</p>
-              <p className="text-sm text-muted-foreground">Solo — $49/month</p>
+              <p className="text-sm text-muted-foreground">Growth — $99/month</p>
             </div>
             <Button variant="outline">Upgrade</Button>
           </div>
@@ -1033,42 +1596,62 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your account and firm settings
+          Manage your account and company settings
         </p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="firm">Firm</TabsTrigger>
+          <TabsTrigger value="company">Company</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="career-page">Career Page</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="api-keys">API & Webhooks</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
           <ProfileTab />
         </TabsContent>
 
-        <TabsContent value="firm">
-          <FirmTab />
+        <TabsContent value="company">
+          <CompanyTab />
+        </TabsContent>
+
+        <TabsContent value="pipeline">
+          <PipelineTab />
         </TabsContent>
 
         <TabsContent value="team">
           <TeamTab />
         </TabsContent>
 
+        <TabsContent value="notifications">
+          <NotificationsTab />
+        </TabsContent>
+
+        <TabsContent value="career-page">
+          <CareerPageTab />
+        </TabsContent>
+
         <TabsContent value="integrations">
           <IntegrationsTab />
         </TabsContent>
 
-        <TabsContent value="billing">
-          <BillingTab />
+        <TabsContent value="api-keys">
+          <ApiKeysTab />
         </TabsContent>
 
         <TabsContent value="security">
           <SecurityTab />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -17,6 +17,9 @@ import {
   ExternalLink,
   Copy,
   CheckCircle2,
+  Heart,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,7 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { usePublicJob } from "@/lib/hooks/use-public-jobs";
+import { usePublicJob, usePublicJobs } from "@/lib/hooks/use-public-jobs";
+import { useSavedJobs, useSaveJob, useUnsaveJob } from "@/lib/hooks/use-saved-jobs";
 
 function formatSalaryCents(cents: number | null, currency = "USD"): string {
   if (!cents) return "";
@@ -75,6 +79,52 @@ function renderTextContent(text: string | null): React.ReactNode {
   ));
 }
 
+function SaveJobButton({ jobId }: { jobId: string }) {
+  const { data: savedJobs } = useSavedJobs();
+  const saveJob = useSaveJob();
+  const unsaveJob = useUnsaveJob();
+
+  const savedEntry = savedJobs?.find((s) => s.job_id === jobId);
+  const isSaved = !!savedEntry;
+
+  function handleToggle() {
+    if (isSaved && savedEntry) {
+      unsaveJob.mutate(savedEntry.id, {
+        onSuccess: () => toast.success("Job removed from saved list"),
+        onError: () => toast.error("Failed to unsave job"),
+      });
+    } else {
+      saveJob.mutate(jobId, {
+        onSuccess: () => toast.success("Job saved to your list"),
+        onError: () => toast.error("Failed to save job"),
+      });
+    }
+  }
+
+  const isPending = saveJob.isPending || unsaveJob.isPending;
+
+  return (
+    <Button
+      variant={isSaved ? "default" : "outline"}
+      className="w-full"
+      onClick={handleToggle}
+      disabled={isPending}
+    >
+      {isSaved ? (
+        <>
+          <BookmarkCheck className="mr-2 h-4 w-4" />
+          {isPending ? "Removing..." : "Saved"}
+        </>
+      ) : (
+        <>
+          <Bookmark className="mr-2 h-4 w-4" />
+          {isPending ? "Saving..." : "Save Job"}
+        </>
+      )}
+    </Button>
+  );
+}
+
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -85,6 +135,14 @@ export default function JobDetailPage() {
   // Check if user is authenticated for the Apply button
   const isAuthenticated =
     typeof window !== "undefined" && !!localStorage.getItem("access_token");
+
+  // Fetch related jobs (same employment type, different from current)
+  const { data: relatedJobsData } = usePublicJobs({
+    per_page: 4,
+    employment_type: job?.employment_type,
+  });
+  const relatedJobs =
+    relatedJobsData?.data?.filter((j) => j.id !== jobId).slice(0, 3) ?? [];
 
   function handleShare() {
     const url = window.location.href;
@@ -247,6 +305,56 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Related Jobs */}
+          {relatedJobs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Similar Jobs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {relatedJobs.map((relatedJob) => {
+                    const relatedLocation = [
+                      relatedJob.location_city,
+                      relatedJob.location_state,
+                    ]
+                      .filter(Boolean)
+                      .join(", ");
+
+                    return (
+                      <Link key={relatedJob.id} href={`/jobs/${relatedJob.id}`}>
+                        <div className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30 cursor-pointer">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate">
+                              {relatedJob.title}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              {relatedJob.company_name && (
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {relatedJob.company_name}
+                                </span>
+                              )}
+                              {relatedLocation && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {relatedLocation}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="ml-2 shrink-0 text-xs">
+                            {formatRemotePolicy(relatedJob.remote_policy)}
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </motion.div>
 
         {/* Sidebar */}
@@ -259,7 +367,7 @@ export default function JobDetailPage() {
           {/* Apply Card */}
           <Card className="sticky top-6">
             <CardContent className="pt-6">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {isAuthenticated ? (
                   <Link href={`/candidate/apply/${job.id}`} className="block">
                     <Button className="w-full" size="lg">
@@ -276,6 +384,9 @@ export default function JobDetailPage() {
                     </Button>
                   </Link>
                 )}
+
+                {/* Save Job Button (only for authenticated candidates) */}
+                {isAuthenticated && <SaveJobButton jobId={job.id} />}
 
                 <Button
                   variant="outline"
@@ -392,6 +503,35 @@ export default function JobDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* Company Info */}
+              {job.company_name && (
+                <>
+                  <Separator className="my-6" />
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold">About the Company</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{job.company_name}</p>
+                        {job.department && (
+                          <p className="text-xs text-muted-foreground">
+                            {job.department} Department
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{job.application_count} applicant{job.application_count !== 1 ? "s" : ""}</span>
+                        <span>{job.view_count} view{job.view_count !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>

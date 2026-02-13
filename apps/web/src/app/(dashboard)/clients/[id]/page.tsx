@@ -5,418 +5,207 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Building2,
-  FileText,
-  Clock,
-  Receipt,
+  Users,
+  Briefcase,
+  MapPin,
+  DollarSign,
   Edit,
-  Shield,
-  Trash2,
+  TrendingUp,
+  UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useClient, useDeleteClient } from "@/lib/hooks/use-clients";
-import { useDocuments } from "@/lib/hooks/use-documents";
-import { useTimeEntries } from "@/lib/hooks/use-time-entries";
-import { useInvoices } from "@/lib/hooks/use-invoices";
-import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
-import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
-function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-export default function ClientDetailPage({
+// Department detail page
+export default function DepartmentDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
-  const { data: client, isLoading, isError } = useClient(id);
-  const deleteClient = useDeleteClient();
-  const { data: docsData } = useDocuments({ client_id: id, per_page: 10 });
-  const { data: timeData } = useTimeEntries({ client_id: id, per_page: 10 });
-  const { data: invoiceData } = useInvoices({ client_id: id, per_page: 10 });
 
-  const documents = docsData?.data ?? [];
-  const timeEntries = timeData?.data ?? [];
-  const invoices = invoiceData?.data ?? [];
+  // Simulated department data
+  const department = {
+    id,
+    name: "Engineering",
+    description: "Software development, infrastructure, and technical operations",
+    head: "Jane Smith",
+    headcount: 45,
+    openPositions: 8,
+    location: "San Francisco, CA",
+    budget: "$2.4M",
+    budgetUsed: 1800000,
+    budgetTotal: 2400000,
+    teams: [
+      { name: "Frontend", members: 12, openRoles: 3 },
+      { name: "Backend", members: 15, openRoles: 2 },
+      { name: "Infrastructure", members: 8, openRoles: 1 },
+      { name: "Mobile", members: 6, openRoles: 1 },
+      { name: "QA", members: 4, openRoles: 1 },
+    ],
+    recentHires: [
+      { name: "Alex Kim", role: "Senior Frontend Engineer", date: "2026-02-01" },
+      { name: "Sarah Lee", role: "DevOps Engineer", date: "2026-01-15" },
+      { name: "James Park", role: "Full Stack Developer", date: "2026-01-05" },
+    ],
+  };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-4 w-48" />
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Skeleton className="h-8 w-56 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-          <Skeleton className="h-9 w-20" />
-          <Skeleton className="h-9 w-20" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-4">
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
-          <Skeleton className="h-20" />
-        </div>
-        <Skeleton className="h-64" />
-      </div>
-    );
-  }
-
-  if (isError || !client) {
-    return (
-      <div className="space-y-4">
-        <Link href="/clients">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Clients
-          </Button>
-        </Link>
-        <div className="text-center py-12">
-          <p className="text-sm text-destructive">
-            Client not found or failed to load.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const budgetPercent = Math.round((department.budgetUsed / department.budgetTotal) * 100);
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Clients", href: "/clients" },
-          { label: client.name },
-        ]}
-      />
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
-            <Badge variant={client.status === "active" ? "default" : "secondary"}>
-              {client.status}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {client.business_type}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
+      <div className="flex items-center gap-3">
+        <Link href="/clients">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
           </Button>
-          <ConfirmDialog
-            title="Delete client?"
-            description={`This will permanently delete "${client.name}" and all associated data.`}
-            actionLabel="Delete"
-            onConfirm={() => {
-              deleteClient.mutate(client.id, {
-                onSuccess: () => {
-                  toast.success("Client deleted");
-                  router.push("/clients");
-                },
-                onError: () => toast.error("Failed to delete client"),
-              });
-            }}
-          >
-            <Button
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              disabled={deleteClient.isPending}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </ConfirmDialog>
-        </div>
+        </Link>
+        <Separator orientation="vertical" className="h-6" />
+        <h1 className="text-2xl font-bold tracking-tight">{department.name}</h1>
+        <Badge variant="secondary">{department.openPositions} open positions</Badge>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="h-4 w-4 text-blue-600" />
-              <span className="text-xs font-medium text-muted-foreground">Documents</span>
-            </div>
-            <p className="text-2xl font-bold">{docsData?.meta?.total ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-amber-600" />
-              <span className="text-xs font-medium text-muted-foreground">Time Entries</span>
-            </div>
-            <p className="text-2xl font-bold">{timeData?.meta?.total ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Receipt className="h-4 w-4 text-green-600" />
-              <span className="text-xs font-medium text-muted-foreground">Invoices</span>
-            </div>
-            <p className="text-2xl font-bold">{invoiceData?.meta?.total ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Building2 className="h-4 w-4 text-violet-600" />
-              <span className="text-xs font-medium text-muted-foreground">Fiscal Year</span>
-            </div>
-            <p className="text-2xl font-bold">{client.fiscal_year_end || "—"}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="time">Time</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Business Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Department Info */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Department Overview</CardTitle>
+                <Button variant="outline" size="sm">
+                  <Edit className="mr-1.5 h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{department.description}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-muted-foreground text-xs">Business Type</p>
-                    <p className="font-medium">{client.business_type || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Fiscal Year End</p>
-                    <p className="font-medium">{client.fiscal_year_end || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Tax ID (last 4)</p>
-                    <p className="font-medium">
-                      {client.tax_id_last4 ? `***-**-${client.tax_id_last4}` : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Status</p>
-                    <p className="font-medium capitalize">{client.status}</p>
+                    <p className="text-xs text-muted-foreground">Department Head</p>
+                    <p className="text-sm font-medium">{department.head}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Risk & Engagement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-muted-foreground text-xs">Risk Score</p>
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="text-sm font-medium">{department.location}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Team Size</p>
+                    <p className="text-sm font-medium">{department.headcount} members</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Open Positions</p>
+                    <p className="text-sm font-medium">{department.openPositions}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Teams */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Teams</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {department.teams.map((team) => (
+                  <div key={team.name} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="text-sm font-medium">{team.name}</p>
+                      <p className="text-xs text-muted-foreground">{team.members} members</p>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-medium">{client.risk_score ?? "—"}</p>
+                      {team.openRoles > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {team.openRoles} open
+                        </Badge>
+                      )}
+                      <Button variant="outline" size="sm">
+                        <Briefcase className="mr-1 h-3 w-3" />
+                        View Jobs
+                      </Button>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Engagement Score</p>
-                    <p className="font-medium">{client.engagement_score ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Created</p>
-                    <p className="font-medium">
-                      {new Date(client.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs">Last Updated</p>
-                    <p className="font-medium">
-                      {new Date(client.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Documents ({docsData?.meta?.total ?? 0})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {documents.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  No documents for this client yet.
-                </p>
-              ) : (
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-2 text-left font-medium">Name</th>
-                        <th className="px-4 py-2 text-left font-medium">Category</th>
-                        <th className="px-4 py-2 text-left font-medium">Status</th>
-                        <th className="px-4 py-2 text-left font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {documents.map((doc) => (
-                        <tr key={doc.id} className="border-b last:border-0">
-                          <td className="px-4 py-2 font-medium">{doc.filename}</td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {doc.category || "—"}
-                          </td>
-                          <td className="px-4 py-2">
-                            <Badge variant="secondary">{doc.verification_status}</Badge>
-                          </td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                ))}
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="time">
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Hiring Budget */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                Time Entries ({timeData?.meta?.total ?? 0})
-              </CardTitle>
+              <CardTitle className="text-base">Hiring Budget</CardTitle>
             </CardHeader>
             <CardContent>
-              {timeEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  No time entries for this client yet.
-                </p>
-              ) : (
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-2 text-left font-medium">Description</th>
-                        <th className="px-4 py-2 text-left font-medium">Duration</th>
-                        <th className="px-4 py-2 text-left font-medium">Billable</th>
-                        <th className="px-4 py-2 text-left font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {timeEntries.map((entry) => (
-                        <tr key={entry.id} className="border-b last:border-0">
-                          <td className="px-4 py-2">{entry.description || "—"}</td>
-                          <td className="px-4 py-2 font-medium">
-                            {entry.duration_minutes
-                              ? formatDuration(entry.duration_minutes)
-                              : "Running..."}
-                          </td>
-                          <td className="px-4 py-2">
-                            <Badge variant={entry.is_billable ? "default" : "outline"}>
-                              {entry.is_billable ? "Billable" : "Non-billable"}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {new Date(entry.date).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Used</span>
+                  <span className="font-medium">${(department.budgetUsed / 1000000).toFixed(1)}M / {department.budget}</span>
                 </div>
-              )}
+                <Progress value={budgetPercent} className="h-2" />
+                <p className="text-xs text-muted-foreground">{budgetPercent}% utilized</p>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="invoices">
+          {/* Recent Hires */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                Invoices ({invoiceData?.meta?.total ?? 0})
-              </CardTitle>
+              <CardTitle className="text-base">Recent Hires</CardTitle>
             </CardHeader>
             <CardContent>
-              {invoices.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  No invoices for this client yet.
-                </p>
-              ) : (
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-2 text-left font-medium">Invoice #</th>
-                        <th className="px-4 py-2 text-left font-medium">Amount</th>
-                        <th className="px-4 py-2 text-left font-medium">Status</th>
-                        <th className="px-4 py-2 text-left font-medium">Due Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoices.map((inv) => (
-                        <tr key={inv.id} className="border-b last:border-0">
-                          <td className="px-4 py-2 font-medium">
-                            {inv.invoice_number || inv.id.slice(0, 8)}
-                          </td>
-                          <td className="px-4 py-2 font-medium">
-                            {formatCents(inv.total_cents)}
-                          </td>
-                          <td className="px-4 py-2">
-                            <Badge
-                              variant={
-                                inv.status === "paid"
-                                  ? "default"
-                                  : inv.status === "overdue"
-                                    ? "destructive"
-                                    : "secondary"
-                              }
-                            >
-                              {inv.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {inv.due_date
-                              ? new Date(inv.due_date).toLocaleDateString()
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="space-y-3">
+                {department.recentHires.map((hire) => (
+                  <div key={hire.name} className="flex items-start gap-2">
+                    <UserPlus className="h-4 w-4 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">{hire.name}</p>
+                      <p className="text-xs text-muted-foreground">{hire.role}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(hire.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <Button className="w-full" size="sm">
+                  <Briefcase className="mr-1.5 h-3.5 w-3.5" />
+                  Create Job Posting
+                </Button>
+                <Button variant="outline" className="w-full" size="sm">
+                  <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
+                  View Analytics
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

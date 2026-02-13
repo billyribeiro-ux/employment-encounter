@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Wallet, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useMemo } from "react";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Download,
+  Calendar,
+  Briefcase,
+  Building2,
+  Users,
+  PieChart,
+  Target,
+  ArrowUpRight,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/dashboard/search-input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -15,285 +29,271 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { exportToCSV } from "@/lib/utils";
-import { useExpenses, useDeleteExpense } from "@/lib/hooks/use-expenses";
-import { useDebounce } from "@/lib/hooks/use-debounce";
-import { CreateExpenseDialog } from "@/components/dashboard/create-expense-dialog";
-import { TableSkeleton } from "@/components/dashboard/table-skeleton";
-import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-function formatCents(cents: number): string {
+interface BudgetCategory {
+  name: string;
+  allocated: number;
+  spent: number;
+  items: { description: string; amount: number; date: string }[];
+}
+
+const BUDGET_DATA: BudgetCategory[] = [
+  {
+    name: "Job Board Postings",
+    allocated: 25000,
+    spent: 18500,
+    items: [
+      { description: "LinkedIn Premium Job Slots (Q1)", amount: 8000, date: "2026-01-15" },
+      { description: "Indeed Sponsored Posts", amount: 5500, date: "2026-01-20" },
+      { description: "Stack Overflow Jobs", amount: 3000, date: "2026-02-01" },
+      { description: "AngelList Posting", amount: 2000, date: "2026-02-05" },
+    ],
+  },
+  {
+    name: "Recruiting Agency Fees",
+    allocated: 60000,
+    spent: 35000,
+    items: [
+      { description: "TechRecruit Inc. - Senior Engineer", amount: 20000, date: "2026-01-10" },
+      { description: "DesignHire - Product Designer", amount: 15000, date: "2026-02-01" },
+    ],
+  },
+  {
+    name: "Employer Branding",
+    allocated: 15000,
+    spent: 8200,
+    items: [
+      { description: "Career page redesign", amount: 5000, date: "2026-01-05" },
+      { description: "Employee testimonial videos", amount: 2200, date: "2026-01-25" },
+      { description: "Glassdoor enhanced profile", amount: 1000, date: "2026-02-01" },
+    ],
+  },
+  {
+    name: "Tools & Software",
+    allocated: 20000,
+    spent: 14400,
+    items: [
+      { description: "Talent OS Platform (Annual)", amount: 9600, date: "2026-01-01" },
+      { description: "Background check service", amount: 2400, date: "2026-01-01" },
+      { description: "Video interview platform", amount: 2400, date: "2026-01-01" },
+    ],
+  },
+  {
+    name: "Events & Campus Recruiting",
+    allocated: 30000,
+    spent: 12000,
+    items: [
+      { description: "Tech Conference Booth - SXSW", amount: 8000, date: "2026-03-01" },
+      { description: "University career fair - Stanford", amount: 2500, date: "2026-02-15" },
+      { description: "Meetup sponsorship", amount: 1500, date: "2026-02-01" },
+    ],
+  },
+  {
+    name: "Relocation & Signing Bonuses",
+    allocated: 50000,
+    spent: 30000,
+    items: [
+      { description: "Signing bonus - Senior Engineer", amount: 15000, date: "2026-01-20" },
+      { description: "Relocation package - Product Manager", amount: 10000, date: "2026-02-01" },
+      { description: "Signing bonus - Data Scientist", amount: 5000, date: "2026-02-10" },
+    ],
+  },
+];
+
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(cents / 100);
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
-export default function ExpensesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("date");
-  const [sortOrder, setSortOrder] = useState<string>("desc");
-  const [perPage, setPerPage] = useState(25);
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useExpenses({
-    page,
-    per_page: perPage,
-    search: debouncedSearch || undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    sort: sortBy,
-    order: sortOrder,
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
-  const deleteExpense = useDeleteExpense();
+}
 
-  function toggleSort(col: string) {
-    if (sortBy === col) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(col);
-      setSortOrder(col === "date" ? "desc" : "asc");
-    }
-    setPage(1);
-  }
+export default function HiringBudgetPage() {
+  const [period, setPeriod] = useState("q1_2026");
 
-  function sortIcon(col: string) {
-    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
-    return sortOrder === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
-  }
+  const totalAllocated = BUDGET_DATA.reduce((sum, cat) => sum + cat.allocated, 0);
+  const totalSpent = BUDGET_DATA.reduce((sum, cat) => sum + cat.spent, 0);
+  const totalRemaining = totalAllocated - totalSpent;
+  const utilizationPercent = Math.round((totalSpent / totalAllocated) * 100);
 
-  const expenses = data?.data ?? [];
-  const meta = data?.meta;
-
-  async function handleDelete(id: string) {
-    try {
-      await deleteExpense.mutateAsync(id);
-      toast.success("Expense deleted");
-    } catch {
-      toast.error("Failed to delete expense");
-    }
-  }
+  const allExpenses = BUDGET_DATA.flatMap(cat =>
+    cat.items.map(item => ({ ...item, category: cat.name }))
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Hiring Budget</h1>
           <p className="text-muted-foreground">
-            Track firm and client expenses
+            Track recruiting spend, allocations, and cost-per-hire metrics
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportToCSV(
-            expenses.map((exp) => ({
-              date: exp.date,
-              category: exp.category,
-              description: exp.description,
-              amount: formatCents(exp.amount_cents),
-              is_reimbursable: exp.is_reimbursable,
-              status: exp.status,
-            })),
-            "expenses"
-          )}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
+        <div className="flex items-center gap-2">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[140px]">
+              <Calendar className="mr-1.5 h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="q1_2026">Q1 2026</SelectItem>
+              <SelectItem value="q4_2025">Q4 2025</SelectItem>
+              <SelectItem value="annual_2026">FY 2026</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm">
+            <Download className="mr-1.5 h-4 w-4" />
+            Export
           </Button>
-          <CreateExpenseDialog>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Record Expense
-            </Button>
-          </CreateExpenseDialog>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap">
-        <SearchInput
-          value={searchQuery}
-          onChange={(v) => { setSearchQuery(v); setPage(1); }}
-          placeholder="Search expenses..."
-        />
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="reimbursed">Reimbursed</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        {(searchQuery || statusFilter !== "all" || sortBy !== "date" || sortOrder !== "desc") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 text-muted-foreground"
-            onClick={() => { setSearchQuery(""); setStatusFilter("all"); setSortBy("date"); setSortOrder("desc"); setPage(1); }}
-          >
-            <RotateCcw className="mr-1 h-3 w-3" />
-            Reset
-          </Button>
-        )}
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Total Budget</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalAllocated)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Annual allocation</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Spent</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalSpent)}</p>
+              <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                <ArrowUpRight className="h-3 w-3" />
+                {utilizationPercent}% utilized
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(totalRemaining)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{100 - utilizationPercent}% available</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Cost per Hire</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalSpent / 89)}</p>
+              <div className="mt-1 flex items-center gap-1 text-xs text-green-600">
+                <TrendingDown className="h-3 w-3" />
+                12% lower than last quarter
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            All Expenses
-            {meta && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({meta.total})
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <TableSkeleton columns={6} rows={5} />
-          ) : isError ? (
-            <div className="text-center py-12">
-              <p className="text-sm text-destructive">
-                Failed to load expenses. Make sure the backend is running.
-              </p>
-            </div>
-          ) : expenses.length === 0 && debouncedSearch ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                No expenses match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          ) : expenses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Wallet className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">No expenses yet</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                Record your first expense to start tracking firm and client costs.
-              </p>
-              <CreateExpenseDialog>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Record Expense
-                </Button>
-              </CreateExpenseDialog>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm min-w-[700px]">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("date")}>
-                        <span className="flex items-center">Date{sortIcon("date")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("category")}>
-                        <span className="flex items-center">Category{sortIcon("category")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("description")}>
-                        <span className="flex items-center">Description{sortIcon("description")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium cursor-pointer select-none" onClick={() => toggleSort("amount_cents")}>
-                        <span className="flex items-center justify-end">Amount{sortIcon("amount_cents")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium">Reimbursable</th>
-                      <th className="px-4 py-3 text-right font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.map((exp) => (
-                      <tr
-                        key={exp.id}
-                        className="border-b last:border-0 hover:bg-muted/30"
-                      >
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {new Date(exp.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary">{exp.category}</Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          {exp.description || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {formatCents(exp.amount_cents)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={exp.is_reimbursable ? "default" : "outline"}
-                          >
-                            {exp.is_reimbursable ? "Yes" : "No"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <ConfirmDialog
-                            title="Delete expense?"
-                            description="This will permanently delete this expense entry."
-                            actionLabel="Delete"
-                            onConfirm={() => handleDelete(exp.id)}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              disabled={deleteExpense.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </ConfirmDialog>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      <Tabs defaultValue="breakdown" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="breakdown">Budget Breakdown</TabsTrigger>
+          <TabsTrigger value="expenses">All Expenses</TabsTrigger>
+        </TabsList>
 
-              {meta && (meta.total_pages > 1 || meta.total > 10) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
-                    </p>
-                    <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                      <SelectTrigger className="w-[70px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= meta.total_pages}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="breakdown" className="space-y-4">
+          {BUDGET_DATA.map((cat, idx) => {
+            const percentUsed = Math.round((cat.spent / cat.allocated) * 100);
+            const isOverBudget = cat.spent > cat.allocated;
+            return (
+              <motion.div
+                key={cat.name}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.03 }}
+              >
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{cat.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={isOverBudget ? "destructive" : percentUsed > 80 ? "secondary" : "outline"}>
+                          {percentUsed}% used
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {formatCurrency(cat.spent)} / {formatCurrency(cat.allocated)}
+                        </span>
+                      </div>
+                    </div>
+                    <Progress
+                      value={Math.min(percentUsed, 100)}
+                      className={`h-2 ${isOverBudget ? "[&>div]:bg-destructive" : ""}`}
+                    />
+
+                    <div className="mt-3 space-y-1">
+                      {cat.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{item.description}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                            <span className="font-medium">{formatCurrency(item.amount)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <Card>
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allExpenses.map((expense, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{expense.description}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{expense.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(expense.date)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(expense.amount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

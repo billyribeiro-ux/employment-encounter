@@ -30,6 +30,14 @@ mod video_rooms;
 mod workflows;
 mod ws;
 
+// Advanced hiring modules
+mod activity;
+mod automations;
+mod career_page;
+mod email_templates;
+mod question_bank;
+mod saved_jobs;
+
 use axum::{
     extract::Request,
     http::{header, HeaderValue, Method},
@@ -346,6 +354,40 @@ async fn main() -> anyhow::Result<()> {
         .route("/team/utilization", get(reports::handler::get_team_utilization))
         // Payments
         .route("/payments/create-intent", post(payments::handler::create_payment_intent))
+        // Saved Jobs (candidate)
+        .route("/saved-jobs", get(saved_jobs::handler::list_saved_jobs))
+        .route("/saved-jobs", post(saved_jobs::handler::save_job))
+        .route("/saved-jobs/{id}", delete(saved_jobs::handler::unsave_job))
+        // Email Templates
+        .route("/email-templates", get(email_templates::handler::list_templates))
+        .route("/email-templates", post(email_templates::handler::create_template))
+        .route("/email-templates/{id}", get(email_templates::handler::get_template))
+        .route("/email-templates/{id}", put(email_templates::handler::update_template))
+        .route("/email-templates/{id}", delete(email_templates::handler::delete_template))
+        .route("/email-templates/{id}/send", post(email_templates::handler::send_template))
+        // Career Page
+        .route("/career-page", get(career_page::handler::get_career_page))
+        .route("/career-page", put(career_page::handler::update_career_page))
+        .route("/career-page/publish", post(career_page::handler::publish_career_page))
+        // Question Bank
+        .route("/questions", get(question_bank::handler::list_questions))
+        .route("/questions", post(question_bank::handler::create_question))
+        .route("/questions/{id}", put(question_bank::handler::update_question))
+        .route("/questions/{id}", delete(question_bank::handler::delete_question))
+        .route("/question-sets", get(question_bank::handler::list_question_sets))
+        .route("/question-sets", post(question_bank::handler::create_question_set))
+        .route("/question-sets/{id}", put(question_bank::handler::update_question_set))
+        .route("/question-sets/{id}", delete(question_bank::handler::delete_question_set))
+        // Automation Rules
+        .route("/automations", get(automations::handler::list_rules))
+        .route("/automations", post(automations::handler::create_rule))
+        .route("/automations/{id}", put(automations::handler::update_rule))
+        .route("/automations/{id}", delete(automations::handler::delete_rule))
+        .route("/automations/{id}/toggle", post(automations::handler::toggle_rule))
+        .route("/automations/log", get(automations::handler::list_execution_log))
+        // Activity Log
+        .route("/activity", get(activity::handler::list_activity))
+        .route("/activity/stats", get(activity::handler::get_activity_stats))
         // Audit logs (admin only)
         .route("/audit-logs", get(middleware::audit_handler::list_audit_logs))
         // MFA

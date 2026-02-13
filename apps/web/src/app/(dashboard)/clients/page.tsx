@@ -1,11 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Plus, Search, Users, Trash2, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Download } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  Search,
+  Users,
+  Briefcase,
+  MapPin,
+  Globe,
+  Edit,
+  Trash2,
+  RotateCcw,
+  Loader2,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/dashboard/search-input";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,271 +28,207 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useClients, useDeleteClient } from "@/lib/hooks/use-clients";
-import { useDebounce } from "@/lib/hooks/use-debounce";
-import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
-import { exportToCSV } from "@/lib/utils";
-import { toast } from "sonner";
-import { TableSkeleton } from "@/components/dashboard/table-skeleton";
-import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
-export default function ClientsPage() {
+// Departments for organizational structure
+interface Department {
+  id: string;
+  name: string;
+  description: string;
+  head: string;
+  headcount: number;
+  openPositions: number;
+  location: string;
+  budget: string;
+}
+
+const SAMPLE_DEPARTMENTS: Department[] = [
+  { id: "1", name: "Engineering", description: "Software development and infrastructure", head: "Jane Smith", headcount: 45, openPositions: 8, location: "San Francisco, CA", budget: "$2.4M" },
+  { id: "2", name: "Product Design", description: "UX/UI design and user research", head: "Alex Kim", headcount: 12, openPositions: 3, location: "San Francisco, CA", budget: "$800K" },
+  { id: "3", name: "Marketing", description: "Brand, growth, and content marketing", head: "Maria Garcia", headcount: 18, openPositions: 2, location: "New York, NY", budget: "$1.2M" },
+  { id: "4", name: "Sales", description: "Enterprise and mid-market sales", head: "Tom Wilson", headcount: 25, openPositions: 5, location: "New York, NY", budget: "$1.8M" },
+  { id: "5", name: "People Operations", description: "HR, recruiting, and employee experience", head: "Sarah Chen", headcount: 8, openPositions: 1, location: "San Francisco, CA", budget: "$500K" },
+  { id: "6", name: "Customer Success", description: "Client onboarding and retention", head: "David Park", headcount: 15, openPositions: 4, location: "Austin, TX", budget: "$900K" },
+  { id: "7", name: "Finance", description: "Financial planning, accounting, and compliance", head: "Lisa Wang", headcount: 6, openPositions: 1, location: "San Francisco, CA", budget: "$400K" },
+  { id: "8", name: "Data Science", description: "Analytics, ML, and business intelligence", head: "Chris Lee", headcount: 10, openPositions: 3, location: "Remote", budget: "$1.1M" },
+];
+
+export default function DepartmentsPage() {
+  const [departments] = useState(SAMPLE_DEPARTMENTS);
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("name");
-  const [sortOrder, setSortOrder] = useState<string>("asc");
-  const [perPage, setPerPage] = useState(25);
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useClients({
-    page,
-    per_page: perPage,
-    search: debouncedSearch || undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    sort: sortBy,
-    order: sortOrder,
-  });
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  function toggleSort(col: string) {
-    if (sortBy === col) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(col);
-      setSortOrder("asc");
-    }
-    setPage(1);
-  }
+  const filtered = departments.filter(
+    d => d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         d.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  function sortIcon(col: string) {
-    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
-    return sortOrder === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
-  }
-  const deleteClient = useDeleteClient();
-
-  const clients = data?.data ?? [];
-  const meta = data?.meta;
+  const totalHeadcount = departments.reduce((sum, d) => sum + d.headcount, 0);
+  const totalOpenPositions = departments.reduce((sum, d) => sum + d.openPositions, 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Departments</h1>
           <p className="text-muted-foreground">
-            Manage your firm&apos;s client relationships
+            Manage organizational departments and hiring allocation
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportToCSV(
-            clients.map((c) => ({
-              name: c.name,
-              email: c.email,
-              phone: c.phone,
-              business_type: c.business_type,
-              status: c.status,
-              created_at: c.created_at,
-            })),
-            "clients"
-          )}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <CreateClientDialog>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Client
-            </Button>
-          </CreateClientDialog>
-        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Add Department
+        </Button>
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap">
-        <SearchInput
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Departments</p>
+                <p className="text-2xl font-bold">{departments.length}</p>
+              </div>
+              <Building2 className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Headcount</p>
+                <p className="text-2xl font-bold">{totalHeadcount}</p>
+              </div>
+              <Users className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Open Positions</p>
+                <p className="text-2xl font-bold">{totalOpenPositions}</p>
+              </div>
+              <Briefcase className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          placeholder="Search departments..."
           value={searchQuery}
-          onChange={(v) => { setSearchQuery(v); setPage(1); }}
-          placeholder="Search clients..."
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
-        {(searchQuery || statusFilter !== "all" || sortBy !== "name" || sortOrder !== "asc") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 text-muted-foreground"
-            onClick={() => { setSearchQuery(""); setStatusFilter("all"); setSortBy("name"); setSortOrder("asc"); setPage(1); }}
-          >
-            <RotateCcw className="mr-1 h-3 w-3" />
-            Reset
-          </Button>
-        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            All Clients
-            {meta && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({meta.total})
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <TableSkeleton columns={6} rows={5} />
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-sm text-destructive">
-                Failed to load clients. Make sure the backend is running.
-              </p>
-            </div>
-          ) : clients.length === 0 && debouncedSearch ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                No clients match &ldquo;{debouncedSearch}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          ) : clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Users className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">No clients yet</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                Add your first client to get started. You can also import
-                clients from a CSV file or sync from QuickBooks.
-              </p>
-              <div className="flex gap-2">
-                <CreateClientDialog>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Client
-                  </Button>
-                </CreateClientDialog>
-                <Button variant="outline">Import CSV</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm min-w-[600px]">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("name")}>
-                        <span className="flex items-center">Name{sortIcon("name")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("business_type")}>
-                        <span className="flex items-center">Type{sortIcon("business_type")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("status")}>
-                        <span className="flex items-center">Status{sortIcon("status")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-left font-medium">Fiscal Year</th>
-                      <th className="px-4 py-3 text-left font-medium cursor-pointer select-none" onClick={() => toggleSort("created_at")}>
-                        <span className="flex items-center">Created{sortIcon("created_at")}</span>
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.map((client) => (
-                      <tr key={client.id} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
-                        <td className="px-4 py-3 font-medium">
-                          <Link href={`/clients/${client.id}`} className="hover:underline">
-                            {client.name}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{client.business_type}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={client.status === "active" ? "default" : "secondary"}>
-                            {client.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{client.fiscal_year_end}</td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {new Date(client.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <ConfirmDialog
-                            title="Delete client?"
-                            description={`This will permanently delete "${client.name}" and all associated data.`}
-                            actionLabel="Delete"
-                            onConfirm={() => {
-                              deleteClient.mutate(client.id, {
-                                onSuccess: () => toast.success("Client deleted"),
-                                onError: () => toast.error("Failed to delete client"),
-                              });
-                            }}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              disabled={deleteClient.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </ConfirmDialog>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      {/* Departments Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((dept, idx) => (
+          <motion.div
+            key={dept.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.03 }}
+          >
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-semibold text-lg">{dept.name}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {dept.openPositions} open
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">{dept.description}</p>
 
-              {meta && (meta.total_pages > 1 || meta.total > 10) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {(meta.page - 1) * meta.per_page + 1}–{Math.min(meta.page * meta.per_page, meta.total)} of {meta.total} results
-                    </p>
-                    <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
-                      <SelectTrigger className="w-[70px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <Separator className="my-3" />
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Department Head</span>
+                    <span className="font-medium">{dept.head}</span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= meta.total_pages}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Team Size</span>
+                    <span className="font-medium">{dept.headcount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> Location
+                    </span>
+                    <span className="font-medium">{dept.location}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Hiring Budget</span>
+                    <span className="font-medium">{dept.budget}</span>
                   </div>
                 </div>
-              )}
+
+                <div className="mt-4 flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Briefcase className="mr-1.5 h-3.5 w-3.5" />
+                    View Jobs
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Create Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Department</DialogTitle>
+            <DialogDescription>Create a new department in your organization.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Department Name</Label>
+              <Input placeholder="e.g., Engineering" className="mt-1" />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <Label>Description</Label>
+              <Textarea placeholder="What does this department do?" rows={2} className="mt-1" />
+            </div>
+            <div>
+              <Label>Department Head</Label>
+              <Input placeholder="Name of department head" className="mt-1" />
+            </div>
+            <div>
+              <Label>Location</Label>
+              <Input placeholder="e.g., San Francisco, CA" className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setCreateDialogOpen(false); toast.success("Department created"); }}>
+              Create Department
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,6 +24,17 @@ import {
   Bell,
   Plus,
   CalendarClock,
+  Brain,
+  GitCompare,
+  FileSearch,
+  MessageCircleQuestion,
+  Zap,
+  Heart,
+  Globe,
+  Mail,
+  Puzzle,
+  Upload,
+  Activity,
 } from "lucide-react";
 
 interface CommandItem {
@@ -69,6 +80,16 @@ export function CommandPalette() {
     { id: "talent", label: "Go to Talent Discovery", icon: <Search className="h-4 w-4" />, shortcut: "G T", action: () => navigate("/talent"), group: "Hiring" },
     { id: "offers", label: "Go to Offers", icon: <FileSignature className="h-4 w-4" />, shortcut: "G O", action: () => navigate("/hiring/offers"), group: "Hiring" },
     { id: "create-job", label: "Create New Job", icon: <Plus className="h-4 w-4" />, action: () => navigate("/hiring/jobs/new"), group: "Hiring" },
+    { id: "templates", label: "Go to Email Templates", icon: <Mail className="h-4 w-4" />, action: () => navigate("/hiring/templates"), group: "Hiring" },
+    { id: "career-page", label: "Go to Career Page", icon: <Globe className="h-4 w-4" />, action: () => navigate("/hiring/career-page"), group: "Hiring" },
+    { id: "team", label: "Go to Hiring Team", icon: <Users className="h-4 w-4" />, action: () => navigate("/hiring/team"), group: "Hiring" },
+    // AI & Tools
+    { id: "matching", label: "Go to AI Matching", icon: <Brain className="h-4 w-4" />, action: () => navigate("/hiring/matching"), group: "AI & Tools" },
+    { id: "compare", label: "Go to Compare Candidates", icon: <GitCompare className="h-4 w-4" />, action: () => navigate("/hiring/compare"), group: "AI & Tools" },
+    { id: "resume-parser", label: "Go to Resume Parser", icon: <FileSearch className="h-4 w-4" />, action: () => navigate("/hiring/resume-parser"), group: "AI & Tools" },
+    { id: "questions", label: "Go to Question Bank", icon: <MessageCircleQuestion className="h-4 w-4" />, action: () => navigate("/hiring/questions"), group: "AI & Tools" },
+    { id: "automations", label: "Go to Automations", icon: <Zap className="h-4 w-4" />, action: () => navigate("/hiring/automations"), group: "AI & Tools" },
+    { id: "diversity", label: "Go to Diversity Dashboard", icon: <Heart className="h-4 w-4" />, action: () => navigate("/hiring/diversity"), group: "AI & Tools" },
     // Communication
     { id: "conversations", label: "Go to Conversations", icon: <MessageSquare className="h-4 w-4" />, shortcut: "G C", action: () => navigate("/conversations"), group: "Communication" },
     { id: "scheduling", label: "Go to Scheduling", icon: <CalendarClock className="h-4 w-4" />, shortcut: "G S", action: () => navigate("/scheduling"), group: "Communication" },
@@ -79,6 +100,9 @@ export function CommandPalette() {
     { id: "workflows", label: "Go to Workflows", icon: <Clock className="h-4 w-4" />, action: () => navigate("/workflows"), group: "Operations" },
     { id: "tasks", label: "Go to Tasks", icon: <Clock className="h-4 w-4" />, action: () => navigate("/tasks"), group: "Operations" },
     { id: "calendar", label: "Go to Calendar", icon: <Calendar className="h-4 w-4" />, action: () => navigate("/calendar"), group: "Operations" },
+    { id: "activity", label: "Go to Activity Log", icon: <Activity className="h-4 w-4" />, action: () => navigate("/hiring/activity"), group: "Operations" },
+    { id: "integrations", label: "Go to Integrations", icon: <Puzzle className="h-4 w-4" />, action: () => navigate("/hiring/integrations"), group: "Operations" },
+    { id: "import", label: "Go to Bulk Import", icon: <Upload className="h-4 w-4" />, action: () => navigate("/hiring/import"), group: "Operations" },
     // Insights
     { id: "analytics", label: "Go to Analytics", icon: <BarChart3 className="h-4 w-4" />, action: () => navigate("/analytics"), group: "Insights" },
     { id: "reports", label: "Go to Reports", icon: <FileText className="h-4 w-4" />, action: () => navigate("/reports"), group: "Insights" },
@@ -115,7 +139,7 @@ export function CommandPalette() {
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
               No results found.
             </Command.Empty>
-            {["Hiring", "Communication", "Operations", "Insights", "Account"].map((group) => {
+            {["Hiring", "AI & Tools", "Communication", "Operations", "Insights", "Account"].map((group) => {
               const groupCommands = commands.filter((c) => c.group === group);
               if (groupCommands.length === 0) return null;
               return (
