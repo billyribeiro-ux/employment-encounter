@@ -1,18 +1,16 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: talent_os
-      POSTGRES_USER: talent_os
-      POSTGRES_PASSWORD: talent_os_dev
+      POSTGRES_DB: cpa_dev
+      POSTGRES_USER: cpa
+      POSTGRES_PASSWORD: cpa_dev_password
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U talent_os"]
+      test: [ "CMD-SHELL", "pg_isready -U cpa -d cpa_dev" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -22,7 +20,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -32,31 +30,19 @@ services:
       context: ../..
       dockerfile: infra/docker/Dockerfile.api
     environment:
-      DATABASE_URL: postgres://talent_os:talent_os_dev@postgres:5432/talent_os
+      DATABASE_URL: postgres://cpa:cpa_dev_password@postgres:5432/cpa_dev
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-secret-change-in-production
+      JWT_SECRET: dev-secret-change-in-production-must-be-32-chars
       HOST: 0.0.0.0
       PORT: "8080"
       CORS_ORIGIN: http://localhost:3000
-      STRIPE_SECRET_KEY: sk_test_placeholder
-      STRIPE_WEBHOOK_SECRET: whsec_placeholder
-      KMS_MASTER_KEY: dev-kms-key-32-bytes-long-min!!
+      RUST_LOG: info
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-
-  worker:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.worker
-    environment:
-      DATABASE_URL: postgres://talent_os:talent_os_dev@postgres:5432/talent_os
-    depends_on:
-      postgres:
         condition: service_healthy
 
   web:

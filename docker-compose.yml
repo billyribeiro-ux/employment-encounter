@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cpa -d cpa_dev"]
+      test: [ "CMD-SHELL", "pg_isready -U cpa -d cpa_dev" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -48,7 +48,7 @@ services:
       TYPESENSE_API_KEY: cpa_dev_typesense_key
       TYPESENSE_ENABLE_CORS: "true"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8108/health"]
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8108/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,7 +73,7 @@ services:
     volumes:
       - localstackdata:/var/lib/localstack
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,6 +83,31 @@ services:
         limits:
           memory: 512M
           cpus: "0.5"
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+    environment:
+      DATABASE_URL: postgres://cpa:cpa_dev_password@postgres:5432/cpa_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production-must-be-32-chars
+      HOST: 0.0.0.0
+      PORT: "8080"
+      CORS_ORIGIN: http://localhost:3000
+      RUST_LOG: info
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
 volumes:
   pgdata:

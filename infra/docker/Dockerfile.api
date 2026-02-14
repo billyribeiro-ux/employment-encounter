@@ -1,31 +1,30 @@
-# Build stage
-FROM rust:1.77-slim-bookworm AS builder
+# ── Build stage ──────────────────────────────────────────
+FROM rust:1.83-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install dependencies
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
-# Copy manifests
+# Copy manifests first for dependency caching
 COPY apps/api-rust/Cargo.toml apps/api-rust/Cargo.lock ./
 
-# Create dummy main for dependency caching
+# Dummy build to cache deps
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release && rm -rf src
 
-# Copy source
+# Copy real source + migrations
 COPY apps/api-rust/src ./src
 COPY apps/api-rust/migrations ./migrations
 
-# Build actual binary
+# Touch main.rs so cargo detects the change
 RUN touch src/main.rs && cargo build --release
 
-# Runtime stage
+# ── Runtime stage ────────────────────────────────────────
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 curl && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/cpa_backend /usr/local/bin/talent-os-api
+COPY --from=builder /app/target/release/cpa-backend /usr/local/bin/cpa-backend
 COPY --from=builder /app/migrations /app/migrations
 
 WORKDIR /app
@@ -33,4 +32,7 @@ WORKDIR /app
 ENV RUST_LOG=info
 EXPOSE 8080
 
-CMD ["talent-os-api"]
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["cpa-backend"]

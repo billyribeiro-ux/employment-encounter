@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Node
+apps/web/node_modules
+apps/web/.next
+apps/web/out
+
+# Rust build artifacts
+apps/api-rust/target
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docker
+docker-compose*.yml
+
+# Misc
+.env*
+*.md
+.windsurf
+infra/docker/docker-compose.yml
