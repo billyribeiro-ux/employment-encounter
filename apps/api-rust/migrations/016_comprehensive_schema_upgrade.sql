@@ -59,14 +59,14 @@ CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses (tenant_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_tasks_kanban ON tasks (tenant_id, status, sort_order);
 
 -- Compliance deadlines: upcoming queries
-CREATE INDEX IF NOT EXISTS idx_deadlines_upcoming ON compliance_deadlines (tenant_id, due_date) WHERE is_completed = FALSE;
+CREATE INDEX IF NOT EXISTS idx_deadlines_upcoming ON compliance_deadlines (tenant_id, due_date) WHERE completed_at IS NULL;
 
 -- ==========================================
 -- 5. CHECK constraints for data integrity
 -- ==========================================
--- Time entries: hours must be positive
+-- Time entries: duration must be positive
 DO $$ BEGIN
-    ALTER TABLE time_entries ADD CONSTRAINT chk_time_entries_hours CHECK (hours_decimal > 0);
+    ALTER TABLE time_entries ADD CONSTRAINT chk_time_entries_duration CHECK (duration_minutes > 0);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

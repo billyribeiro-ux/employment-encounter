@@ -1,5 +1,5 @@
 # ── Build stage ──────────────────────────────────────────
-FROM rust:latest AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -33,6 +33,6 @@ ENV RUST_LOG=info
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8080/api/v1/health || exit 1
 
 CMD ["cpa-backend"]

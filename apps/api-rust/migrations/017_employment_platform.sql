@@ -1102,7 +1102,7 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
     UNIQUE(tenant_id, key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_idempotency_keys_lookup ON idempotency_keys(tenant_id, key) WHERE expires_at > NOW();
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_lookup ON idempotency_keys(tenant_id, key) WHERE expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expire ON idempotency_keys(expires_at);
 
 -- Notification events (all notification dispatches)

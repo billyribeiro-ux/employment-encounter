@@ -93,11 +93,13 @@ CREATE INDEX IF NOT EXISTS idx_expenses_tenant_client ON expenses(tenant_id, cli
 
 -- RLS for security_events
 ALTER TABLE security_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS security_events_tenant_isolation ON security_events;
 CREATE POLICY security_events_tenant_isolation ON security_events
     USING (tenant_id::TEXT = current_setting('app.current_tenant', true));
 
 -- RLS for payments
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS payments_tenant_isolation ON payments;
 CREATE POLICY payments_tenant_isolation ON payments
     USING (tenant_id::TEXT = current_setting('app.current_tenant', true));
 
