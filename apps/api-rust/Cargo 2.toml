@@ -1,0 +1,75 @@
+[package]
+name = "cpa-backend"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8", features = ["ws", "multipart", "macros"] }
+axum-extra = { version = "0.10", features = ["cookie", "typed-header"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "compression-gzip", "trace", "timeout", "request-id", "set-header", "limit", "propagate-header"] }
+hyper = { version = "1.0", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
+
+# Redis
+fred = { version = "9", features = ["enable-rustls"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Auth
+jsonwebtoken = "9"
+argon2 = "0.5"
+totp-rs = { version = "5", features = ["gen_secret", "otpauth", "qr"] }
+rand = "0.8"
+
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
+# Config
+dotenvy = "0.15"
+envy = "0.4"
+
+# Logging / Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+time = "0.3"
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# AWS
+aws-sdk-s3 = "1"
+aws-sdk-kms = "1"
+aws-config = "1"
+
+# HTTP client (for external APIs)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
+# Hex encoding
+hex = "0.4"
+
+# Slug generation
+slug = "0.1"
+
+# Stripe
+stripe-rust = { package = "async-stripe", version = "0.39", features = ["runtime-tokio-hyper"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+axum-test = "16"
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
+tokio = { version = "1", features = ["full", "test-util"] }
