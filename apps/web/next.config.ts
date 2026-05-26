@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -87,4 +88,21 @@ const nextConfig: NextConfig = {
   compress: true,
 };
 
-export default withBundleAnalyzer(nextConfig);
+// Sentry wraps the config to: (a) auto-instrument server/client/edge
+// bundles, (b) upload sourcemaps on prod build (when SENTRY_AUTH_TOKEN
+// is set), (c) tunnel events to bypass ad-blockers. All of these are
+// gracefully skipped when their env vars are absent, so dev + CI cost
+// nothing.
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  // Strip sourcemap comments from the deployed bundle so attackers can't
+  // pull symbol-rich maps off the CDN. Cosmetic, not a security control.
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  // Forward client errors that browser ad-blockers might otherwise
+  // swallow. Only matters when DSN is set.
+  tunnelRoute: process.env.NEXT_PUBLIC_SENTRY_DSN ? "/monitoring" : undefined,
+  disableLogger: true,
+});

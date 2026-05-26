@@ -9,6 +9,7 @@
 // the root layout when an error escalates to it.
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export default function GlobalError({
   error,
@@ -19,7 +20,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[Talent OS] Root-level error:", error);
-    // Hook a Sentry/error-tracking call in here once wired.
+    Sentry.captureException(error);
   }, [error]);
 
   return (

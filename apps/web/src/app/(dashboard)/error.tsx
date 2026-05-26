@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import * as Sentry from "@sentry/nextjs";
 
 export default function DashboardError({
   error,
@@ -15,6 +16,7 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     console.error("Dashboard error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

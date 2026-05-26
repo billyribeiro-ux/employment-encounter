@@ -111,20 +111,52 @@ async fn security_headers(req: Request, next: Next) -> Response {
     response
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     // Load .env file
     dotenvy::dotenv().ok();
 
-    // Initialize tracing
+    // Sentry must be initialized BEFORE the tokio runtime starts so its
+    // global hub captures panics from worker threads. The guard must be
+    // held for the lifetime of the process — drop on shutdown flushes
+    // queued events. When SENTRY_DSN is unset, init is a cheap no-op.
+    let _sentry_guard = sentry::init(sentry::ClientOptions {
+        dsn: std::env::var("SENTRY_DSN")
+            .ok()
+            .and_then(|s| s.parse().ok()),
+        release: sentry::release_name!(),
+        environment: Some(
+            std::env::var("APP_ENV")
+                .unwrap_or_else(|_| "development".to_string())
+                .into(),
+        ),
+        // 10% sample rate for tracing; bump in prod once we know the volume.
+        traces_sample_rate: 0.1,
+        attach_stacktrace: true,
+        send_default_pii: false,
+        ..Default::default()
+    });
+
+    // tracing + sentry: ERROR-level events flow through to Sentry as
+    // issues; warn/info/debug stay local. This avoids spamming Sentry
+    // with low-signal logs.
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "talent_os_api=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
+        .with(sentry_tracing::layer())
         .init();
 
+    // Now start the async runtime. Returning a Result from sync main
+    // requires us to drive the runtime ourselves.
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(run())
+}
+
+async fn run() -> anyhow::Result<()> {
     // Load config
     let config = Config::from_env().expect("Failed to load configuration");
 
@@ -899,6 +931,11 @@ async fn main() -> anyhow::Result<()> {
         // responses propagate back out through every layer in reverse.
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
         .layer(PropagateRequestIdLayer::x_request_id())
+        // Sentry HTTP layer: attaches request context (method, path,
+        // headers, status) to any event captured during a request. Cheap
+        // no-op when SENTRY_DSN is unset.
+        .layer(sentry_tower::NewSentryLayer::new_from_top())
+        .layer(sentry_tower::SentryHttpLayer::new().enable_transaction())
         .layer(TraceLayer::new_for_http())
         .layer(prometheus_layer)
         .layer(cors)
