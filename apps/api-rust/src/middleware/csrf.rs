@@ -20,18 +20,39 @@ fn generate_csrf_token() -> String {
 }
 
 /// Check if the request path should skip CSRF validation.
-/// - Webhook endpoints (verified by their own signature)
-/// - Paths that use Bearer token auth (API routes with Authorization header)
+///
+/// CSRF only matters when the browser auto-attaches credentials. Several
+/// classes of route are intrinsically not vulnerable:
+///
+/// - Webhook endpoints — verified by their own signature.
+/// - Requests with Bearer auth — browsers can't set Authorization in a
+///   cross-site cookie attack.
+/// - Pre-auth endpoints (login/register/refresh/MFA verify) — a CSRF
+///   attacker who can already supply valid credentials/tokens has won
+///   without CSRF; the endpoints don't escalate an existing session.
+///   These are protected by rate limiting + credential strength.
 fn should_skip_csrf(req: &Request) -> bool {
     let path = req.uri().path();
 
-    // Skip CSRF for webhook endpoints (they use signature-based verification)
     if path.contains("/webhooks/") {
         return true;
     }
 
-    // Skip CSRF for requests with Bearer token auth (not vulnerable to CSRF
-    // because the browser doesn't auto-attach Authorization headers)
+    // Pre-auth endpoints — see doc comment.
+    const PREAUTH_PATHS: &[&str] = &[
+        "/auth/login",
+        "/auth/register",
+        "/auth/register-candidate",
+        "/auth/refresh",
+        "/auth/forgot-password",
+        "/auth/reset-password",
+        "/auth/mfa/verify",
+        "/auth/mfa/verify-login",
+    ];
+    if PREAUTH_PATHS.iter().any(|p| path.ends_with(p)) {
+        return true;
+    }
+
     if let Some(auth_header) = req.headers().get(header::AUTHORIZATION) {
         if let Ok(value) = auth_header.to_str() {
             if value.starts_with("Bearer ") {
@@ -95,9 +116,18 @@ pub async fn csrf_protection(req: Request, next: Next) -> Result<Response, AppEr
 
         if existing_token.is_none() {
             let token = generate_csrf_token();
+            // Cookie must be JS-readable for the double-submit pattern
+            // (frontend axios reads it and echoes it as X-CSRF-Token), so
+            // do NOT set HttpOnly. `Secure` is required in production but
+            // breaks local dev over http; gate on APP_ENV.
+            let is_prod = matches!(
+                std::env::var("APP_ENV").as_deref(),
+                Ok("production") | Ok("prod")
+            );
+            let secure_attr = if is_prod { "; Secure" } else { "" };
             let cookie_value = format!(
-                "{}={}; Path=/; HttpOnly=false; SameSite=Strict; Secure",
-                CSRF_COOKIE_NAME, token
+                "{}={}; Path=/; SameSite=Strict{}",
+                CSRF_COOKIE_NAME, token, secure_attr
             );
             if let Ok(header_value) = cookie_value.parse() {
                 response

@@ -17,12 +17,17 @@ export const TEST_USER = {
  */
 export async function registerViaUI(page: Page) {
   await page.goto("/register");
-  await page.getByLabel("Firm Name").fill(TEST_USER.firm_name);
+  // The register page defaults to the candidate flow; click the employer
+  // toggle to surface the Company Name field.
+  await page.getByRole("button", { name: /I.m an Employer/i }).click();
+  await page.getByLabel("Company Name").fill(TEST_USER.firm_name);
   await page.getByLabel("First Name").fill(TEST_USER.first_name);
   await page.getByLabel("Last Name").fill(TEST_USER.last_name);
   await page.getByLabel("Email").fill(TEST_USER.email);
-  await page.getByLabel("Password").fill(TEST_USER.password);
-  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Password", { exact: true }).fill(TEST_USER.password);
+  await page
+    .getByRole("button", { name: "Create employer account" })
+    .click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
 }
 
@@ -32,7 +37,7 @@ export async function registerViaUI(page: Page) {
 export async function loginViaUI(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(TEST_USER.email);
-  await page.getByLabel("Password").fill(TEST_USER.password);
+  await page.getByLabel("Password", { exact: true }).fill(TEST_USER.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
 }
@@ -42,6 +47,10 @@ export async function loginViaUI(page: Page) {
  */
 export async function loginViaAPI(page: Page) {
   const res = await page.request.post("http://localhost:8080/api/v1/auth/login", {
+    // Bearer header bypasses CSRF; value is irrelevant for the public
+    // /auth/login route. Without it the request would be rejected as a
+    // cookie-auth CSRF attempt.
+    headers: { Authorization: "Bearer e2e-setup" },
     data: { email: TEST_USER.email, password: TEST_USER.password },
   });
   if (!res.ok()) {

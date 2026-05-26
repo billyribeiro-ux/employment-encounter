@@ -207,7 +207,15 @@ async fn main() -> anyhow::Result<()> {
             Method::PATCH,
             Method::OPTIONS,
         ])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+        .allow_headers([
+            header::CONTENT_TYPE,
+            header::AUTHORIZATION,
+            header::ACCEPT,
+            "x-csrf-token".parse().expect("x-csrf-token header name"),
+            "idempotency-key"
+                .parse()
+                .expect("idempotency-key header name"),
+        ])
         .allow_credentials(true);
 
     // Authenticated routes (require JWT)

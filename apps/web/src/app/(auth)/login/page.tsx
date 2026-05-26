@@ -422,8 +422,8 @@ export default function LoginPage() {
                               Forgot password?
                             </Link>
                           </div>
-                          <FormControl>
-                            <div className="relative">
+                          <div className="relative">
+                            <FormControl>
                               <Input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
@@ -431,15 +431,16 @@ export default function LoginPage() {
                                 className="h-11 bg-muted/50 border-0 pr-10 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all"
                                 {...field}
                               />
+                            </FormControl>
                               <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
-                            </div>
-                          </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

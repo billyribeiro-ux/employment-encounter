@@ -2,15 +2,25 @@ import { TEST_USER } from "./fixtures/auth";
 
 const API = "http://localhost:8080/api/v1";
 
+// Bearer-auth requests are exempt from CSRF (browsers can't set the
+// Authorization header on a cross-site cookie attack, so CSRF doesn't
+// apply to that auth mode). Setup uses raw fetch without the axios
+// interceptor, so signal Bearer-auth here. The token value is irrelevant
+// — /auth/register and /auth/login are public routes with no auth check;
+// the header just suppresses CSRF.
+const SETUP_HEADERS = {
+  "Content-Type": "application/json",
+  Authorization: "Bearer e2e-setup",
+};
+
 /**
  * Runs once before all tests.
  * Registers the E2E test user via API (or confirms it already exists by logging in).
  */
 async function globalSetup() {
-  // 1. Try to register via API
   const regRes = await fetch(`${API}/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: SETUP_HEADERS,
     body: JSON.stringify({
       firm_name: TEST_USER.firm_name,
       first_name: TEST_USER.first_name,
@@ -25,10 +35,9 @@ async function globalSetup() {
     return;
   }
 
-  // 2. Registration failed (probably already exists) — verify by logging in
   const loginRes = await fetch(`${API}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: SETUP_HEADERS,
     body: JSON.stringify({
       email: TEST_USER.email,
       password: TEST_USER.password,

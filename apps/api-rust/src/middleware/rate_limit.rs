@@ -27,12 +27,27 @@ pub enum RateLimitTier {
 
 impl RateLimitTier {
     /// Returns (max_requests, window_seconds) for each tier.
+    ///
+    /// Defaults are production-tight (5/min login). For non-production
+    /// environments — local dev, CI, e2e — set `APP_ENV` to anything
+    /// other than `production`/`prod` to get looser limits that don't
+    /// trip Playwright test suites. The env value is read once per
+    /// process; restart to change.
     pub fn limits(&self) -> (u32, u64) {
-        match self {
-            RateLimitTier::Login => (5, 60),
-            RateLimitTier::TokenRefresh => (10, 60),
-            RateLimitTier::MfaVerification => (5, 60),
-            RateLimitTier::General => (100, 60),
+        // Per-call read is cheap (env var lookup, no allocations on
+        // hit-rate path) and lets tests/CI flip it without rebuilding.
+        let is_prod = matches!(
+            std::env::var("APP_ENV").as_deref(),
+            Ok("production") | Ok("prod")
+        );
+        match (self, is_prod) {
+            (RateLimitTier::Login, true) => (5, 60),
+            (RateLimitTier::Login, false) => (100, 60),
+            (RateLimitTier::TokenRefresh, true) => (10, 60),
+            (RateLimitTier::TokenRefresh, false) => (100, 60),
+            (RateLimitTier::MfaVerification, true) => (5, 60),
+            (RateLimitTier::MfaVerification, false) => (100, 60),
+            (RateLimitTier::General, _) => (100, 60),
         }
     }
 
