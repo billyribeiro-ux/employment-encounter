@@ -15,9 +15,8 @@ import {
   Loader2,
   CheckCircle2,
   Globe,
-  Github,
-  Linkedin,
 } from "lucide-react";
+import { FaGithub as Github, FaLinkedin as Linkedin } from "react-icons/fa6";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

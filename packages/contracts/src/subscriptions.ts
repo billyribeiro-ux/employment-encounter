@@ -74,6 +74,6 @@ export const EntitlementSchema = z.object({
   feature_name: z.string().min(1),
   is_enabled: z.boolean(),
   limit_value: z.number().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 export type Entitlement = z.infer<typeof EntitlementSchema>;

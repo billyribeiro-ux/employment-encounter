@@ -11,6 +11,7 @@ target/
 .next/
 out/
 dist/
+.turbo/
 
 # IDE
 .idea/

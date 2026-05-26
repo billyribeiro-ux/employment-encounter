@@ -12,10 +12,8 @@ import {
   CheckCircle2,
   Sparkles,
   Play,
-  Twitter,
-  Linkedin,
-  Github,
 } from "lucide-react";
+import { FaXTwitter, FaLinkedin, FaGithub } from "react-icons/fa6";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -454,7 +452,7 @@ export default function LandingPage() {
               </p>
               {/* Social icons */}
               <div className="mt-6 flex gap-3">
-                {[Twitter, Linkedin, Github].map((Icon, i) => (
+                {[FaXTwitter, FaLinkedin, FaGithub].map((Icon, i) => (
                   <a
                     key={i}
                     href="#"

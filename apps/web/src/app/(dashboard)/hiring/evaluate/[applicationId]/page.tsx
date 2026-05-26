@@ -9,8 +9,6 @@ import {
   Trash2,
   Edit2,
   MapPin,
-  Linkedin,
-  Github,
   Globe,
   ExternalLink,
   ClipboardCheck,
@@ -31,6 +29,7 @@ import {
   BarChart3,
   User,
 } from "lucide-react";
+import { FaGithub as Github, FaLinkedin as Linkedin } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
