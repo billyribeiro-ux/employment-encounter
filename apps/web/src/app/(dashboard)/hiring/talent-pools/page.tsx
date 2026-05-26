@@ -757,7 +757,6 @@ function PoolDetailView({
 export default function TalentPoolsPage() {
   const [activeTab, setActiveTab] = useState("pools");
   const [selectedPool, setSelectedPool] = useState<TalentPool | null>(null);
-  const [poolSearch, setPoolSearch] = useState("");
 
   const totalCandidates = TALENT_POOLS.reduce((sum, p) => sum + p.count, 0);
   const avgEngagement = Math.round(

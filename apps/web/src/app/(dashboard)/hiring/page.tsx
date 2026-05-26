@@ -15,20 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
-import { useJobs, useCreateJob, useDeleteJob } from "@/lib/hooks/use-jobs";
+import { useJobs, useDeleteJob } from "@/lib/hooks/use-jobs";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { exportToCSV } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,120 +36,6 @@ function statusVariant(status: string) {
     default:
       return "secondary" as const;
   }
-}
-
-function formatSalaryCents(cents: number | null): string {
-  if (!cents) return "";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
-function CreateJobDialog({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [locationCity, setLocationCity] = useState("");
-  const [employmentType, setEmploymentType] = useState("full_time");
-  const createJob = useCreateJob();
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim()) return;
-    createJob.mutate(
-      {
-        title: title.trim(),
-        department: department.trim() || undefined,
-        location_city: locationCity.trim() || undefined,
-        employment_type: employmentType,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Job created successfully");
-          setOpen(false);
-          setTitle("");
-          setDepartment("");
-          setLocationCity("");
-          setEmploymentType("full_time");
-        },
-        onError: () => toast.error("Failed to create job"),
-      }
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create Job Posting</DialogTitle>
-            <DialogDescription>
-              Create a new job posting to start receiving applications.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Job Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Senior Software Engineer"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="department">Department</Label>
-              <Input
-                id="department"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Engineering"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={locationCity}
-                onChange={(e) => setLocationCity(e.target.value)}
-                placeholder="e.g. San Francisco, CA"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="type">Employment Type</Label>
-              <Select value={employmentType} onValueChange={setEmploymentType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full_time">Full Time</SelectItem>
-                  <SelectItem value="part_time">Part Time</SelectItem>
-                  <SelectItem value="contract">Contract</SelectItem>
-                  <SelectItem value="internship">Internship</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createJob.isPending}>
-              {createJob.isPending ? "Creating..." : "Create Job"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 export default function HiringPage() {

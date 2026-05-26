@@ -42,15 +42,6 @@ import { useJobs } from "@/lib/hooks/use-jobs";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { toast } from "sonner";
 
-type QuestionCategory =
-  | "technical"
-  | "behavioral"
-  | "situational"
-  | "cultural_fit"
-  | "leadership"
-  | "problem_solving"
-  | "role_specific";
-
 const CATEGORY_LABELS: Record<string, string> = {
   technical: "Technical",
   behavioral: "Behavioral",
@@ -536,7 +527,6 @@ export default function QuestionsPage() {
   const aiSuggestedIds = useMemo(() => {
     if (!selectedJob) return new Set<string>();
     const jobSkills = [...(selectedJob.skills_required || []), ...(selectedJob.skills_preferred || [])];
-    const jobDesc = (selectedJob.description || "").toLowerCase();
     const jobTitle = selectedJob.title.toLowerCase();
 
     const ids = new Set<string>();

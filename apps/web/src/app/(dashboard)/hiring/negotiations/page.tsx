@@ -112,7 +112,6 @@ function formatCurrency(amount: number): string {
 export default function NegotiationsPage() {
   const [negotiations] = useState(NEGOTIATIONS);
   const [selectedNeg, setSelectedNeg] = useState<Negotiation | null>(null);
-  const [counterDialogOpen, setCounterDialogOpen] = useState(false);
 
   const active = negotiations.filter(n => !["accepted", "declined"].includes(n.status));
   const resolved = negotiations.filter(n => ["accepted", "declined"].includes(n.status));

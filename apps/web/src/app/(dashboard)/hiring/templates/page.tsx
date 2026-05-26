@@ -41,7 +41,6 @@ import {
   useBulkSendTemplate,
   type EmailTemplate,
   type TemplateCategory,
-  type CreateEmailTemplatePayload,
 } from "@/lib/hooks/use-email-templates";
 import { toast } from "sonner";
 import {
@@ -872,7 +871,7 @@ export default function EmailTemplatesPage() {
         t.subject.toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q)
     );
-  }, [templates, isLoading, searchQuery, categoryFilter]);
+  }, [templates, isLoading, searchQuery]);
 
   function handleEdit(template: EmailTemplate) {
     setEditingTemplate(template);

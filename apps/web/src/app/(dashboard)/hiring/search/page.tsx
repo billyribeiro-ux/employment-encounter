@@ -74,12 +74,6 @@ export default function AdvancedSearchPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [savedSearchName, setSavedSearchName] = useState("");
 
-  const allSkills = useMemo(() => {
-    const skills = new Set<string>();
-    CANDIDATES.forEach(c => c.skills.forEach(s => skills.add(s)));
-    return Array.from(skills).sort();
-  }, []);
-
   // Boolean search parser (supports AND, OR, NOT)
   function matchesBooleanSearch(candidate: Candidate, query: string): boolean {
     if (!query.trim()) return true;

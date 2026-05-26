@@ -64,19 +64,6 @@ function stageVariant(stage: string) {
   }
 }
 
-function decisionVariant(decision: string) {
-  switch (decision) {
-    case "hire":
-      return "default" as const;
-    case "reject":
-      return "destructive" as const;
-    case "hold":
-      return "secondary" as const;
-    default:
-      return "outline" as const;
-  }
-}
-
 // --- All Candidates Tab ---
 
 function AllCandidatesTab() {
