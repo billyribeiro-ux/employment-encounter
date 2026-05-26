@@ -14,7 +14,7 @@
 - `cd apps/api-rust && cargo fmt --check` → clean
 
 ### Backend tests (all pass against a real Postgres+Redis)
-- **Unit:** 15/15 in `cargo test --bin talent-os-api` (password hashing, JWT, role hierarchy, CSRF token gen, constant-time compare)
+- **Unit:** 19/19 in `cargo test --bin talent-os-api` (password hashing, JWT, role hierarchy, CSRF token gen, constant-time compare, auth-cookie set/clear/parse/scope)
 - **Integration:** 3/3 in `cargo test --test transactions`
   - `for_update_serializes_concurrent_status_check` — proves the FOR UPDATE pattern used by `offers::accept_offer` and `applications::advance_stage` correctly serializes concurrent winners
   - `transaction_rolls_back_on_error` — proves multi-statement tx is atomic (invoice header doesn't survive a failing line-item insert)
@@ -52,18 +52,31 @@ These compile clean and pass type/lint checks, but were not invoked by a test in
 - The other 60+ frontend pages (built into Next.js production output via `pnpm -w turbo run build`)
 - The 13 other Playwright spec files: deeply drifted against the OLD CPA-platform UI ("CPA Platform branding" expected in nav, "13 navigation items" expected, etc.). They need page-by-page rewrites tied to the actual hiring UI. **In CI they are gated behind `if: false` already.**
 
+## ✅ Closed since the original scorecard
+
+- **HttpOnly cookie auth** — tokens migrated off `localStorage` into
+  HttpOnly + SameSite=Strict cookies (Secure in prod). Backend sets on
+  register/login/MFA/refresh, clears on logout. Auth middleware reads
+  cookie or Bearer. Refresh endpoint reads either cookie or body.
+  Frontend dropped Authorization header, `atob` decoding, and
+  localStorage token storage entirely. 4 new unit tests in
+  `apps/api-rust/src/auth/cookies.rs`.
+- **Sentry on both apps** — `sentry` + `sentry-tower` + `sentry-tracing`
+  for the Rust API; `@sentry/nextjs` for the web app with client +
+  server + edge configs. All instrumentation is a no-op when the DSN
+  env var is unset, so dev + CI cost nothing.
+
 ## ❌ Known-open from the audit (each is multi-hour-to-multi-day)
 
 | # | Item | Impact | Estimate |
 |---|------|--------|----------|
-| 1 | HttpOnly cookie auth migration (tokens currently in `localStorage`) | P0 — XSS = full account takeover | 1 day |
-| 2 | Sentry integration (web + backend) | P0 — production errors invisible | 0.5 day |
-| 3 | OpenAPI codegen (utoipa) + SDK consumption in web | P0 — eliminates ~50 hand-written hook types | 2-3 days |
-| 4 | Rewrite remaining 13 Playwright specs to current UI | P1 — coverage of clients/jobs/offers/etc UI flows | 1-2 days |
-| 5 | Decompose 1500–1800-line client pages | P1 — bundle perf, maintainability | 2-5 days |
-| 6 | Migrate from JWT HS256 → RS256 + JWKS + key rotation | P1 — key compromise → mass reissue today | 1 day |
-| 7 | Add OpenTelemetry tracing across both services | P1 — full distributed tracing | 1 day |
-| 8 | Frontend unit tests (currently 0) | P2 — component-level coverage | open-ended |
+| 1 | OpenAPI codegen (utoipa) + SDK consumption in web | P0 — eliminates ~50 hand-written hook types | 2-3 days |
+| 2 | Rewrite remaining 13 Playwright specs to current UI | P1 — coverage of clients/jobs/offers/etc UI flows | 1-2 days |
+| 3 | Decompose 1500–1800-line client pages | P1 — bundle perf, maintainability | 2-5 days |
+| 4 | Migrate from JWT HS256 → RS256 + JWKS + key rotation | P1 — key compromise → mass reissue today | 1 day |
+| 5 | Add OpenTelemetry tracing across both services | P1 — full distributed tracing | 1 day |
+| 6 | Frontend unit tests (currently 0) | P2 — component-level coverage | open-ended |
+| 7 | Remove transitional JWT fields from auth JSON responses once SDK ships cookie-aware update | P2 — defense in depth | <1 day |
 | 9 | Strip or rename legacy CPA modules (`clients`, `invoices`, `expenses`) if not part of staffing-agency product surface | P2 | 0.5-1 day |
 
 ## Operational notes
