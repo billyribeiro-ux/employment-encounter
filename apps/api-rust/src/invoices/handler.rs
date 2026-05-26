@@ -168,14 +168,20 @@ pub async fn create_invoice(
     // middleware applies uniformly to every statement on the same conn.
     let mut tx = state.db.begin().await?;
 
-    // Compute next invoice number INSIDE the transaction with a row lock
-    // so concurrent creates serialize on the highest existing row instead
-    // of colliding on the same MAX().
+    // Per-tenant advisory lock to serialize concurrent number generation.
+    // `FOR UPDATE` doesn't work on aggregate queries (Postgres rejects it
+    // with SQLSTATE 0A000), so we use a transaction-scoped advisory lock
+    // keyed on the tenant + a stable namespace. The lock auto-releases
+    // on commit/rollback, so we don't need explicit cleanup.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('invoice_number:' || $1::text, 0))")
+        .bind(claims.tid)
+        .execute(&mut *tx)
+        .await?;
+
     let (next_num,): (i64,) = sqlx::query_as(
         "SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 5) AS BIGINT)), 0) + 1 \
          FROM invoices \
-         WHERE tenant_id = $1 AND invoice_number LIKE 'INV-%' \
-         FOR UPDATE",
+         WHERE tenant_id = $1 AND invoice_number LIKE 'INV-%'",
     )
     .bind(claims.tid)
     .fetch_one(&mut *tx)

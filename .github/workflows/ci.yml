@@ -70,7 +70,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/api-rust
-      - name: Run tests
+      - name: Install sqlx-cli for migrations
+        run: cargo install sqlx-cli --no-default-features --features postgres,rustls --locked
+      - name: Apply migrations to test DB
+        run: sqlx migrate run
+      - name: Run unit + integration tests
         run: cargo test --all --verbose
 
   frontend-check:
