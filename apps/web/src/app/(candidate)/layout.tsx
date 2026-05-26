@@ -18,40 +18,21 @@ export default function CandidateLayout({
   const { isAuthenticated, isLoading, setUser } = useAuthStore();
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    // Check token expiry first
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      if (payload.exp * 1000 < Date.now()) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        router.push("/login");
-        return;
-      }
-    } catch {
-      router.push("/login");
-      return;
-    }
-
-    // Hydrate user from API for complete profile data
-    const hydrateUser = async () => {
+    // Cookie-based auth: source of truth is GET /auth/me. See the
+    // dashboard layout for the design rationale.
+    let cancelled = false;
+    (async () => {
       try {
         const { data } = await api.get("/auth/me");
+        if (cancelled) return;
         setUser(data);
       } catch {
-        // Token might be invalid, redirect to login
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        router.push("/login");
+        if (!cancelled) router.push("/login");
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    hydrateUser();
   }, [router, setUser]);
 
   if (isLoading) {

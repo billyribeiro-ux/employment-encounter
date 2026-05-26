@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { usePublicJob, usePublicJobs } from "@/lib/hooks/use-public-jobs";
 import { useSavedJobs, useSaveJob, useUnsaveJob } from "@/lib/hooks/use-saved-jobs";
+import { useAuthStore } from "@/stores/auth-store";
 
 function formatSalaryCents(cents: number | null, currency = "USD"): string {
   if (!cents) return "";
@@ -115,9 +116,9 @@ export default function JobDetailPage() {
   const { data: job, isLoading, isError } = usePublicJob(jobId);
   const [copied, setCopied] = useState(false);
 
-  // Check if user is authenticated for the Apply button
-  const isAuthenticated =
-    typeof window !== "undefined" && !!localStorage.getItem("access_token");
+  // Authenticated state lives in the zustand store; it gets populated
+  // by the (dashboard|candidate) layout via GET /auth/me.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Fetch related jobs (same employment type, different from current)
   const { data: relatedJobsData } = usePublicJobs({

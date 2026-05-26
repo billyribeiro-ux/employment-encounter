@@ -43,29 +43,20 @@ export async function loginViaUI(page: Page) {
 }
 
 /**
- * Login via API and inject tokens into localStorage — fast auth for every test.
+ * Login via the API and let the HttpOnly auth cookies land in the
+ * page's cookie jar. This is the fast-path used by `authedPage`.
+ * No JS-side token injection — cookies are HttpOnly.
  */
 export async function loginViaAPI(page: Page) {
   const res = await page.request.post("http://localhost:8080/api/v1/auth/login", {
-    // Bearer header bypasses CSRF; value is irrelevant for the public
-    // /auth/login route. Without it the request would be rejected as a
-    // cookie-auth CSRF attempt.
-    headers: { Authorization: "Bearer e2e-setup" },
     data: { email: TEST_USER.email, password: TEST_USER.password },
   });
   if (!res.ok()) {
     throw new Error(`API login failed: ${res.status()} ${await res.text()}`);
   }
-  const body = await res.json();
-  await page.goto("/login");
-  await page.evaluate(
-    ({ access_token, refresh_token, user }) => {
-      localStorage.setItem("access_token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
-      localStorage.setItem("auth-storage", JSON.stringify({ state: { user, isAuthenticated: true }, version: 0 }));
-    },
-    body
-  );
+  // Visit the app once so the browser context picks up the cookie jar
+  // for subsequent navigations.
+  await page.goto("/");
 }
 
 /**

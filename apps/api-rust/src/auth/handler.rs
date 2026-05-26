@@ -87,7 +87,7 @@ struct UserRow {
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> AppResult<(StatusCode, Json<AuthResponse>)> {
+) -> AppResult<(StatusCode, axum::http::HeaderMap, Json<AuthResponse>)> {
     payload
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
@@ -143,8 +143,12 @@ pub async fn register(
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user_id, refresh_jti).await;
 
+    let mut headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::set_auth_cookies(&mut headers, &access_token, &refresh_token);
+
     Ok((
         StatusCode::CREATED,
+        headers,
         Json(AuthResponse {
             access_token,
             refresh_token,
@@ -164,7 +168,7 @@ pub async fn login(
     State(state): State<AppState>,
     headers: axum::http::HeaderMap,
     Json(payload): Json<LoginRequest>,
-) -> AppResult<Json<LoginResponse>> {
+) -> AppResult<(axum::http::HeaderMap, Json<LoginResponse>)> {
     payload
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
@@ -281,12 +285,18 @@ pub async fn login(
             None,
         );
 
-        return Ok(Json(LoginResponse::MfaChallenge(MfaRequiredResponse {
-            mfa_required: true,
-            mfa_token,
-            message: "MFA verification required. Submit TOTP code to /api/v1/auth/mfa/verify-login"
-                .to_string(),
-        })));
+        // No auth cookies until MFA is verified — the client must
+        // complete /auth/mfa/verify-login first.
+        return Ok((
+            axum::http::HeaderMap::new(),
+            Json(LoginResponse::MfaChallenge(MfaRequiredResponse {
+                mfa_required: true,
+                mfa_token,
+                message:
+                    "MFA verification required. Submit TOTP code to /api/v1/auth/mfa/verify-login"
+                        .to_string(),
+            })),
+        ));
     }
 
     security::log_security_event(
@@ -316,18 +326,24 @@ pub async fn login(
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
 
-    Ok(Json(LoginResponse::Full(AuthResponse {
-        access_token,
-        refresh_token,
-        user: UserResponse {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role,
-            tenant_id: user.tenant_id,
-        },
-    })))
+    let mut resp_headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::set_auth_cookies(&mut resp_headers, &access_token, &refresh_token);
+
+    Ok((
+        resp_headers,
+        Json(LoginResponse::Full(AuthResponse {
+            access_token,
+            refresh_token,
+            user: UserResponse {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role,
+                tenant_id: user.tenant_id,
+            },
+        })),
+    ))
 }
 
 // === MFA Login Verification ===
@@ -345,7 +361,7 @@ pub async fn verify_mfa_login(
     State(state): State<AppState>,
     headers: axum::http::HeaderMap,
     Json(payload): Json<MfaLoginVerifyRequest>,
-) -> AppResult<Json<AuthResponse>> {
+) -> AppResult<(axum::http::HeaderMap, Json<AuthResponse>)> {
     let ip = security::extract_ip(&headers);
     let ua = security::extract_user_agent(&headers);
 
@@ -457,18 +473,24 @@ pub async fn verify_mfa_login(
     // Store refresh token jti for rotation tracking
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
 
-    Ok(Json(AuthResponse {
-        access_token,
-        refresh_token,
-        user: UserResponse {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role,
-            tenant_id: user.tenant_id,
-        },
-    }))
+    let mut resp_headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::set_auth_cookies(&mut resp_headers, &access_token, &refresh_token);
+
+    Ok((
+        resp_headers,
+        Json(AuthResponse {
+            access_token,
+            refresh_token,
+            user: UserResponse {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role,
+                tenant_id: user.tenant_id,
+            },
+        }),
+    ))
 }
 
 pub async fn health() -> StatusCode {
@@ -482,10 +504,17 @@ pub struct RefreshRequest {
 
 pub async fn refresh_token(
     State(state): State<AppState>,
-    Json(payload): Json<RefreshRequest>,
-) -> AppResult<Json<AuthResponse>> {
-    // Validate the refresh token
-    let token_data = jwt::validate_token(&payload.refresh_token, &state.config.jwt_secret)
+    headers: axum::http::HeaderMap,
+    payload: Option<Json<RefreshRequest>>,
+) -> AppResult<(axum::http::HeaderMap, Json<AuthResponse>)> {
+    // Prefer the HttpOnly cookie when present (the modern path);
+    // fall back to a JSON body for transitional clients (mobile, the
+    // SDK, anything that hasn't migrated to cookies yet).
+    let token_str = crate::auth::cookies::extract_refresh_cookie(&headers)
+        .or_else(|| payload.map(|p| p.0.refresh_token))
+        .ok_or_else(|| AppError::Unauthorized("Missing refresh token".to_string()))?;
+
+    let token_data = jwt::validate_token(&token_str, &state.config.jwt_secret)
         .map_err(|_| AppError::Unauthorized("Invalid or expired refresh token".to_string()))?;
 
     let claims = token_data.claims;
@@ -580,18 +609,24 @@ pub async fn refresh_token(
     // Store new refresh token jti
     store_refresh_token_jti(&state, user.id, refresh_jti).await;
 
-    Ok(Json(AuthResponse {
-        access_token,
-        refresh_token,
-        user: UserResponse {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role,
-            tenant_id: user.tenant_id,
-        },
-    }))
+    let mut resp_headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::set_auth_cookies(&mut resp_headers, &access_token, &refresh_token);
+
+    Ok((
+        resp_headers,
+        Json(AuthResponse {
+            access_token,
+            refresh_token,
+            user: UserResponse {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role,
+                tenant_id: user.tenant_id,
+            },
+        }),
+    ))
 }
 
 pub async fn get_me(
@@ -674,7 +709,7 @@ pub async fn change_password(
 pub async fn logout(
     State(state): State<AppState>,
     Extension(claims): Extension<jwt::Claims>,
-) -> AppResult<StatusCode> {
+) -> AppResult<(StatusCode, axum::http::HeaderMap)> {
     security::log_security_event(
         state.db.clone(),
         Some(claims.tid),
@@ -711,7 +746,10 @@ pub async fn logout(
     .execute(&state.db)
     .await?;
 
-    Ok(StatusCode::NO_CONTENT)
+    let mut headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::clear_auth_cookies(&mut headers);
+
+    Ok((StatusCode::NO_CONTENT, headers))
 }
 
 // ── Candidate Self-Registration ──────────────────────────────────────────
@@ -731,7 +769,7 @@ pub struct RegisterCandidateRequest {
 pub async fn register_candidate(
     State(state): State<AppState>,
     Json(payload): Json<RegisterCandidateRequest>,
-) -> AppResult<(StatusCode, Json<AuthResponse>)> {
+) -> AppResult<(StatusCode, axum::http::HeaderMap, Json<AuthResponse>)> {
     payload
         .validate()
         .map_err(|e| AppError::Validation(e.to_string()))?;
@@ -797,8 +835,12 @@ pub async fn register_candidate(
     let (refresh_token, _jti) =
         jwt::create_refresh_token(user_id, tenant_id, "candidate", &state.config.jwt_secret)?;
 
+    let mut headers = axum::http::HeaderMap::new();
+    crate::auth::cookies::set_auth_cookies(&mut headers, &access_token, &refresh_token);
+
     Ok((
         StatusCode::CREATED,
+        headers,
         Json(AuthResponse {
             access_token,
             refresh_token,

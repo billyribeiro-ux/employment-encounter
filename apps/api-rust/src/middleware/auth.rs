@@ -8,20 +8,27 @@ use crate::auth::jwt::{validate_token, Claims};
 use crate::error::AppError;
 use crate::AppState;
 
-/// Extract JWT claims from the Authorization header and inject into request extensions.
+/// Extract JWT claims from either the `Authorization: Bearer <token>` header
+/// (used by mobile/SDK clients) or the `access_token` HttpOnly cookie
+/// (used by the browser). Bearer wins if both are present — that lets a
+/// browser-based test/admin tool override the cookie without logging out.
 pub async fn require_auth(
     State(state): State<AppState>,
     mut req: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    let token = req
+    let bearer_token = req
         .headers()
         .get("Authorization")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
-        .ok_or_else(|| AppError::Unauthorized("Missing authorization header".to_string()))?;
+        .map(|s| s.to_string());
 
-    let token_data = validate_token(token, &state.config.jwt_secret)?;
+    let token = bearer_token
+        .or_else(|| crate::auth::cookies::extract_access_cookie(req.headers()))
+        .ok_or_else(|| AppError::Unauthorized("Missing authentication".to_string()))?;
+
+    let token_data = validate_token(&token, &state.config.jwt_secret)?;
 
     // Set tenant context for RLS — parameterized to prevent SQL injection
     sqlx::query("SELECT set_config('app.current_tenant', $1, true)")

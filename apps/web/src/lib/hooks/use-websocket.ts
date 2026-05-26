@@ -100,11 +100,11 @@ export function useWebSocket() {
     function connect() {
       if (isUnmountedRef.current) return;
 
-      const token = localStorage.getItem("access_token");
-      if (!token) return;
-
+      // Auth: the browser auto-attaches the access_token HttpOnly cookie
+      // on the WS handshake. The backend ws_handler reads either the
+      // cookie or a ?token= query param; we leave the query empty.
       try {
-        const ws = new WebSocket(`${WS_URL}/api/v1/ws?token=${token}`);
+        const ws = new WebSocket(`${WS_URL}/api/v1/ws`);
         wsRef.current = ws;
 
         ws.onopen = () => {

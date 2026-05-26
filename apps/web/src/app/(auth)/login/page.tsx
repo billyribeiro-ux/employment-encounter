@@ -312,8 +312,6 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       setUser(data.user);
       toast.success("Welcome back!");
       router.push("/dashboard");
@@ -330,8 +328,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const { data } = await api.post("/auth/mfa/verify", { mfa_token: mfaToken, code });
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       setUser(data.user);
       toast.success("Welcome back!");
       router.push("/dashboard");
@@ -348,8 +344,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const { data } = await api.post("/auth/mfa/backup", { mfa_token: mfaToken, backup_code: code });
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       setUser(data.user);
       toast.success("Welcome back!");
       router.push("/dashboard");

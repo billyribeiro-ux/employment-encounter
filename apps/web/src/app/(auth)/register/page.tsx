@@ -88,8 +88,6 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const { data } = await api.post("/auth/register", values);
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       setUser(data.user);
       toast.success("Account created successfully!");
       router.push("/dashboard");
@@ -110,8 +108,6 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const { data } = await api.post("/auth/register-candidate", values);
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       setUser(data.user);
       toast.success("Account created successfully!");
       router.push("/candidate/profile");

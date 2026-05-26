@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
+import { api } from "@/lib/api";
 import { CandidateMobileSidebar } from "@/components/candidate/mobile-sidebar";
 
 export function CandidateHeader() {
@@ -27,7 +28,12 @@ export function CandidateHeader() {
         .toUpperCase() || "U"
     : "U";
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      /* ignore */
+    }
     logout();
     router.push("/login");
   }

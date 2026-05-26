@@ -74,12 +74,10 @@ export default function MessagesPage() {
   const { data: unreadCounts } = useUnreadCounts();
   const createDocument = useCreateDocument();
 
-  // Connect to WebSocket for real-time typing indicators
+  // Connect to WebSocket for real-time typing indicators. Auth rides on
+  // the access_token HttpOnly cookie that the browser auto-attaches.
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-
-    const ws = new WebSocket(`${WS_URL}/api/v1/ws?token=${token}`);
+    const ws = new WebSocket(`${WS_URL}/api/v1/ws`);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {

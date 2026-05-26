@@ -51,11 +51,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isEmployer: user?.role !== "candidate",
     }),
   setLoading: (isLoading) => set({ isLoading }),
+  // Local clear only. Caller is responsible for hitting POST /auth/logout
+  // first so the server expires the HttpOnly cookies — without that, the
+  // browser will keep auto-attaching them on the next page load.
   logout: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-    }
     set({
       user: null,
       isAuthenticated: false,

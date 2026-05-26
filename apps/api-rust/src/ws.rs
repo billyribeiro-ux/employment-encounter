@@ -154,18 +154,32 @@ pub enum WsEventPayload {
     },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct WsQuery {
+    /// Optional — legacy clients pass the access token here. Cookie-based
+    /// browser clients leave this empty; the access_token HttpOnly cookie
+    /// rides the handshake automatically.
+    #[serde(default)]
     pub token: String,
 }
 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
     Query(query): Query<WsQuery>,
 ) -> Response {
-    // Validate JWT from query param
-    let token_result = validate_token(&query.token, &state.config.jwt_secret);
+    // Source of token, in order of preference:
+    //   1. ?token= query (legacy SDK / mobile clients)
+    //   2. access_token HttpOnly cookie (modern browser clients)
+    // The handshake carries cookies automatically because the upgrade
+    // request is a regular HTTP GET.
+    let token = if !query.token.is_empty() {
+        query.token
+    } else {
+        crate::auth::cookies::extract_access_cookie(&headers).unwrap_or_default()
+    };
+    let token_result = validate_token(&token, &state.config.jwt_secret);
 
     match token_result {
         Ok(token_data) => {

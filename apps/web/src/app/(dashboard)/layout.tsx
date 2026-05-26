@@ -20,44 +20,27 @@ export default function DashboardLayout({
   const { isAuthenticated, isLoading, setUser } = useAuthStore();
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    // Check token expiry first
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      if (payload.exp * 1000 < Date.now()) {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        router.push("/login");
-        return;
-      }
-    } catch {
-      router.push("/login");
-      return;
-    }
-
-    // Hydrate user from API for complete profile data
-    const hydrateUser = async () => {
+    // With HttpOnly cookies the access token is invisible to JS, so we
+    // can't pre-check expiry locally. Source of truth is GET /auth/me:
+    // the browser auto-attaches the cookie; if the server says 200, the
+    // session is valid; if 401, the response interceptor in lib/api.ts
+    // tries a silent refresh and either retries or boots us to /login.
+    let cancelled = false;
+    (async () => {
       try {
         const { data } = await api.get("/auth/me");
+        if (cancelled) return;
         setUser(data);
-        // Redirect candidates to their portal
         if (data.role === "candidate") {
           router.push("/candidate");
         }
       } catch {
-        // Token might be invalid, redirect to login
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        router.push("/login");
+        if (!cancelled) router.push("/login");
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    hydrateUser();
   }, [router, setUser]);
 
   if (isLoading) {

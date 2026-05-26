@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
+import { api } from "@/lib/api";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
 import { NotificationBell } from "@/components/notification-bell";
 import { useWebSocket } from "@/lib/hooks/use-websocket";
@@ -73,7 +74,15 @@ export function Header() {
     ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() || "U"
     : "U";
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Server expires the HttpOnly cookies; we then clear local state and
+    // redirect. Best-effort: even if the API call fails (network), we
+    // still clear local state so the UI reflects the logged-out intent.
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      /* ignore — proceed with local logout */
+    }
     logout();
     router.push("/login");
   }
