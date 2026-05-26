@@ -108,7 +108,7 @@ export function useWebSocket() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          console.log("[WS] Connected");
+          console.warn("[WS] Connected");
           reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
         };
 
@@ -145,7 +145,7 @@ export function useWebSocket() {
         };
 
         ws.onclose = (event) => {
-          console.log("[WS] Disconnected:", event.code);
+          console.warn("[WS] Disconnected:", event.code);
           wsRef.current = null;
 
           // Don't reconnect on auth errors or intentional close
@@ -154,7 +154,7 @@ export function useWebSocket() {
           // Exponential backoff reconnect
           const delay = reconnectDelayRef.current;
           reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
-          console.log(`[WS] Reconnecting in ${delay}ms...`);
+          console.warn(`[WS] Reconnecting in ${delay}ms...`);
           reconnectTimeoutRef.current = setTimeout(connect, delay);
         };
 
@@ -184,7 +184,7 @@ export function useWebSocket() {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       wsRef.current?.close();
     };
-  }, [handleEvent]);
+  }, [handleEvent, queryClient]);
 
   return wsRef;
 }

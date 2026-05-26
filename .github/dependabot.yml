@@ -1,0 +1,72 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      next-react:
+        patterns:
+          - next
+          - next-*
+          - eslint-config-next
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
+      radix-ui:
+        patterns:
+          - radix-ui
+          - "@radix-ui/*"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      tailwind:
+        patterns:
+          - tailwindcss
+          - "@tailwindcss/*"
+          - tw-animate-css
+      dev-deps:
+        dependency-type: development
+
+  - package-ecosystem: cargo
+    directory: /apps/api-rust
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "aws-*"
+      sqlx:
+        patterns:
+          - sqlx
+          - sqlx-*
+      tower:
+        patterns:
+          - tower
+          - tower-*
+
+  - package-ecosystem: cargo
+    directory: /apps/worker
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker
+    directory: /infra/docker
+    schedule:
+      interval: weekly
+      day: monday

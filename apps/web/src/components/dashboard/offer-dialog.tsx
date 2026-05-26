@@ -19,15 +19,6 @@ import { DollarSign, Send, Save } from "lucide-react";
 import { useCreateOffer, useSendOffer } from "@/lib/hooks/use-offers";
 import { toast } from "sonner";
 
-function formatCents(cents: number | null): string {
-  if (!cents) return "";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
 interface OfferDialogProps {
   children: React.ReactNode;
   applicationId: string;

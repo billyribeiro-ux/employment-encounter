@@ -3,15 +3,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-interface ShortcutAction {
-  key: string;
-  ctrl?: boolean;
-  meta?: boolean;
-  shift?: boolean;
-  description: string;
-  action: () => void;
-}
-
 /** Global keyboard shortcuts for the dashboard */
 export function useKeyboardShortcuts(options?: {
   onOpenCommandPalette?: () => void;

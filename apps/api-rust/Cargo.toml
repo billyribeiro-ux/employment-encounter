@@ -1,5 +1,5 @@
 [package]
-name = "cpa-backend"
+name = "talent-os-api"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"

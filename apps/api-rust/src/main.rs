@@ -61,8 +61,12 @@ use axum::{
     Router,
 };
 use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
+use tower_http::compression::CompressionLayer;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -85,10 +89,8 @@ async fn security_headers(req: Request, next: Next) -> Response {
         HeaderValue::from_static("nosniff"),
     );
     headers.insert("x-frame-options", HeaderValue::from_static("DENY"));
-    headers.insert(
-        "x-xss-protection",
-        HeaderValue::from_static("1; mode=block"),
-    );
+    // X-XSS-Protection is deprecated; modern browsers ignore it and the
+    // legacy behavior can introduce side-channel bugs. CSP replaces it.
     headers.insert(
         "referrer-policy",
         HeaderValue::from_static("strict-origin-when-cross-origin"),
@@ -96,6 +98,14 @@ async fn security_headers(req: Request, next: Next) -> Response {
     headers.insert(
         "permissions-policy",
         HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
+    );
+    headers.insert(
+        "cross-origin-opener-policy",
+        HeaderValue::from_static("same-origin"),
+    );
+    headers.insert(
+        "cross-origin-resource-policy",
+        HeaderValue::from_static("same-site"),
     );
     response
 }
@@ -109,7 +119,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "cpa_backend=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "talent_os_api=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -860,15 +870,31 @@ async fn main() -> anyhow::Result<()> {
         )
         // Protected API routes
         .nest("/api/v1", protected_routes)
-        // Layers
+        // Layers — order matters: outermost (top) wraps everything inside.
+        // Request lifecycle: request-id → trace → CORS → compression →
+        // CSRF → security headers → rate-limit → idempotency → timeout
+        // → body limit → handler. Errors and responses propagate back out
+        // through every layer in reverse.
+        .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
+        .layer(PropagateRequestIdLayer::x_request_id())
+        .layer(TraceLayer::new_for_http())
+        .layer(cors)
+        .layer(CompressionLayer::new().gzip(true))
+        .layer(axum_mw::from_fn(middleware::csrf::csrf_protection))
+        .layer(axum_mw::from_fn(security_headers))
         .layer(axum_mw::from_fn_with_state(
             state.clone(),
             middleware::rate_limit::rate_limit,
         ))
-        .layer(axum_mw::from_fn(security_headers))
+        .layer(axum_mw::from_fn_with_state(
+            state.clone(),
+            middleware::idempotency::idempotency_check,
+        ))
+        .layer(TimeoutLayer::with_status_code(
+            axum::http::StatusCode::GATEWAY_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10MB max body
-        .layer(TraceLayer::new_for_http())
-        .layer(cors)
         .with_state(state);
 
     // Start server with graceful shutdown

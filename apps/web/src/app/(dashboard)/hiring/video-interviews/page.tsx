@@ -492,7 +492,6 @@ function StarRating({
 function StatsOverview() {
   const total = videoSubmissions.length;
   const completed = videoSubmissions.filter((s) => s.completionRate === 100).length;
-  const rated = videoSubmissions.filter((s) => s.status === "rated").length;
   const ratedSubmissions = videoSubmissions.filter((s) => s.overallRating > 0);
   const avgRating =
     ratedSubmissions.length > 0

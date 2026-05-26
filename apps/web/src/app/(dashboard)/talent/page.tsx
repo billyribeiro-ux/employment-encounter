@@ -268,13 +268,11 @@ function PoolStatistics({
   available,
   avgScore,
   remoteCount,
-  topLocations,
 }: {
   total: number;
   available: number;
   avgScore: number | null;
   remoteCount: number;
-  topLocations: { name: string; count: number }[];
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -458,7 +456,7 @@ export default function TalentPage() {
   const { data: jobsData } = useJobs({ per_page: 100, status: "published" });
   const createApplication = useCreateApplication();
 
-  const candidates = data?.data ?? [];
+  const candidates = useMemo(() => data?.data ?? [], [data]);
   const meta = data?.meta;
   const jobs = jobsData?.data ?? [];
   const selectedJob = jobs.find((j) => j.id === matchJobId);
@@ -714,7 +712,6 @@ export default function TalentPage() {
         available={poolStats.available}
         avgScore={poolStats.avgScore}
         remoteCount={poolStats.remoteCount}
-        topLocations={poolStats.topLocations}
       />
 
       {/* Search and Filters */}

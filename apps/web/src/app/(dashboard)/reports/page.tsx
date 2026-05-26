@@ -38,15 +38,6 @@ import { useHiringStats } from "@/lib/hooks/use-hiring-analytics";
 import { useJobs } from "@/lib/hooks/use-jobs";
 import { toast } from "sonner";
 
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
 function BarChart({
   data,
   maxValue,
@@ -206,10 +197,8 @@ function ExportButtons({
 
 function PipelineHealthReport({
   stats,
-  departmentFilter,
 }: {
   stats: NonNullable<ReturnType<typeof useHiringStats>["data"]>;
-  departmentFilter: string;
 }) {
   const funnel = stats.funnel;
   const maxCount = Math.max(...funnel.map((s) => s.count), 1);
@@ -1199,10 +1188,7 @@ export default function ReportsPage() {
         ) : stats ? (
           <>
             <TabsContent value="pipeline">
-              <PipelineHealthReport
-                stats={stats}
-                departmentFilter={departmentFilter}
-              />
+              <PipelineHealthReport stats={stats} />
             </TabsContent>
 
             <TabsContent value="time-to-hire">

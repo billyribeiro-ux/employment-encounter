@@ -98,7 +98,7 @@ export default function ConferencePage() {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         // In production, send via WebSocket signaling server
-        console.log("[WebRTC] ICE candidate:", event.candidate);
+        console.warn("[WebRTC] ICE candidate:", event.candidate);
       }
     };
 

@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
-  DATABASE_URL: postgres://cpa:cpa_test@localhost:5432/cpa_test
+  DATABASE_URL: postgres://talent_os:talent_os_test@localhost:5432/talent_os_test
   REDIS_URL: redis://localhost:6379
   JWT_SECRET: ci_test_secret_that_is_long_enough_for_hmac_256_validation
   CORS_ORIGIN: http://localhost:3000
@@ -45,13 +45,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: cpa_test
-          POSTGRES_USER: cpa
-          POSTGRES_PASSWORD: cpa_test
+          POSTGRES_DB: talent_os_test
+          POSTGRES_USER: talent_os
+          POSTGRES_PASSWORD: talent_os_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U cpa -d cpa_test"
+          --health-cmd "pg_isready -U talent_os -d talent_os_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
@@ -75,57 +75,67 @@ jobs:
 
   frontend-check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-      - run: npm ci
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: TypeScript check
-        run: npx tsc --noEmit
+        run: pnpm --filter frontend exec tsc --noEmit
       - name: Lint
-        run: npx eslint .
+        run: pnpm --filter frontend exec eslint .
 
   frontend-build:
     runs-on: ubuntu-latest
     needs: frontend-check
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-      - run: npm ci
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Build
-        run: npm run build
+        run: pnpm --filter frontend run build
+
+  packages-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" run build
 
   e2e-tests:
     runs-on: ubuntu-latest
-    if: false  # Disabled: requires running backend server — enable after adding backend start step
+    if: false  # Disabled until backend boot step is wired (see CONTRIBUTING.md)
     needs: [frontend-build, backend-test]
-    defaults:
-      run:
-        working-directory: apps/web
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: cpa_test
-          POSTGRES_USER: cpa
-          POSTGRES_PASSWORD: cpa_test
+          POSTGRES_DB: talent_os_test
+          POSTGRES_USER: talent_os
+          POSTGRES_PASSWORD: talent_os_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U cpa -d cpa_test"
+          --health-cmd "pg_isready -U talent_os -d talent_os_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
@@ -140,15 +150,19 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-      - run: npm ci
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
+        working-directory: apps/web
         run: npx playwright install --with-deps chromium
       - name: Run E2E tests
+        working-directory: apps/web
         run: npx playwright test
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080
@@ -169,6 +183,8 @@ jobs:
         run: cargo install cargo-audit
       - name: Rust security audit
         working-directory: apps/api-rust
+        # Ignored advisories should each have a tracking issue. Audit
+        # quarterly and prune.
         run: >-
           cargo audit
           --ignore RUSTSEC-2025-0134
@@ -177,14 +193,14 @@ jobs:
           --ignore RUSTSEC-2023-0071
           --ignore RUSTSEC-2024-0384
           --ignore RUSTSEC-2024-0370
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-      - name: Install frontend deps
-        working-directory: apps/web
-        run: npm ci
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: NPM security audit
         working-directory: apps/web
-        run: npm audit --production --audit-level=high
+        run: pnpm audit --prod --audit-level=high

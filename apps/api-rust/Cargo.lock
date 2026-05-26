@@ -1067,44 +1067,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
-name = "cpa-backend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "async-stripe",
- "aws-config",
- "aws-sdk-kms",
- "aws-sdk-s3",
- "axum 0.8.8",
- "axum-extra",
- "axum-test",
- "chrono",
- "dotenvy",
- "envy",
- "fred",
- "hex",
- "hyper 1.8.1",
- "jsonwebtoken",
- "rand 0.8.5",
- "reqwest",
- "serde",
- "serde_json",
- "slug",
- "sqlx",
- "thiserror 2.0.18",
- "time",
- "tokio",
- "totp-rs",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid 1.20.0",
- "validator",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4087,6 +4049,44 @@ checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "talent-os-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "async-stripe",
+ "aws-config",
+ "aws-sdk-kms",
+ "aws-sdk-s3",
+ "axum 0.8.8",
+ "axum-extra",
+ "axum-test",
+ "chrono",
+ "dotenvy",
+ "envy",
+ "fred",
+ "hex",
+ "hyper 1.8.1",
+ "jsonwebtoken",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "slug",
+ "sqlx",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "totp-rs",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid 1.20.0",
+ "validator",
 ]
 
 [[package]]

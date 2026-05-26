@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: cpa_dev
-      POSTGRES_USER: cpa
-      POSTGRES_PASSWORD: cpa_dev_password
+      POSTGRES_DB: talent_os_dev
+      POSTGRES_USER: talent_os
+      POSTGRES_PASSWORD: talent_os_dev_password
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U cpa -d cpa_dev" ]
+      test: [ "CMD-SHELL", "pg_isready -U talent_os -d talent_os_dev" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,7 +45,7 @@ services:
       - typesensedata:/data
     environment:
       TYPESENSE_DATA_DIR: /data
-      TYPESENSE_API_KEY: cpa_dev_typesense_key
+      TYPESENSE_API_KEY: talent_os_dev_typesense_key
       TYPESENSE_ENABLE_CORS: "true"
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8108/health" ]
@@ -89,7 +89,7 @@ services:
       context: .
       dockerfile: infra/docker/Dockerfile.api
     environment:
-      DATABASE_URL: postgres://cpa:cpa_dev_password@postgres:5432/cpa_dev
+      DATABASE_URL: postgres://talent_os:talent_os_dev_password@postgres:5432/talent_os_dev
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev-secret-change-in-production-must-be-32-chars
       HOST: 0.0.0.0

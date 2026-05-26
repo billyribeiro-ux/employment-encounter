@@ -170,7 +170,6 @@ export function useDeleteNotification() {
         { queryKey: ["notifications"] },
         (old) => {
           if (!old) return old;
-          const removed = old.data.find((n) => n.id === id);
           return {
             ...old,
             data: old.data.filter((n) => n.id !== id),

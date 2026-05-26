@@ -44,15 +44,47 @@ fn default_s3_endpoint() -> String {
 }
 
 fn default_s3_bucket() -> String {
-    "cpa-documents".to_string()
+    "talent-os-documents".to_string()
 }
 
 fn default_s3_region() -> String {
     "us-east-1".to_string()
 }
 
+/// JWT secret values that exist in repo-tracked .env.example /
+/// docker-compose.yml. Production must never use these.
+const KNOWN_DEV_JWT_SECRETS: &[&str] = &[
+    "dev-secret-change-in-production-must-be-32-chars",
+    "change-me-in-production",
+    "secret",
+];
+
 impl Config {
     pub fn from_env() -> Result<Self, envy::Error> {
-        envy::from_env::<Config>()
+        let cfg = envy::from_env::<Config>()?;
+        cfg.validate();
+        Ok(cfg)
+    }
+
+    /// Fail-fast checks for production-hostile defaults. Panics with a
+    /// readable message so the operator sees it on boot, not after a
+    /// security incident.
+    fn validate(&self) {
+        if self.jwt_secret.len() < 32 {
+            panic!(
+                "JWT_SECRET must be at least 32 characters (got {}). \
+                 Generate one with `openssl rand -hex 32`.",
+                self.jwt_secret.len()
+            );
+        }
+
+        let app_env = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
+        let is_prod = matches!(app_env.as_str(), "production" | "prod");
+        if is_prod && KNOWN_DEV_JWT_SECRETS.contains(&self.jwt_secret.as_str()) {
+            panic!(
+                "JWT_SECRET is set to a known development default in production. \
+                 Set a real secret via `openssl rand -hex 32` before deploying."
+            );
+        }
     }
 }

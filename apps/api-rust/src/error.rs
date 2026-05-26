@@ -76,6 +76,17 @@ impl IntoResponse for AppError {
         };
 
         let request_id = uuid::Uuid::new_v4().to_string();
+        // Log the request_id alongside the error so operators can find the
+        // failing request in logs given only the id the client received.
+        // The real per-request id from SetRequestIdLayer is propagated on
+        // the `x-request-id` response header; this field is a fallback for
+        // clients that don't read headers.
+        if matches!(status, StatusCode::INTERNAL_SERVER_ERROR) {
+            tracing::error!(
+                request_id = %request_id,
+                "Returning 500 to client (see prior log line for cause)"
+            );
+        }
         let body = json!({
             "error": {
                 "code": code,

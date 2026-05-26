@@ -86,15 +86,6 @@ function formatTime(dateStr: string): string {
   });
 }
 
-function formatDuration(minutes: number | undefined): string {
-  if (!minutes) return "";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-}
-
 function RequestMeetingDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");

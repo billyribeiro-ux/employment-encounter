@@ -48,7 +48,6 @@ export function calculateMatchScore(
 
   // Skills match: compare candidate skills vs job required + preferred skills
   const allJobSkills = [...(job.skills_required || []), ...(job.skills_preferred || [])];
-  const requiredSkills = job.skills_required || [];
 
   if (allJobSkills.length > 0) {
     let matchedCount = 0;
@@ -126,7 +125,6 @@ export function calculateMatchScore(
   }
 
   // Experience match
-  const candLevel = getExperienceIndex(candidate.availability_status === "available" ? "mid" : "mid");
   const jobLevel = getExperienceIndex(job.experience_level);
 
   if (jobLevel >= 0) {
@@ -192,7 +190,10 @@ export function useMatching(options: UseMatchingOptions) {
   const isLoading = jobLoading || candidatesLoading || jobsLoading;
 
   const jobs = jobsData?.data ?? [];
-  const candidates = candidatesData?.data ?? [];
+  const candidates = useMemo(
+    () => candidatesData?.data ?? [],
+    [candidatesData]
+  );
   const job = jobData;
 
   const results = useMemo(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
@@ -61,6 +61,8 @@ export function CreateTimeEntryDialog({
       start_timer: mode === "timer",
     },
   });
+
+  const startTimer = useWatch({ control: form.control, name: "start_timer" });
 
   async function onSubmit(values: CreateTimeEntryForm) {
     try {
@@ -128,7 +130,7 @@ export function CreateTimeEntryDialog({
               )}
             />
 
-            {!form.watch("start_timer") && (
+            {!startTimer && (
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -204,7 +206,7 @@ export function CreateTimeEntryDialog({
                 {createEntry.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {form.watch("start_timer") ? "Start Timer" : "Log Entry"}
+                {startTimer ? "Start Timer" : "Log Entry"}
               </Button>
             </DialogFooter>
           </form>

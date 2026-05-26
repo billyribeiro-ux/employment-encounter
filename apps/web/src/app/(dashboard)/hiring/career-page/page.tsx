@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ import {
   type CareerPageConfig,
 } from "@/lib/hooks/use-career-page";
 import { toast } from "sonner";
-import { Globe, Eye, EyeOff, Save, Loader2, Plus, Trash2, Upload, Palette, Search, Image, MapPin, Quote, Users, Briefcase, Heart, ExternalLink, Check, X } from "lucide-react";
+import { Globe, Eye, EyeOff, Save, Loader2, Plus, Trash2, Upload, Palette, Search, Image as ImageIcon, MapPin, Quote, Users, Briefcase, Heart, ExternalLink, Check, X } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -317,7 +318,7 @@ function CultureSection({
               key={n}
               className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors cursor-pointer"
             >
-              <Image className="h-6 w-6 mb-1" />
+              <ImageIcon className="h-6 w-6 mb-1" />
               <span className="text-[10px]">Upload Photo</span>
             </div>
           ))}
@@ -465,9 +466,12 @@ function ThemeSection({
         <div className="flex items-center gap-3">
           <div className="h-16 w-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground">
             {config.logo_url ? (
-              <img
+              <Image
                 src={config.logo_url}
                 alt="Logo"
+                width={64}
+                height={64}
+                unoptimized
                 className="h-full w-full object-contain rounded-lg"
               />
             ) : (
@@ -527,7 +531,7 @@ function SEOSection({
         <Label>OG Image</Label>
         <div className="h-24 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-muted-foreground cursor-pointer hover:border-primary/50 transition-colors">
           <div className="text-center">
-            <Image className="h-6 w-6 mx-auto mb-1" />
+            <ImageIcon className="h-6 w-6 mx-auto mb-1" />
             <span className="text-xs">Upload OG Image (1200x630px)</span>
           </div>
         </div>
@@ -647,7 +651,7 @@ function LivePreview({ config }: { config: typeof DEFAULT_CONFIG }) {
               key={n}
               className="aspect-video rounded-md bg-gray-100 flex items-center justify-center"
             >
-              <Image className="h-5 w-5 text-gray-300" />
+              <ImageIcon className="h-5 w-5 text-gray-300" />
             </div>
           ))}
         </div>

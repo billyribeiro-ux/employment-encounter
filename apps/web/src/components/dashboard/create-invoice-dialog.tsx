@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -72,7 +72,7 @@ export function CreateInvoiceDialog({ children }: { children: React.ReactNode })
     name: "line_items",
   });
 
-  const watchedItems = form.watch("line_items");
+  const watchedItems = useWatch({ control: form.control, name: "line_items" });
   const subtotal = watchedItems.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unit_price_cents || 0),
     0
