@@ -14,7 +14,7 @@ pub async fn get_profit_loss(
     Extension(claims): Extension<Claims>,
     Query(params): Query<ReportQuery>,
 ) -> AppResult<Json<ProfitLossReport>> {
-    require_role(&claims, "manager")?;
+    require_role(&claims, "hiring_manager")?;
 
     let start = params.start_date.as_deref().unwrap_or("2026-01-01");
     let end = params.end_date.as_deref().unwrap_or("2026-12-31");
@@ -101,7 +101,7 @@ pub async fn get_cash_flow(
     Extension(claims): Extension<Claims>,
     Query(params): Query<ReportQuery>,
 ) -> AppResult<Json<CashFlowReport>> {
-    require_role(&claims, "manager")?;
+    require_role(&claims, "hiring_manager")?;
 
     let start = params.start_date.as_deref().unwrap_or("2026-01-01");
     let end = params.end_date.as_deref().unwrap_or("2026-12-31");
@@ -163,7 +163,7 @@ pub async fn get_team_utilization(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<serde_json::Value>> {
-    require_role(&claims, "manager")?;
+    require_role(&claims, "hiring_manager")?;
 
     let utilization: Vec<(Uuid, String, String, i64, i64)> = sqlx::query_as(
         "SELECT u.id, u.first_name, u.last_name, \

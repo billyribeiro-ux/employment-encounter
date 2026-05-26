@@ -48,14 +48,16 @@ pub fn require_role(claims: &Claims, min_role: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Hiring-domain role hierarchy. `candidate` is intentionally outside
+/// the hierarchy (it falls through to 0) — candidate access is gated by
+/// explicit `claims.role == "candidate"` checks at the route boundary,
+/// not by `require_role`.
 fn role_to_level(role: &str) -> u8 {
     match role {
-        "client" => 0,
-        "staff_accountant" => 1,
-        "senior_accountant" => 2,
-        "manager" => 3,
+        "viewer" => 1,
+        "recruiter" => 2,
+        "hiring_manager" => 3,
         "admin" => 4,
-        "partner" => 5,
         _ => 0,
     }
 }
@@ -78,50 +80,46 @@ mod tests {
 
     #[test]
     fn test_role_hierarchy() {
-        assert!(role_to_level("partner") > role_to_level("admin"));
-        assert!(role_to_level("admin") > role_to_level("manager"));
-        assert!(role_to_level("manager") > role_to_level("senior_accountant"));
-        assert!(role_to_level("senior_accountant") > role_to_level("staff_accountant"));
-        assert!(role_to_level("staff_accountant") > role_to_level("client"));
+        assert!(role_to_level("admin") > role_to_level("hiring_manager"));
+        assert!(role_to_level("hiring_manager") > role_to_level("recruiter"));
+        assert!(role_to_level("recruiter") > role_to_level("viewer"));
     }
 
     #[test]
     fn test_unknown_role_defaults_to_zero() {
         assert_eq!(role_to_level("unknown"), 0);
         assert_eq!(role_to_level(""), 0);
+        assert_eq!(role_to_level("candidate"), 0);
     }
 
     #[test]
-    fn test_require_role_partner_can_do_anything() {
-        let claims = make_claims("partner");
-        assert!(require_role(&claims, "client").is_ok());
-        assert!(require_role(&claims, "staff_accountant").is_ok());
-        assert!(require_role(&claims, "admin").is_ok());
-        assert!(require_role(&claims, "partner").is_ok());
-    }
-
-    #[test]
-    fn test_require_role_admin_cannot_access_partner() {
+    fn test_admin_can_do_anything() {
         let claims = make_claims("admin");
+        assert!(require_role(&claims, "viewer").is_ok());
+        assert!(require_role(&claims, "recruiter").is_ok());
+        assert!(require_role(&claims, "hiring_manager").is_ok());
         assert!(require_role(&claims, "admin").is_ok());
-        assert!(require_role(&claims, "manager").is_ok());
-        assert!(require_role(&claims, "partner").is_err());
     }
 
     #[test]
-    fn test_require_role_staff_accountant_limited() {
-        let claims = make_claims("staff_accountant");
-        assert!(require_role(&claims, "staff_accountant").is_ok());
-        assert!(require_role(&claims, "client").is_ok());
-        assert!(require_role(&claims, "senior_accountant").is_err());
-        assert!(require_role(&claims, "manager").is_err());
+    fn test_hiring_manager_cannot_admin() {
+        let claims = make_claims("hiring_manager");
+        assert!(require_role(&claims, "recruiter").is_ok());
+        assert!(require_role(&claims, "hiring_manager").is_ok());
         assert!(require_role(&claims, "admin").is_err());
     }
 
     #[test]
-    fn test_require_role_client_most_restricted() {
-        let claims = make_claims("client");
-        assert!(require_role(&claims, "client").is_ok());
-        assert!(require_role(&claims, "staff_accountant").is_err());
+    fn test_viewer_most_restricted() {
+        let claims = make_claims("viewer");
+        assert!(require_role(&claims, "viewer").is_ok());
+        assert!(require_role(&claims, "recruiter").is_err());
+    }
+
+    #[test]
+    fn test_candidate_outside_hierarchy() {
+        let claims = make_claims("candidate");
+        // candidate has no level in the staff hierarchy
+        assert!(require_role(&claims, "viewer").is_err());
     }
 }

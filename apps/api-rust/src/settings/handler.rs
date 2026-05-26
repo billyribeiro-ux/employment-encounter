@@ -118,13 +118,7 @@ pub async fn invite_user(
     require_role(&claims, "admin")?;
 
     // Check valid role
-    let valid_roles = [
-        "staff_accountant",
-        "senior_accountant",
-        "manager",
-        "partner",
-        "admin",
-    ];
+    let valid_roles = ["viewer", "recruiter", "hiring_manager", "admin"];
     if !valid_roles.contains(&payload.role.as_str()) {
         return Err(AppError::Validation(format!(
             "Invalid role: {}",
@@ -181,13 +175,7 @@ pub async fn update_user_role(
 ) -> AppResult<Json<UserProfile>> {
     require_role(&claims, "admin")?;
 
-    let valid_roles = [
-        "staff_accountant",
-        "senior_accountant",
-        "manager",
-        "partner",
-        "admin",
-    ];
+    let valid_roles = ["viewer", "recruiter", "hiring_manager", "admin"];
     if !valid_roles.contains(&payload.role.as_str()) {
         return Err(AppError::Validation(format!(
             "Invalid role: {}",
@@ -215,7 +203,7 @@ pub async fn delete_user(
     Extension(claims): Extension<Claims>,
     Path(user_id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    require_role(&claims, "partner")?;
+    require_role(&claims, "admin")?;
 
     if user_id == claims.sub {
         return Err(AppError::Validation("Cannot delete yourself".to_string()));

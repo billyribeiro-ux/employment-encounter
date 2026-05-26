@@ -153,17 +153,6 @@ pub async fn create_invoice(
 
     let id = Uuid::new_v4();
 
-    // Generate invoice number using MAX to avoid race conditions
-    let (next_num,): (i64,) = sqlx::query_as(
-        "SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 5) AS BIGINT)), 0) + 1 \
-         FROM invoices WHERE tenant_id = $1 AND invoice_number LIKE 'INV-%'",
-    )
-    .bind(claims.tid)
-    .fetch_one(&state.db)
-    .await?;
-
-    let invoice_number = format!("INV-{:05}", next_num);
-
     // Calculate totals
     let subtotal_cents: i64 = payload
         .line_items
@@ -172,6 +161,27 @@ pub async fn create_invoice(
         .sum();
     let tax_cents: i64 = 0; // Tax calculation deferred to tax engine
     let total_cents = subtotal_cents + tax_cents;
+
+    // Wrap header + line items + time-entry marks in a single transaction
+    // so a mid-write failure can't leave an invoice with partial lines,
+    // and so the SET LOCAL app.current_tenant context from the auth
+    // middleware applies uniformly to every statement on the same conn.
+    let mut tx = state.db.begin().await?;
+
+    // Compute next invoice number INSIDE the transaction with a row lock
+    // so concurrent creates serialize on the highest existing row instead
+    // of colliding on the same MAX().
+    let (next_num,): (i64,) = sqlx::query_as(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 5) AS BIGINT)), 0) + 1 \
+         FROM invoices \
+         WHERE tenant_id = $1 AND invoice_number LIKE 'INV-%' \
+         FOR UPDATE",
+    )
+    .bind(claims.tid)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let invoice_number = format!("INV-{:05}", next_num);
 
     let invoice: Invoice = sqlx::query_as(
         "INSERT INTO invoices (id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, due_date, notes, created_by) VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10) RETURNING id, tenant_id, client_id, invoice_number, status, subtotal_cents, tax_cents, total_cents, amount_paid_cents, currency, due_date, issued_date, paid_date, notes, stripe_payment_intent_id, stripe_invoice_id, pdf_s3_key, created_by, created_at, updated_at",
@@ -186,10 +196,9 @@ pub async fn create_invoice(
     .bind(payload.due_date)
     .bind(payload.notes.as_deref())
     .bind(claims.sub)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
-    // Insert line items
     for (i, li) in payload.line_items.iter().enumerate() {
         let line_total = (li.quantity * li.unit_price_cents as f64) as i64;
         sqlx::query(
@@ -203,19 +212,20 @@ pub async fn create_invoice(
         .bind(line_total)
         .bind(li.time_entry_id)
         .bind(i as i32)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await?;
 
-        // Mark time entry as invoiced if linked
         if let Some(te_id) = li.time_entry_id {
             sqlx::query("UPDATE time_entries SET invoice_id = $1 WHERE id = $2 AND tenant_id = $3")
                 .bind(id)
                 .bind(te_id)
                 .bind(claims.tid)
-                .execute(&state.db)
+                .execute(&mut *tx)
                 .await?;
         }
     }
+
+    tx.commit().await?;
 
     Ok((StatusCode::CREATED, Json(invoice)))
 }

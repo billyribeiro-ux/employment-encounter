@@ -11,13 +11,13 @@ export interface User {
   status?: string;
 }
 
-// Role hierarchy for permission checks
+// Hiring-domain role hierarchy. `candidate` is outside the hierarchy —
+// candidate-portal access is gated by `isCandidate`, not `hasRole`.
 const ROLE_HIERARCHY: Record<string, number> = {
-  staff_accountant: 1,
-  senior_accountant: 2,
-  manager: 3,
-  partner: 4,
-  admin: 5,
+  viewer: 1,
+  recruiter: 2,
+  hiring_manager: 3,
+  admin: 4,
 };
 
 interface AuthState {
@@ -31,7 +31,7 @@ interface AuthState {
   logout: () => void;
   hasRole: (minRole: string) => boolean;
   isAdmin: () => boolean;
-  isPartnerOrAbove: () => boolean;
+  isHiringManagerOrAbove: () => boolean;
   displayName: () => string;
   initials: () => string;
 }
@@ -75,10 +75,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     return user?.role === "admin";
   },
-  isPartnerOrAbove: () => {
+  isHiringManagerOrAbove: () => {
     const user = get().user;
     if (!user) return false;
-    return ["partner", "admin"].includes(user.role);
+    return ["hiring_manager", "admin"].includes(user.role);
   },
   displayName: () => {
     const user = get().user;
