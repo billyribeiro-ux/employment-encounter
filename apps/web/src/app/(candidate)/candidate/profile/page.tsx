@@ -160,26 +160,31 @@ export default function CandidateProfilePage() {
   const [savingLinks, setSavingLinks] = useState(false);
   const [savingAuth, setSavingAuth] = useState(false);
 
-  // Populate form when profile loads
-  useEffect(() => {
-    if (profile) {
-      setHeadline(profile.headline || "");
-      setSummary(profile.summary || "");
-      setLocationCity(profile.location_city || "");
-      setLocationState(profile.location_state || "");
-      setLocationCountry(profile.location_country || "");
-      setRemotePreference(profile.remote_preference || "no_preference");
-      setAvailabilityStatus(profile.availability_status || "actively_looking");
-      setDesiredSalaryMin(formatSalaryForInput(profile.desired_salary_min_cents));
-      setDesiredSalaryMax(formatSalaryForInput(profile.desired_salary_max_cents));
-      setDesiredCurrency(profile.desired_currency || "USD");
-      setLinkedinUrl(profile.linkedin_url || "");
-      setGithubUrl(profile.github_url || "");
-      setPortfolioUrl(profile.portfolio_url || "");
-      setVisaStatus(profile.visa_status || "");
-      setWorkAuthorization(profile.work_authorization || "");
-    }
-  }, [profile]);
+  // Seed form state from the loaded profile, but only when the profile
+  // identity changes — otherwise a background react-query refetch would
+  // overwrite the user's in-progress edits. Adjusting state during render
+  // (gated by an equality check) is the React-recommended pattern for
+  // deriving state from props/queries; see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [seededProfileId, setSeededProfileId] = useState<string | null>(null);
+  if (profile && profile.id !== seededProfileId) {
+    setSeededProfileId(profile.id);
+    setHeadline(profile.headline || "");
+    setSummary(profile.summary || "");
+    setLocationCity(profile.location_city || "");
+    setLocationState(profile.location_state || "");
+    setLocationCountry(profile.location_country || "");
+    setRemotePreference(profile.remote_preference || "no_preference");
+    setAvailabilityStatus(profile.availability_status || "actively_looking");
+    setDesiredSalaryMin(formatSalaryForInput(profile.desired_salary_min_cents));
+    setDesiredSalaryMax(formatSalaryForInput(profile.desired_salary_max_cents));
+    setDesiredCurrency(profile.desired_currency || "USD");
+    setLinkedinUrl(profile.linkedin_url || "");
+    setGithubUrl(profile.github_url || "");
+    setPortfolioUrl(profile.portfolio_url || "");
+    setVisaStatus(profile.visa_status || "");
+    setWorkAuthorization(profile.work_authorization || "");
+  }
 
   async function saveSection(
     payload: UpdateCandidatePayload,

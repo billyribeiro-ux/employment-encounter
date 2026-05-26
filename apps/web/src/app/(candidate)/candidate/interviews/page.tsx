@@ -3,33 +3,13 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Video,
-  Phone,
-  Users,
-  Building2,
-  Briefcase,
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-  LayoutList,
-  CalendarDays,
-  FileText,
-  XCircle,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Calendar, Clock, MapPin, Video, Phone, Users, Building2, ExternalLink, ChevronLeft, ChevronRight, LayoutList, CalendarDays, FileText, XCircle, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -45,18 +25,6 @@ import {
   type MeetingRequest,
 } from "@/lib/hooks/use-meetings";
 import { cn } from "@/lib/utils";
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString("en-US", {

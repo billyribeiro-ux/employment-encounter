@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
@@ -62,24 +61,7 @@ import {
   type Department,
 } from "@/lib/hooks/use-team";
 import { toast } from "sonner";
-import {
-  Plus,
-  Users,
-  Mail,
-  Shield,
-  Search,
-  MoreHorizontal,
-  Pencil,
-  UserMinus,
-  UserPlus,
-  Building2,
-  Trash2,
-  Loader2,
-  Check,
-  X,
-  Calendar,
-  Clock,
-} from "lucide-react";
+import { Plus, Users, Mail, Shield, Search, MoreHorizontal, Pencil, UserMinus, UserPlus, Building2, Trash2, Loader2, Check, X, Calendar } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Constants

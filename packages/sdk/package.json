@@ -12,6 +12,7 @@
     "axios": "^1.16.1"
   },
   "devDependencies": {
+    "@talent-os/config": "workspace:*",
     "typescript": "^6.0.3"
   }
 }

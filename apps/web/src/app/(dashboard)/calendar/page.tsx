@@ -1,24 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Calendar as CalendarIcon,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Phone,
-  Code,
-  Building2,
-  CheckCircle2,
-  Video,
-  MapPin,
-  Filter,
-  X,
-  RefreshCw,
-  CalendarCheck,
-  CalendarX,
-} from "lucide-react";
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock, Phone, Code, Building2, CheckCircle2, Video, MapPin, X, RefreshCw, CalendarCheck, CalendarX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -32,9 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { useMeetings, useCancelMeeting } from "@/lib/hooks/use-meetings";
-import { useApplications } from "@/lib/hooks/use-applications";
 import { useJobs } from "@/lib/hooks/use-jobs";
 import { toast } from "sonner";
 
@@ -135,7 +116,7 @@ export default function CalendarPage() {
 
   const { data: jobsData } = useJobs({ page: 1, per_page: 100, status: "published" });
   const jobs = jobsData?.data ?? [];
-  const meetings = meetingsData?.data ?? [];
+  const meetings = useMemo(() => meetingsData?.data ?? [], [meetingsData]);
 
   const meetingsByDay = useMemo(() => {
     const map: Record<string, typeof meetings> = {};

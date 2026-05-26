@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  MessageSquare,
-  Send,
-  Search,
-  Plus,
-  Users,
-  X,
-} from "lucide-react";
+import { MessageSquare, Send, Search, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

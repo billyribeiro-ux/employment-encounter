@@ -3,24 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  MapPin,
-  Briefcase,
-  Clock,
-  DollarSign,
-  Building2,
-  Share2,
-  Laptop,
-  Calendar,
-  Users,
-  ExternalLink,
-  Copy,
-  CheckCircle2,
-  Heart,
-  Bookmark,
-  BookmarkCheck,
-} from "lucide-react";
+import { ArrowLeft, MapPin, Briefcase, Clock, DollarSign, Building2, Share2, Laptop, Calendar, Users, CheckCircle2, Bookmark, BookmarkCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 

@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Lock } from "lucide-react";
@@ -71,7 +71,7 @@ function ResetPasswordForm() {
     defaultValues: { password: "", confirmPassword: "" },
   });
 
-  const password = form.watch("password");
+  const password = useWatch({ control: form.control, name: "password" });
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   async function onSubmit(values: ResetPasswordForm) {

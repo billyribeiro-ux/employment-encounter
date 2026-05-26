@@ -1,23 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Activity,
-  Users,
-  FileText,
-  Calendar,
-  Send,
-  ArrowRight,
-  Star,
-  MessageSquare,
-  UserCheck,
-  Eye,
-  Clock,
-  Filter,
-  X,
-  Search,
-  ChevronDown,
-} from "lucide-react";
+import { Activity, Users, FileText, Calendar, Send, ArrowRight, Star, MessageSquare, UserCheck, Eye, Clock, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -31,12 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
 import { useApplications } from "@/lib/hooks/use-applications";
 import { useMeetings } from "@/lib/hooks/use-meetings";
 import { useOffers } from "@/lib/hooks/use-offers";
 import { useTeamUsers } from "@/lib/hooks/use-settings";
-import { toast } from "sonner";
 
 interface ActivityItem {
   id: string;

@@ -3,25 +3,11 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Bookmark,
-  BookmarkX,
-  MapPin,
-  DollarSign,
-  Briefcase,
-  Clock,
-  Search,
-  Share2,
-  ExternalLink,
-  CheckCircle2,
-  XCircle,
-  Filter,
-  Copy,
-} from "lucide-react";
+import { Bookmark, BookmarkX, MapPin, DollarSign, Briefcase, Clock, Search, Share2, CheckCircle2, XCircle, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";

@@ -1,24 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  MapPin,
-  Briefcase,
-  DollarSign,
-  Users,
-  Clock,
-  ChevronRight,
-  X,
-  Star,
-  ArrowRight,
-  ClipboardCheck,
-  BarChart3,
-} from "lucide-react";
+import { ArrowLeft, MapPin, Briefcase, DollarSign, Users, Clock, X, Star, ArrowRight, ClipboardCheck, BarChart3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";

@@ -1,35 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Users,
-  UserPlus,
-  Trophy,
-  DollarSign,
-  Share2,
-  Search,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Eye,
-  Mail,
-  Briefcase,
-  TrendingUp,
-  Award,
-  Gift,
-  Star,
-  Copy,
-  ExternalLink,
-  ArrowUpRight,
-  Filter,
-  Upload,
-  ChevronRight,
-  Medal,
-  Sparkles,
-  Target,
-  Timer,
-  Bell,
-} from "lucide-react";
+import { Users, UserPlus, Trophy, DollarSign, Share2, Search, Clock, CheckCircle2, XCircle, Eye, Mail, Briefcase, Award, Gift, Copy, ExternalLink, ArrowUpRight, Filter, Upload, Medal, Sparkles, Target, Timer, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 

@@ -147,6 +147,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@talent-os/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -157,6 +160,9 @@ importers:
         specifier: ^1.16.1
         version: 1.16.1
     devDependencies:
+      '@talent-os/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -170,6 +176,15 @@ importers:
         specifier: ^19.0.0
         version: 19.2.6(react@19.2.6)
     devDependencies:
+      '@talent-os/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: ^19.2.15
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.15)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

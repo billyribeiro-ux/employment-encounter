@@ -2,21 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  Users,
-  Briefcase,
-  CheckCircle2,
-  XCircle,
-  Send,
-  Target,
-  ArrowRight,
-  ChevronRight,
-  Activity,
-} from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Users, Briefcase, CheckCircle2, XCircle, Send, Target, ArrowRight, ChevronRight, Activity } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

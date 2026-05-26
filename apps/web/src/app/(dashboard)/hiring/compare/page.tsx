@@ -24,18 +24,11 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { useCandidates, type CandidateProfile } from "@/lib/hooks/use-candidates";
 import { useApplications } from "@/lib/hooks/use-applications";
@@ -214,15 +207,18 @@ export default function ComparePage() {
     per_page: 20,
   });
 
-  const { data: allCandidatesData, isLoading: candidatesLoading } = useCandidates({
+  const { data: allCandidatesData } = useCandidates({
     per_page: 200,
   });
 
   const { data: appsData } = useApplications({ per_page: 200 });
-  const applications = appsData?.data ?? [];
+  const applications = useMemo(() => appsData?.data ?? [], [appsData]);
 
   const searchResults = searchData?.data ?? [];
-  const allCandidates = allCandidatesData?.data ?? [];
+  const allCandidates = useMemo(
+    () => allCandidatesData?.data ?? [],
+    [allCandidatesData]
+  );
 
   const selectedCandidates = useMemo(() => {
     return selectedIds

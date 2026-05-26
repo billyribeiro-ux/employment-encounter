@@ -1,23 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  User,
-  Bell,
-  Shield,
-  Briefcase,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Trash2,
-  Download,
-  Save,
-  X,
-  Plus,
-  AlertTriangle,
-} from "lucide-react";
+import { User, Bell, Shield, Briefcase, Eye, EyeOff, Lock, Mail, Trash2, Download, Save, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -672,7 +655,7 @@ function JobPreferencesTab() {
         remote_preference: remotePreference,
         min_salary_cents: minSalary ? Math.round(parseFloat(minSalary) * 100) : null,
         employment_types: Object.entries(employmentTypes)
-          .filter(([_, v]) => v)
+          .filter(([, v]) => v)
           .map(([k]) => k),
         willing_to_relocate: willingToRelocate,
         notice_period: noticePeriod,

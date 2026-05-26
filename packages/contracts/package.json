@@ -12,6 +12,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@talent-os/config": "workspace:*",
     "typescript": "^6.0.3"
   }
 }

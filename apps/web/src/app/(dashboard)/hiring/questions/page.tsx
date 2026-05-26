@@ -1,39 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  HelpCircle,
-  Search,
-  Star,
-  Plus,
-  Trash2,
-  Filter,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  BookOpen,
-  BarChart3,
-  Layers,
-  Tag,
-  Copy,
-  MessageSquare,
-  Brain,
-  Briefcase,
-  Users,
-  Target,
-  Award,
-  Lightbulb,
-  Wrench,
-} from "lucide-react";
+import { HelpCircle, Search, Star, Plus, Trash2, RotateCcw, ChevronDown, ChevronUp, Sparkles, BookOpen, BarChart3, Layers, Copy, MessageSquare, Brain, Briefcase, Users, Award, Lightbulb, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,

@@ -1,45 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Users,
-  UserPlus,
-  Search,
-  Plus,
-  Mail,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Clock,
-  CheckCircle2,
-  Eye,
-  Send,
-  Sparkles,
-  Target,
-  Zap,
-  ArrowUpRight,
-  ArrowRight,
-  ChevronRight,
-  Filter,
-  Star,
-  MessageSquare,
-  Calendar,
-  Globe,
-  GraduationCap,
-  Briefcase,
-  Crown,
-  Medal,
-  MousePointerClick,
-  MailOpen,
-  Reply,
-  Activity,
-  Layers,
-  RefreshCw,
-  PenLine,
-  Copy,
-  MoreHorizontal,
-  X,
-} from "lucide-react";
+import { Users, UserPlus, Search, Plus, Mail, TrendingUp, BarChart3, Eye, Send, Sparkles, Target, Zap, ArrowUpRight, ChevronRight, MessageSquare, Calendar, Globe, GraduationCap, Briefcase, Crown, Medal, MousePointerClick, MailOpen, Reply, Activity, Layers, RefreshCw, PenLine, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -54,9 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   Tabs,
   TabsContent,

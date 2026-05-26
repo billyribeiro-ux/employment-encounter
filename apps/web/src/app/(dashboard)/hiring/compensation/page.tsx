@@ -1,36 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  MapPin,
-  Briefcase,
-  Building2,
-  Award,
-  Search,
-  Download,
-  Calculator,
-  ChevronRight,
-  ChevronDown,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Info,
-  Gem,
-  PiggyBank,
-  Heart,
-  Gift,
-  Globe,
-  Filter,
-  Layers,
-  Target,
-  Banknote,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, BarChart3, MapPin, Briefcase, Award, Search, Download, Calculator, ArrowUpRight, ArrowDownRight, Info, Gem, Heart, Gift, Layers, Target, Banknote, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -44,10 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -55,15 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -168,25 +127,6 @@ const EXPERIENCE_MULTIPLIERS: Record<string, number> = {
   "8-12 years": 1.12,
   "12+ years": 1.25,
 };
-
-const COMPANY_SIZES = [
-  "Startup (1-50)",
-  "Small (51-200)",
-  "Medium (201-1000)",
-  "Large (1001-5000)",
-  "Enterprise (5000+)",
-];
-
-const INDUSTRIES = [
-  "Technology",
-  "Finance",
-  "Healthcare",
-  "E-Commerce",
-  "SaaS",
-  "AI/ML",
-  "Gaming",
-  "Consulting",
-];
 
 // ─── Utility ──────────────────────────────────────────────
 
@@ -864,8 +804,6 @@ function CompanyComparison() {
 export default function CompensationPage() {
   const [activeTab, setActiveTab] = useState("benchmarks");
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationFilter, setLocationFilter] = useState("all");
-  const [experienceFilter, setExperienceFilter] = useState("all");
   const [selectedTrend, setSelectedTrend] = useState<string>("Software Engineer");
 
   const maxSalary = Math.max(...ROLES.map((r) => r.p90)) * 1.05;

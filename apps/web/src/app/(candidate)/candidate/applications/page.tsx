@@ -3,28 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  FileText,
-  Search,
-  Filter,
-  RotateCcw,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  Calendar,
-  Briefcase,
-  Building2,
-  Loader2,
-} from "lucide-react";
+import { FileText, Search, RotateCcw, Clock, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Calendar, Briefcase, Building2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -48,7 +32,7 @@ import {
   useWithdrawApplication,
   useStageHistory,
 } from "@/lib/hooks/use-applications";
-import type { Application, ApplicationStageEvent } from "@/lib/hooks/use-applications";
+import type { Application } from "@/lib/hooks/use-applications";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
 function stageIcon(stage: string) {

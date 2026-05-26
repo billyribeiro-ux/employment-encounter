@@ -14,10 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import {
   useCareerPage,
@@ -26,29 +24,7 @@ import {
   type CareerPageConfig,
 } from "@/lib/hooks/use-career-page";
 import { toast } from "sonner";
-import {
-  Globe,
-  Eye,
-  EyeOff,
-  Save,
-  Loader2,
-  Plus,
-  Trash2,
-  Upload,
-  Link,
-  Palette,
-  Search,
-  Image,
-  MapPin,
-  Quote,
-  Users,
-  Briefcase,
-  Heart,
-  Code,
-  ExternalLink,
-  Check,
-  X,
-} from "lucide-react";
+import { Globe, Eye, EyeOff, Save, Loader2, Plus, Trash2, Upload, Palette, Search, Image, MapPin, Quote, Users, Briefcase, Heart, ExternalLink, Check, X } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Constants

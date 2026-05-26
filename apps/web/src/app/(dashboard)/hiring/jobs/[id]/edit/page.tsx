@@ -2,17 +2,7 @@
 
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Save,
-  X,
-  Plus,
-  Loader2,
-  Briefcase,
-  MapPin,
-  DollarSign,
-  Settings,
-  Sparkles,
-} from "lucide-react";
+import { Save, X, Loader2, Briefcase, MapPin, DollarSign, Settings, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

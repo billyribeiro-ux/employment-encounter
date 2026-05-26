@@ -2,35 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import {
-  Plus,
-  GripVertical,
-  Pencil,
-  Trash2,
-  Copy,
-  ChevronRight,
-  ArrowRight,
-  Clock,
-  TrendingUp,
-  BarChart3,
-  Layers,
-  Settings2,
-  Zap,
-  FileText,
-  Shield,
-  Users,
-  Briefcase,
-  GraduationCap,
-  Star,
-  RotateCcw,
-  Check,
-  Palette,
-  Hash,
-  Info,
-  CheckCircle2,
-  XCircle,
-  Eye,
-} from "lucide-react";
+import { Plus, GripVertical, Pencil, Trash2, Copy, ChevronRight, ArrowRight, Clock, TrendingUp, Layers, Settings2, Zap, FileText, Shield, Users, GraduationCap, Star, RotateCcw, Check, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -44,24 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {

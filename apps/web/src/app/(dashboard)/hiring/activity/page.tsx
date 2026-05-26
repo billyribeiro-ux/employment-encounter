@@ -2,21 +2,13 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -30,29 +22,7 @@ import {
   type ActivityItem,
 } from "@/lib/hooks/use-activity-log";
 import { toast } from "sonner";
-import {
-  Activity,
-  Download,
-  Filter,
-  Clock,
-  TrendingUp,
-  Calendar,
-  Briefcase,
-  Users,
-  FileText,
-  Mail,
-  Star,
-  CheckCircle,
-  XCircle,
-  ArrowRight,
-  Send,
-  UserPlus,
-  MessageSquare,
-  Eye,
-  ClipboardCheck,
-  Zap,
-  BarChart3,
-} from "lucide-react";
+import { Activity, Download, Filter, Clock, TrendingUp, Calendar, Briefcase, Users, Mail, CheckCircle, XCircle, ArrowRight, Send, UserPlus, MessageSquare, Eye, ClipboardCheck, Zap, BarChart3 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -307,7 +277,7 @@ export default function ActivityLogPage() {
     date_to: dateTo || undefined,
   });
 
-  const activities = data?.data ?? [];
+  const activities = useMemo(() => data?.data ?? [], [data]);
   const meta = data?.meta;
   const stats = data?.stats ?? { today: 0, this_week: 0, avg_per_day: 0 };
 

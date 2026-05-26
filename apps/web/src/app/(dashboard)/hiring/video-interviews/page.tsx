@@ -2,41 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Video,
-  Plus,
-  Play,
-  Pause,
-  Star,
-  Clock,
-  Users,
-  Eye,
-  Search,
-  Send,
-  Copy,
-  Link2,
-  MessageSquare,
-  CheckCircle2,
-  AlertCircle,
-  BarChart3,
-  Timer,
-  MonitorPlay,
-  ChevronRight,
-  ChevronDown,
-  Settings2,
-  Calendar,
-  FileText,
-  Pencil,
-  Trash2,
-  Share2,
-  ExternalLink,
-  SkipForward,
-  SkipBack,
-  Volume2,
-  Maximize2,
-  TrendingUp,
-  Percent,
-} from "lucide-react";
+import { Video, Plus, Play, Star, Clock, Users, Eye, Search, Send, Copy, Link2, MessageSquare, CheckCircle2, AlertCircle, BarChart3, Timer, MonitorPlay, ChevronRight, ChevronDown, Settings2, Calendar, FileText, Pencil, Share2, SkipForward, SkipBack, Volume2, Maximize2, TrendingUp, Percent } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -73,14 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 // ---------------------------------------------------------------------------
 // Types

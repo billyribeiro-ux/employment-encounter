@@ -2,7 +2,11 @@
   "name": "@talent-os/config",
   "version": "0.1.0",
   "private": true,
-  "main": "./index.js",
+  "files": ["tsconfig.base.json", "eslint.base.js"],
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint.base.js": "./eslint.base.js"
+  },
   "scripts": {
     "lint": "echo 'config package'"
   }

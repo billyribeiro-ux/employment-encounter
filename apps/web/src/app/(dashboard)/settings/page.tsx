@@ -38,41 +38,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "sonner";
-import {
-  Users,
-  Shield,
-  Mail,
-  Loader2,
-  Trash2,
-  Plus,
-  Copy,
-  Eye,
-  EyeOff,
-  Link2,
-  Webhook,
-  Key,
-  Bell,
-  Briefcase,
-  Globe,
-  Palette,
-  Settings2,
-  ArrowRight,
-  GripVertical,
-  Upload,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+import { Users, Shield, Mail, Loader2, Trash2, Plus, Copy, Eye, EyeOff, Link2, Webhook, Key, Bell, Globe, Palette, Settings2, GripVertical, Upload, CheckCircle2, XCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   useProfile,
@@ -85,7 +54,7 @@ import {
   useDeleteUser,
   type UserProfile,
 } from "@/lib/hooks/use-settings";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 // ---------------------------------------------------------------------------
 // Zod Schemas

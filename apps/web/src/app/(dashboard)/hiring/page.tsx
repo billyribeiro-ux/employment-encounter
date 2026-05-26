@@ -2,24 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Plus,
-  Briefcase,
-  Users,
-  Calendar,
-  FileCheck,
-  Search,
-  RotateCcw,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Download,
-  Eye,
-  Trash2,
-  MoreHorizontal,
-  Pencil,
-  ClipboardCheck,
-} from "lucide-react";
+import { Plus, Briefcase, Users, Calendar, FileCheck, Search, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown, Download, Eye, Trash2, Pencil, ClipboardCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +29,6 @@ import { Label } from "@/components/ui/label";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { TableSkeleton } from "@/components/dashboard/table-skeleton";
 import { useJobs, useCreateJob, useDeleteJob } from "@/lib/hooks/use-jobs";
-import type { JobPost } from "@/lib/hooks/use-jobs";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { exportToCSV } from "@/lib/utils";
 import { toast } from "sonner";

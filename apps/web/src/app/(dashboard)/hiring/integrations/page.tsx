@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,27 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { toast } from "sonner";
-import {
-  Search,
-  Plug,
-  Settings,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Calendar,
-  MessageSquare,
-  Users,
-  Briefcase,
-  Shield,
-  Zap,
-  Video,
-  FileSignature,
-  ExternalLink,
-  RefreshCw,
-  Loader2,
-  Link,
-  Unlink,
-} from "lucide-react";
+import { Search, Plug, Settings, CheckCircle, AlertCircle, Calendar, MessageSquare, Users, Briefcase, Shield, Zap, Video, FileSignature, RefreshCw, Loader2, Link, Unlink } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types

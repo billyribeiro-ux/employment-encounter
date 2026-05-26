@@ -1,32 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import Link from "next/link";
-import {
-  Upload,
-  FileText,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  GraduationCap,
-  Award,
-  Languages,
-  Sparkles,
-  Check,
-  Loader2,
-  AlertCircle,
-  Trash2,
-  Edit2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Plus,
-  UserPlus,
-  Files,
-  History,
-} from "lucide-react";
+import { Upload, FileText, User, Briefcase, GraduationCap, Award, Languages, Sparkles, Check, Loader2, AlertCircle, Trash2, Edit2, ChevronDown, ChevronUp, Clock, UserPlus, Files, History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import {

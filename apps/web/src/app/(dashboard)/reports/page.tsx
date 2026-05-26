@@ -35,8 +35,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useHiringStats } from "@/lib/hooks/use-hiring-analytics";
-import { useApplications } from "@/lib/hooks/use-applications";
-import { useOffers } from "@/lib/hooks/use-offers";
 import { useJobs } from "@/lib/hooks/use-jobs";
 import { toast } from "sonner";
 

@@ -1,35 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Briefcase,
-  Users,
-  FileCheck,
-  Calendar,
-  Plus,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  ClipboardCheck,
-  Search,
-  Eye,
-  Zap,
-  Target,
-  Timer,
-  Star,
-  Brain,
-  Handshake,
-  UserPlus,
-  Activity,
-} from "lucide-react";
+import { Briefcase, Users, FileCheck, Calendar, Plus, ArrowRight, TrendingUp, TrendingDown, ClipboardCheck, Search, Eye, Zap, Target, Timer, Star, Brain, Handshake, UserPlus, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDashboardStats } from "@/lib/hooks/use-dashboard";

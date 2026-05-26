@@ -4,36 +4,13 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Video,
-  Phone,
-  Building2,
-  Briefcase,
-  Users,
-  FileText,
-  CheckSquare,
-  Square,
-  Lightbulb,
-  BookOpen,
-  MessageSquare,
-  ExternalLink,
-  Globe,
-  Star,
-  Target,
-  Clipboard,
-  Save,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Video, Phone, Building2, Briefcase, Users, FileText, CheckSquare, Square, Lightbulb, BookOpen, MessageSquare, Globe, Star, Target, Clipboard, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useMeeting } from "@/lib/hooks/use-meetings";
@@ -45,14 +22,6 @@ function formatDateTime(dateStr: string): string {
     month: "long",
     day: "numeric",
     year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

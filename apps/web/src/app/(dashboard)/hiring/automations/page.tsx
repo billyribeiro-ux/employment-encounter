@@ -1,33 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import {
-  Zap,
-  Plus,
-  Play,
-  Pause,
-  Trash2,
-  Clock,
-  Mail,
-  ArrowRight,
-  UserCheck,
-  Bell,
-  Tag,
-  ClipboardCheck,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  ChevronUp,
-  Activity,
-  Settings,
-  Copy,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
+import { useState } from "react";
+import { Zap, Plus, Play, Trash2, Clock, Mail, ArrowRight, UserCheck, Bell, Tag, ClipboardCheck, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp, Activity, Settings, Copy, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";

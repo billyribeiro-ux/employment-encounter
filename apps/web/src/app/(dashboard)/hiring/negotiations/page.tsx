@@ -1,52 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DollarSign,
-  TrendingUp,
-  ArrowRight,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  MessageSquare,
-  Plus,
-  Edit,
-  Eye,
-  ArrowUpRight,
-  ArrowDownRight,
-  Handshake,
-  FileSignature,
-  AlertCircle,
-  Loader2,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, XCircle, MessageSquare, ArrowUpRight, ArrowDownRight, Handshake, FileSignature, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 interface NegotiationRound {
   round: number;

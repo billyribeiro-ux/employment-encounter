@@ -2,33 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Star,
-  Plus,
-  Trash2,
-  Edit2,
-  MapPin,
-  Globe,
-  ExternalLink,
-  ClipboardCheck,
-  StickyNote,
-  Clock,
-  FileText,
-  ArrowRight,
-  Send,
-  X,
-  Heart,
-  ChevronRight,
-  Calendar,
-  Gavel,
-  MessageSquare,
-  CheckCircle2,
-  XCircle,
-  PauseCircle,
-  BarChart3,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Star, Plus, Trash2, Edit2, MapPin, Globe, ExternalLink, ClipboardCheck, StickyNote, Clock, FileText, ArrowRight, Send, X, Calendar, Gavel, MessageSquare, CheckCircle2, XCircle, PauseCircle, BarChart3, User } from "lucide-react";
 import { FaGithub as Github, FaLinkedin as Linkedin } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";
@@ -41,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
@@ -1004,7 +977,7 @@ function ScoreSummaryCard({ applicationId }: { applicationId: string }) {
 // --- Decision Card ---
 
 function DecisionCard({ applicationId }: { applicationId: string }) {
-  const { data: decisions, isLoading } = useDecisionRecords(applicationId);
+  const { data: decisions } = useDecisionRecords(applicationId);
   const createDecision = useCreateDecision();
   const [showForm, setShowForm] = useState(false);
   const [decision, setDecision] = useState("");

@@ -2,18 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Search,
-  Briefcase,
-  Users,
-  Zap,
-  Shield,
-  BarChart3,
-  ArrowRight,
-  CheckCircle2,
-  Building2,
-  Globe,
-} from "lucide-react";
+import { Search, Briefcase, Zap, Shield, BarChart3, ArrowRight, Building2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 

@@ -2,26 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Star,
-  Search,
-  Users,
-  ClipboardCheck,
-  Heart,
-  Gavel,
-  Eye,
-  StickyNote,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  RotateCcw,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Star, Users, ClipboardCheck, Heart, Gavel, Eye, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { SearchInput } from "@/components/dashboard/search-input";
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs";
 import { useApplications } from "@/lib/hooks/use-applications";

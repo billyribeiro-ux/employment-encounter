@@ -2,25 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  MapPin,
-  MessageSquare,
-  Calendar,
-  Globe,
-  Shield,
-  ShieldCheck,
-  Briefcase,
-  FileText,
-  Download,
-  ExternalLink,
-  Star,
-  StickyNote,
-  Plus,
-  Edit2,
-  Trash2,
-  ClipboardCheck,
-} from "lucide-react";
+import { ArrowLeft, MapPin, MessageSquare, Calendar, Globe, Shield, ShieldCheck, Briefcase, FileText, ExternalLink, Star, StickyNote, Edit2, Trash2, ClipboardCheck } from "lucide-react";
 import { FaGithub as Github, FaLinkedin as Linkedin } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/button";

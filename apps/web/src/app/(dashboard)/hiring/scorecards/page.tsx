@@ -2,31 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ClipboardCheck,
-  Plus,
-  Star,
-  Users,
-  BarChart3,
-  Eye,
-  Copy,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  Search,
-  Target,
-  TrendingUp,
-  Award,
-  ThumbsUp,
-  ThumbsDown,
-  Minus,
-  AlertTriangle,
-  CheckCircle2,
-  Layers,
-  Settings2,
-  UserCheck,
-  Radar,
-} from "lucide-react";
+import { ClipboardCheck, Plus, Star, Users, BarChart3, Eye, Copy, ChevronDown, ChevronRight, Search, Target, TrendingUp, Award, ThumbsUp, ThumbsDown, Minus, AlertTriangle, CheckCircle2, Layers, Settings2, Radar } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tabs,
   TabsContent,

@@ -1,39 +1,12 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
-import {
-  Users,
-  Clock,
-  TrendingUp,
-  Filter,
-  Search,
-  Eye,
-  Calendar,
-  MessageSquarePlus,
-  XCircle,
-  ChevronRight,
-  ChevronLeft,
-  MoreHorizontal,
-  Star,
-  Zap,
-  ArrowRight,
-  BarChart3,
-  UserCircle,
-  GripVertical,
-  Inbox,
-  RotateCcw,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, Clock, TrendingUp, Filter, Search, Eye, Calendar, MessageSquarePlus, XCircle, ChevronRight, ChevronLeft, Star, Zap, ArrowRight, BarChart3, UserCircle, Inbox, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -44,15 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -61,7 +26,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ─── Types ──────────────────────────────────────────────────────────────────

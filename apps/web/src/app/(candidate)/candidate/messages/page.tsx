@@ -2,16 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  MessageSquare,
-  Send,
-  Search,
-  CheckCheck,
-  Check,
-  Clock,
-  Building2,
-  ArrowLeft,
-} from "lucide-react";
+import { MessageSquare, Send, Search, CheckCheck, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/stores/auth-store";
 import {
   useConversations,

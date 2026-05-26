@@ -3,52 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import {
-  Users,
-  Briefcase,
-  MessageSquare,
-  Calendar,
-  CreditCard,
-  Search,
-  Settings,
-  BarChart3,
-  Video,
-  FileText,
-  Clock,
-  Receipt,
-  LayoutDashboard,
-  Keyboard,
-  ClipboardCheck,
-  FileSignature,
-  Star,
-  Bell,
-  Plus,
-  CalendarClock,
-  Brain,
-  GitCompare,
-  FileSearch,
-  MessageCircleQuestion,
-  Zap,
-  Heart,
-  Globe,
-  Mail,
-  Puzzle,
-  Upload,
-  Activity,
-  Kanban,
-  Layers,
-  ShieldCheck,
-  ClipboardList,
-  VideoIcon,
-  BookOpen,
-  Handshake,
-  UserPlus,
-  GraduationCap,
-  DollarSign,
-  Shield,
-  SearchCheck,
-  Scale,
-} from "lucide-react";
+import { Users, Briefcase, MessageSquare, Calendar, CreditCard, Search, Settings, BarChart3, Video, FileText, Clock, LayoutDashboard, Keyboard, ClipboardCheck, FileSignature, Bell, Plus, CalendarClock, Brain, GitCompare, FileSearch, MessageCircleQuestion, Zap, Heart, Globe, Mail, Puzzle, Upload, Activity, Kanban, Layers, ShieldCheck, ClipboardList, VideoIcon, BookOpen, Handshake, UserPlus, GraduationCap, DollarSign, Shield, SearchCheck, Scale } from "lucide-react";
 
 interface CommandItem {
   id: string;

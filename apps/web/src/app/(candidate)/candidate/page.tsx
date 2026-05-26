@@ -2,36 +2,13 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  FileText,
-  Calendar,
-  User,
-  Bookmark,
-  ArrowRight,
-  Briefcase,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Search,
-  MessageSquare,
-  Bell,
-  Video,
-  MapPin,
-  Settings,
-  Shield,
-  Mail,
-  Globe,
-  Star,
-} from "lucide-react";
+import { FileText, Calendar, User, Bookmark, ArrowRight, Briefcase, TrendingUp, CheckCircle2, XCircle, AlertCircle, Search, MessageSquare, Bell, Video, MapPin, Settings, Shield, Mail, Globe, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/stores/auth-store";
 import { useApplications } from "@/lib/hooks/use-applications";
 import { usePublicJobs } from "@/lib/hooks/use-public-jobs";
@@ -80,14 +57,6 @@ function formatDateTime(dateStr: string): string {
     weekday: "short",
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -167,7 +136,7 @@ export default function CandidateDashboardPage() {
     ) ?? 0;
 
   // Meetings data for upcoming interviews
-  const { data: meetingsData, isLoading: meetingsLoading } = useMeetings({
+  const { data: meetingsData } = useMeetings({
     per_page: 5,
     sort: "proposed_start",
     order: "asc",

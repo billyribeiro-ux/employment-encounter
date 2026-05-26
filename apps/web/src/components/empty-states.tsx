@@ -2,19 +2,7 @@
 
 import { type ReactNode } from "react";
 import { motion } from "framer-motion";
-import {
-  Users,
-  FileText,
-  Receipt,
-  CheckSquare,
-  MessageSquare,
-  Clock,
-  BarChart3,
-  FolderOpen,
-  Inbox,
-  Plus,
-  type LucideIcon,
-} from "lucide-react";
+import { Users, FileText, Receipt, CheckSquare, MessageSquare, Clock, BarChart3, Inbox, Plus, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 

@@ -2,37 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Users,
-  Briefcase,
-  DollarSign,
-  FileText,
-  Plus,
-  Eye,
-  MessageSquare,
-  ChevronRight,
-  ArrowRight,
-  BarChart3,
-  Shield,
-  Send,
-  UserPlus,
-  Filter,
-  Search,
-  RotateCcw,
-  Check,
-  X,
-  Zap,
-  CalendarClock,
-  Building2,
-  Award,
-  CircleDot,
-  Loader2,
-  Settings2,
-} from "lucide-react";
+import { CheckCircle2, XCircle, Clock, AlertCircle, Briefcase, DollarSign, FileText, Plus, ChevronRight, ArrowRight, BarChart3, Shield, Send, UserPlus, Search, RotateCcw, Check, X, CalendarClock, CircleDot, Loader2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -46,7 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -76,7 +45,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

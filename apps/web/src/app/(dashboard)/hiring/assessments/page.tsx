@@ -1,42 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  ClipboardCheck,
-  Plus,
-  Search,
-  Clock,
-  Users,
-  BarChart3,
-  TrendingUp,
-  Send,
-  Eye,
-  Code2,
-  FileText,
-  Brain,
-  Puzzle,
-  MessageSquare,
-  Globe,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  ChevronRight,
-  ChevronDown,
-  Copy,
-  Monitor,
-  Timer,
-  Upload,
-  Video,
-  Filter,
-  Download,
-  Star,
-  Zap,
-  ArrowUpDown,
-  MoreHorizontal,
-  Trash2,
-  Pencil,
-  Mail,
-} from "lucide-react";
+import { ClipboardCheck, Plus, Search, Clock, Users, BarChart3, TrendingUp, Send, Eye, Code2, FileText, Brain, Puzzle, Globe, AlertTriangle, CheckCircle2, ChevronRight, Copy, Monitor, Timer, Upload, Video, Filter, Download, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -50,7 +15,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
