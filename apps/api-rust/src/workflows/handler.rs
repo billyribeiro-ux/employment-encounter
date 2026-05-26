@@ -202,13 +202,18 @@ pub async fn advance_step(
         )));
     }
 
-    // Get current instance
+    // All four writes (current-step log, instance update, optional
+    // next-step "started" log) commit atomically. Without this, a crash
+    // between writes could leave the instance advanced but with no
+    // step-log row, breaking activity history.
+    let mut tx = state.db.begin().await?;
+
     let instance: WorkflowInstance = sqlx::query_as(
-        "SELECT id, tenant_id, template_id, client_id, name, status, current_step_index, started_at, completed_at, due_date, assigned_to, metadata, created_by, created_at, updated_at FROM workflow_instances WHERE id = $1 AND tenant_id = $2",
+        "SELECT id, tenant_id, template_id, client_id, name, status, current_step_index, started_at, completed_at, due_date, assigned_to, metadata, created_by, created_at, updated_at FROM workflow_instances WHERE id = $1 AND tenant_id = $2 FOR UPDATE",
     )
     .bind(instance_id)
     .bind(claims.tid)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| AppError::NotFound("Workflow not found".to_string()))?;
 
@@ -216,12 +221,11 @@ pub async fn advance_step(
         return Err(AppError::Validation("Workflow is not active".to_string()));
     }
 
-    // Get template steps to determine total count and step name
     let (steps_json,): (serde_json::Value,) =
         sqlx::query_as("SELECT steps FROM workflow_templates WHERE id = $1 AND tenant_id = $2")
             .bind(instance.template_id)
             .bind(claims.tid)
-            .fetch_one(&state.db)
+            .fetch_one(&mut *tx)
             .await?;
 
     let empty_vec = vec![];
@@ -232,7 +236,6 @@ pub async fn advance_step(
         .and_then(|n| n.as_str())
         .unwrap_or("Unknown Step");
 
-    // Log the action on current step
     sqlx::query(
         "INSERT INTO workflow_step_logs (tenant_id, instance_id, step_index, step_name, action, performed_by, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
@@ -243,10 +246,9 @@ pub async fn advance_step(
     .bind(&payload.action)
     .bind(claims.sub)
     .bind(payload.notes.as_deref())
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
 
-    // Determine next step
     let next_index = match payload.action.as_str() {
         "completed" | "skipped" => instance.current_step_index + 1,
         "returned" => (instance.current_step_index - 1).max(0),
@@ -263,10 +265,9 @@ pub async fn advance_step(
     .bind(claims.tid)
     .bind(next_index)
     .bind(new_status)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
-    // Log next step as started if not complete
     if !is_complete {
         let next_step_name = steps_array
             .get(next_index as usize)
@@ -282,9 +283,11 @@ pub async fn advance_step(
         .bind(next_index)
         .bind(next_step_name)
         .bind(claims.sub)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await?;
     }
+
+    tx.commit().await?;
 
     Ok(Json(updated))
 }

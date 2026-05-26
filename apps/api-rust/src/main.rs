@@ -60,6 +60,7 @@ use axum::{
     routing::{delete, get, patch, post, put},
     Router,
 };
+use axum_prometheus::PrometheusMetricLayer;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 use tower_http::compression::CompressionLayer;
@@ -185,6 +186,13 @@ async fn main() -> anyhow::Result<()> {
         rate_limiter,
         redis: redis_client,
     };
+
+    // Prometheus metrics. The metric layer auto-tracks HTTP request
+    // count + latency histograms by route+method+status. The handle
+    // serves the Prometheus exposition format on /metrics (no auth, in
+    // line with industry practice — restrict at network layer if
+    // sensitive).
+    let (prometheus_layer, prometheus_handle) = PrometheusMetricLayer::pair();
 
     // Build CORS layer
     let cors = CorsLayer::new()
@@ -847,6 +855,12 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         // Health
         .route("/api/v1/health", get(auth::handler::health))
+        // Prometheus metrics. Public on purpose; lock down at the LB if
+        // exposure is a concern.
+        .route(
+            "/metrics",
+            get(move || std::future::ready(prometheus_handle.render())),
+        )
         // Auth (public)
         .route("/api/v1/auth/register", post(auth::handler::register))
         .route(
@@ -871,13 +885,14 @@ async fn main() -> anyhow::Result<()> {
         // Protected API routes
         .nest("/api/v1", protected_routes)
         // Layers — order matters: outermost (top) wraps everything inside.
-        // Request lifecycle: request-id → trace → CORS → compression →
-        // CSRF → security headers → rate-limit → idempotency → timeout
-        // → body limit → handler. Errors and responses propagate back out
-        // through every layer in reverse.
+        // Request lifecycle: request-id → trace → metrics → CORS →
+        // compression → CSRF → security headers → rate-limit →
+        // idempotency → timeout → body limit → handler. Errors and
+        // responses propagate back out through every layer in reverse.
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(TraceLayer::new_for_http())
+        .layer(prometheus_layer)
         .layer(cors)
         .layer(CompressionLayer::new().gzip(true))
         .layer(axum_mw::from_fn(middleware::csrf::csrf_protection))

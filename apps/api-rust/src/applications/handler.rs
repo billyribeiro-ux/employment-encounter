@@ -204,20 +204,25 @@ pub async fn advance_stage(
     Path(application_id): Path<Uuid>,
     Json(payload): Json<AdvanceStageRequest>,
 ) -> AppResult<Json<Application>> {
-    // Get current application
+    // All three statements (read-current, update-stage, insert-event) run
+    // inside one transaction so the stage event row never desynchronizes
+    // from the application stage and the RLS tenant context is set on a
+    // single connection for the whole operation.
+    let mut tx = state.db.begin().await?;
+
     let current: Application = sqlx::query_as(&format!(
-        "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2",
+        "SELECT {} FROM applications a WHERE a.id = $1 AND a.tenant_id = $2 FOR UPDATE",
         APPLICATION_COLUMNS
     ))
     .bind(application_id)
     .bind(claims.tid)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| AppError::NotFound("Application not found".to_string()))?;
 
     let from_stage = current.stage.clone();
 
-    // Calculate duration_hours from previous stage event
+    // Calculate duration_hours from previous stage event.
     let duration_hours: Option<i32> = sqlx::query_as::<_, (Option<i32>,)>(
         "SELECT EXTRACT(EPOCH FROM (NOW() - created_at))::int / 3600 \
          FROM application_stage_events \
@@ -226,11 +231,10 @@ pub async fn advance_stage(
     )
     .bind(application_id)
     .bind(claims.tid)
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .and_then(|row| row.0);
 
-    // Update the application stage
     let updated: Application = sqlx::query_as(&format!(
         "UPDATE applications SET stage = $3, updated_at = NOW() \
              WHERE id = $1 AND tenant_id = $2 \
@@ -240,10 +244,9 @@ pub async fn advance_stage(
     .bind(application_id)
     .bind(claims.tid)
     .bind(&payload.to_stage)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
-    // Insert stage event
     sqlx::query(
         "INSERT INTO application_stage_events \
          (tenant_id, application_id, from_stage, to_stage, changed_by, notes, duration_hours) \
@@ -256,8 +259,10 @@ pub async fn advance_stage(
     .bind(claims.sub)
     .bind(payload.notes.as_deref())
     .bind(duration_hours)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
+
+    tx.commit().await?;
 
     Ok(Json(updated))
 }

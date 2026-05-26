@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 const isProd = process.env.NODE_ENV === "production";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 // Baseline Content-Security-Policy. Starts strict; relax per-route via
 // route-level headers if a feature genuinely needs it. We ship Report-Only
@@ -82,4 +87,4 @@ const nextConfig: NextConfig = {
   compress: true,
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

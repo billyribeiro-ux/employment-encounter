@@ -40,6 +40,11 @@ envy = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
+# Metrics — Prometheus exposition format on /metrics
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.18", default-features = false }
+axum-prometheus = "0.10"
+
 # Error handling
 thiserror = "2"
 anyhow = "1"

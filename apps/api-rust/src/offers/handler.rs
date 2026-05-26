@@ -186,12 +186,18 @@ pub async fn accept_offer(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Offer>> {
-    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
-        .bind(id)
-        .bind(claims.tid)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    // SELECT ... FOR UPDATE + UPDATE inside one tx eliminates the TOCTOU
+    // race where two concurrent accepts both observe status='sent' before
+    // either UPDATE runs.
+    let mut tx = state.db.begin().await?;
+
+    let existing: Offer =
+        sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2 FOR UPDATE")
+            .bind(id)
+            .bind(claims.tid)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "sent" {
         return Err(AppError::Validation(format!(
@@ -211,9 +217,10 @@ pub async fn accept_offer(
     )
     .bind(id)
     .bind(claims.tid)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
+    tx.commit().await?;
     Ok(Json(offer))
 }
 
@@ -223,12 +230,15 @@ pub async fn decline_offer(
     Path(id): Path<Uuid>,
     Json(payload): Json<DeclineOfferRequest>,
 ) -> AppResult<Json<Offer>> {
-    let existing: Offer = sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2")
-        .bind(id)
-        .bind(claims.tid)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
+    let mut tx = state.db.begin().await?;
+
+    let existing: Offer =
+        sqlx::query_as("SELECT * FROM offers WHERE id = $1 AND tenant_id = $2 FOR UPDATE")
+            .bind(id)
+            .bind(claims.tid)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Offer not found".to_string()))?;
 
     if existing.status != "sent" {
         return Err(AppError::Validation(format!(
@@ -250,8 +260,9 @@ pub async fn decline_offer(
     .bind(id)
     .bind(claims.tid)
     .bind(&payload.reason)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
+    tx.commit().await?;
     Ok(Json(offer))
 }
